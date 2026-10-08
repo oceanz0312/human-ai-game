@@ -84,6 +84,7 @@ scripts/
   migrate.ts
   validate-levels.ts
 public/levels/v1/
+docs/design/visual-style.md
 tests/
   e2e/game.spec.ts
   fixtures/fake-decisions.ts
@@ -851,15 +852,15 @@ The AI route is a same-origin Next.js endpoint. Browser code must not read `DECI
 
 - [ ] **Step 5: Apply the approved visual system**
 
-Use a centered `max-width: 430px` shell, white background, near-black text, one purple status accent, system sans-serif typography, 18-pixel rounded primary buttons, no navigation, and no decorative card containers on the gameplay screen. Respect `prefers-reduced-motion` and use `100dvh` rather than `100vh`.
+Implement [`docs/design/visual-style.md`](../../design/visual-style.md) as the authoritative visual contract. Define its colors, typography, spacing, radius, safe-area, button, board, loading, error, result, poster, motion, and reduced-motion rules as CSS custom properties and shared classes. Do not introduce unapproved gradients, cards, shadows, navigation, semantic red/green panels, or a second primary action.
 
 - [ ] **Step 6: Run component tests and a mobile screenshot check**
 
 Run: `npm test -- tests/unit/game-board.test.tsx tests/unit/play-flow.test.tsx`
 Expected: PASS.
 
-Run: `npm run dev`, then inspect `/` and `/play/{test-session}` at 390×844.
-Expected: no horizontal scroll; all 81 touch cells fit; primary action remains reachable.
+Run: `npm run dev`, then capture the five required views from `docs/design/visual-style.md` at 375×812, 390×844, and 430×932.
+Expected: no horizontal scroll or text clipping; all 81 touch cells fit and align with the raster; primary actions remain reachable; purple appears only in the AI status; screenshot review matches the approved hierarchy.
 
 - [ ] **Step 7: Commit**
 
