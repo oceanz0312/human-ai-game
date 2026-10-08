@@ -1,0 +1,25 @@
+{
+  "$schema": "../../node_modules/wrangler/config-schema.json",
+  "name": "human-ai-decisions",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat"],
+  "observability": { "enabled": true },
+  "workers_dev": true,
+  "vars": {
+    "OPENAI_BASE_URL": "https://api.openai.com/v1",
+    "OPENAI_DECISIONS_MODEL": "gpt-6-luna",
+    "OPENAI_DECISIONS_TIMEOUT_MS": "8000"
+  },
+  // Secrets: wrangler secret put OPENAI_API_KEY / DECISIONS_WORKER_SHARED_SECRET (never commit values here).
+  "env": {
+    "preview": {
+      "name": "human-ai-decisions-preview",
+      "vars": {
+        "OPENAI_BASE_URL": "https://api.openai.com/v1",
+        "OPENAI_DECISIONS_MODEL": "gpt-6-luna",
+        "OPENAI_DECISIONS_TIMEOUT_MS": "8000"
+      }
+    }
+  }
+}
