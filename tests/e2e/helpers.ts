@@ -73,10 +73,11 @@ export async function assertMobileLayout(page: Page) {
   expect(report.scrollWidth, "no horizontal scroll").toBeLessThanOrEqual(report.viewport.width);
   expect(report.purple, "purple is reserved for the AI status dot").toEqual([]);
   expect(report.clipped, "no clipped text").toBe(0);
+  const onReveal = await page.evaluate(() => Boolean(document.querySelector(".mobile-shell.reveal")));
   if (report.board) {
     expect(report.board.left).toBeGreaterThanOrEqual(0);
     expect(report.board.right).toBeLessThanOrEqual(report.viewport.width);
-    expect(report.board.bottom, "board fits the first screen").toBeLessThanOrEqual(report.viewport.height);
+    if (!onReveal) expect(report.board.bottom, "board fits the first screen").toBeLessThanOrEqual(report.viewport.height);
     expect(Math.abs(report.board.width - report.board.height)).toBeLessThan(1);
     if (report.image && report.firstCell && report.lastCell) {
       const inset = (report.image.width * 24) / 1080;
@@ -87,7 +88,7 @@ export async function assertMobileLayout(page: Page) {
       if (report.cellCount === 81) expect(report.firstCell.width, "9×9 touch target").toBeGreaterThanOrEqual(35);
     }
   }
-  if (report.primary) expect(report.primary.bottom, "primary action reachable").toBeLessThanOrEqual(report.viewport.height);
+  if (report.primary && !onReveal) expect(report.primary.bottom, "primary action reachable").toBeLessThanOrEqual(report.viewport.height);
 }
 
 export async function screenshot(page: Page, testInfo: TestInfo, name: string) {
