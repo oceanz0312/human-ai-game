@@ -57,6 +57,27 @@ export interface RoundStartResponse {
   session: SessionSnapshot;
 }
 
+/** Where the browser should trigger AI (visible in DevTools Network). */
+export type AiDispatch =
+  | { mode: "worker"; url: string; ticket: string; issuedAt: number }
+  | { mode: "fake"; url: string };
+
+export interface BeginRoundResponse {
+  roundId: string;
+  deadlineAt: number | null;
+  started: boolean;
+  ai: AiDispatch | null;
+}
+
+/** Browser-visible Decisions Worker payload (never includes the AI's chosen cell). */
+export interface BrowserDecisionResponse {
+  status: "complete" | "error";
+  requestId: string;
+  modelElapsedMs: number;
+  errorCode: string | null;
+  receivedAt: number;
+}
+
 export interface SubmitResponse {
   round: RoundReveal;
   session: SessionSnapshot;

@@ -1,19 +1,17 @@
 import { decisionRequestSchema, type DecisionErrorCode, MAX_IMAGE_BYTES, type WorkerDecisionResponse } from "../../../src/server/decisions/contracts";
+import type { WorkerEnv } from "./env";
+import { createPublicDecideHandler } from "./public-decide";
 import { requestOddCell } from "./openai";
+import { createD1TicketStore, createMemoryTicketStore } from "./ticket-store";
 
-export interface WorkerEnv {
-  OPENAI_API_KEY: string;
-  DECISIONS_WORKER_SHARED_SECRET: string;
-  OPENAI_BASE_URL?: string;
-  OPENAI_DECISIONS_MODEL?: string;
-  OPENAI_DECISIONS_TIMEOUT_MS?: string;
-}
+export type { WorkerEnv } from "./env";
 
 interface HandlerDeps {
   fetchImpl?: typeof fetch;
   now?: () => number;
   log?: (entry: Record<string, string | number | null>) => void;
   randomId?: () => string;
+  ticketStore?: import("./ticket-store").TicketConsumeStore;
 }
 
 const MAX_BODY_BYTES = MAX_IMAGE_BYTES + 64 * 1024;
@@ -44,9 +42,16 @@ export function createWorkerHandler(deps: HandlerDeps = {}) {
   const now = deps.now ?? (() => Date.now());
   const log = deps.log ?? ((entry) => console.log(JSON.stringify(entry)));
   const randomId = deps.randomId ?? (() => crypto.randomUUID());
+  const publicDecide = createPublicDecideHandler({ fetchImpl, now, log, randomId, ticketStore: deps.ticketStore });
 
   return {
     async fetch(request: Request, env: WorkerEnv): Promise<Response> {
+      const url = new URL(request.url);
+      if (url.pathname === "/v1/decide-ticket") {
+        const ticketStore = deps.ticketStore ?? (env.DB ? createD1TicketStore(env.DB) : createMemoryTicketStore());
+        return publicDecide.handle(request, env, ticketStore);
+      }
+
       const requestId = randomId();
       const startedAt = now();
       let choiceCount: number | null = null;
@@ -65,7 +70,6 @@ export function createWorkerHandler(deps: HandlerDeps = {}) {
         requestId,
       });
 
-      const url = new URL(request.url);
       if (url.pathname !== "/v1/decide") return respond(404, { error: "not_found" });
       if (request.method !== "POST") return respond(405, { error: "method_not_allowed" });
 

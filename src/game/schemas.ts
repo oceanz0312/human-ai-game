@@ -12,6 +12,8 @@ export const nicknameSchema = z.object({ nickname: z.string().trim().min(1).max(
 export const ANALYTICS_EVENTS = [
   "game_start",
   "level_shown",
+  "ai_dispatch_complete",
+  "ai_dispatch_failed",
   "player_answered",
   "ai_answered",
   "level_result",

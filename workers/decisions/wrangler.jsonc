@@ -9,8 +9,13 @@
   "vars": {
     "OPENAI_BASE_URL": "https://api.openai.com/v1",
     "OPENAI_DECISIONS_MODEL": "gpt-6-luna",
-    "OPENAI_DECISIONS_TIMEOUT_MS": "8000"
+    "OPENAI_DECISIONS_TIMEOUT_MS": "8000",
+    "PUBLIC_BASE_URL": "https://human-ai.zdychanges.workers.dev"
   },
+  "services": [{ "binding": "GAME", "service": "human-ai" }],
+  "d1_databases": [
+    { "binding": "DB", "database_name": "human-ai", "database_id": "2cb1e22d-8042-4045-b5eb-e8b1131e6925", "migrations_dir": "../../drizzle" }
+  ],
   // Secrets: wrangler secret put OPENAI_API_KEY / DECISIONS_WORKER_SHARED_SECRET (never commit values here).
   "env": {
     "preview": {
@@ -18,8 +23,13 @@
       "vars": {
         "OPENAI_BASE_URL": "https://api.openai.com/v1",
         "OPENAI_DECISIONS_MODEL": "gpt-6-luna",
-        "OPENAI_DECISIONS_TIMEOUT_MS": "8000"
-      }
+        "OPENAI_DECISIONS_TIMEOUT_MS": "8000",
+        "PUBLIC_BASE_URL": "https://human-ai.zdychanges.workers.dev"
+      },
+      "services": [{ "binding": "GAME", "service": "human-ai" }],
+      "d1_databases": [
+        { "binding": "DB", "database_name": "human-ai", "database_id": "2cb1e22d-8042-4045-b5eb-e8b1131e6925", "migrations_dir": "../../drizzle" }
+      ]
     }
   }
 }

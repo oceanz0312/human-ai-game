@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PublicLevel, RoundReveal, SessionSnapshot } from "@/game/contracts";
 import { PUBLIC_LEVELS_V1 } from "@/levels/public-catalog.generated";
+import { dispatchRoundAi, type AiNetworkProgress } from "@/lib/ai-dispatch";
 import { api, ApiError, haptic, track, withRetry } from "@/lib/api-client";
 import { countdown } from "@/lib/format";
 import { GameBoard } from "./GameBoard";
@@ -46,6 +47,20 @@ export function preloadImage(url: string): Promise<void> {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+function formatAiTime(ms: number | null) {
+  if (ms === null) return null;
+  return new Date(ms).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function describeAiProgress(progress: AiNetworkProgress | null, submitting: boolean) {
+  if (submitting) return { main: "答案已锁定", hint: "正在结算" };
+  if (!progress?.ticketIssuedAt) return { main: "AI 正在寻找", hint: "点击不同项" };
+  if (!progress.requestSentAt) return { main: "已发放凭证", hint: "正在连接 AI" };
+  if (!progress.responseReceivedAt) return { main: "已请求 AI", hint: "等待响应" };
+  const stamp = formatAiTime(progress.responseReceivedAt);
+  return { main: stamp ? `AI 已响应 · ${stamp}` : "AI 已响应", hint: progress.errorCode ? "AI 侧异常" : "等待你的答案" };
+}
+
 export function GameScreen({ sessionId }: { sessionId: string }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
@@ -56,6 +71,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
   const [selected, setSelected] = useState<string | null>(null);
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
   const [reveal, setReveal] = useState<RoundReveal | null>(null);
+  const [aiProgress, setAiProgress] = useState<AiNetworkProgress | null>(null);
   const [locked, setLocked] = useState(false);
   const [loadEpoch, setLoadEpoch] = useState(0);
   const [slowEpoch, setSlowEpoch] = useState(-1);
@@ -149,6 +165,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
     setImageReady(false);
     setPainted(false);
     setRemainingMs(null);
+    setAiProgress(null);
     setLocked(false);
     setLoadEpoch((value) => value + 1);
     lockedRef.current = false;
@@ -233,8 +250,25 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
     startedAtRef.current = performance.now();
     setPainted(true);
     const roundId = roundIdRef.current;
-    beginRef.current = withRetry(() => api.beginRound(roundId), 3);
-  }, []);
+    beginRef.current = withRetry(async () => {
+      const begun = await api.beginRound(roundId);
+      if (begun.ai) {
+        setAiProgress({ ticketIssuedAt: begun.ai.mode === "worker" ? begun.ai.issuedAt : Date.now(), requestSentAt: null, responseReceivedAt: null, requestId: null, errorCode: null });
+        try {
+          const outcome = await dispatchRoundAi(begun.ai);
+          setAiProgress(outcome.progress);
+          track("ai_dispatch_complete", {
+            sessionId,
+            level: level?.level ?? null,
+            metadata: { requestId: outcome.progress.requestId, errorCode: outcome.progress.errorCode },
+          });
+        } catch {
+          track("ai_dispatch_failed", { sessionId, level: level?.level ?? null });
+        }
+      }
+      return begun;
+    }, 3);
+  }, [sessionId, level]);
 
   // Absolute-deadline countdown; backgrounding the page does not pause it.
   useEffect(() => {
@@ -352,6 +386,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
   const remaining = remainingMs ?? limit;
   const interactive = phase.kind === "playing" && painted && !locked;
   const slowLoading = phase.kind === "loading" && slowEpoch === loadEpoch;
+  const aiCopy = describeAiProgress(aiProgress, phase.kind === "submitting");
 
   return (
     <main className="mobile-shell game">
@@ -372,12 +407,12 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
         onImagePainted={onImagePainted}
       />
       <div className="game-spacer" />
-      <footer className="ai-status">
+      <footer className="ai-status" data-testid="ai-status">
         <span className="ai">
           <span className="ai-dot" aria-hidden />
-          AI 正在寻找
+          {aiCopy.main}
         </span>
-        <span className="hint">{phase.kind === "submitting" ? "已锁定" : "点击不同项"}</span>
+        <span className="hint">{aiCopy.hint}</span>
       </footer>
     </main>
   );

@@ -46,12 +46,12 @@ test("an unreachable Worker or malformed response becomes an AI error", async ()
   expect((await outside.decide({ imageDataUrl: IMAGE, choices }, new AbortController().signal)).errorCode).toBe("invalid_choice");
 });
 
-test("the browser bundle never references the Worker, OpenAI, or their secrets", async () => {
+test("the browser bundle never embeds OpenAI keys or server decision secrets", async () => {
   const { readFile } = await import("node:fs/promises");
   const { globSync } = await import("node:fs");
   const clientFiles = [...globSync("src/components/**/*.tsx"), ...globSync("src/lib/**/*.ts"), ...globSync("src/levels/**/*.ts"), "src/app/page.tsx"];
   for (const file of clientFiles) {
     const source = await readFile(file, "utf8");
-    expect(source, file).not.toMatch(/DECISIONS_WORKER|OPENAI_API_KEY|api\.openai\.com|workers\.dev|server\/decisions/);
+    expect(source, file).not.toMatch(/OPENAI_API_KEY|api\.openai\.com|DECISIONS_WORKER_SHARED_SECRET|server\/decisions/);
   }
 });

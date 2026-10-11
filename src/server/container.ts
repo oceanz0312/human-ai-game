@@ -60,6 +60,15 @@ async function cloudflareBindings(): Promise<CloudflareBindings | null> {
   }
 }
 
+function resolveDecisionsDispatchMode(): "worker" | "fake" | "off" {
+  const url = process.env.DECISIONS_WORKER_URL;
+  const secret = process.env.DECISIONS_WORKER_SHARED_SECRET;
+  const mode = process.env.DECISIONS_MODE || (url ? "worker" : process.env.NODE_ENV === "production" ? "off" : "fake");
+  if (mode === "worker" && url && secret) return "worker";
+  if (mode === "fake") return "fake";
+  return "off";
+}
+
 function selectDecisionClient(decisionsBinding?: Fetcher): DecisionClient {
   const url = process.env.DECISIONS_WORKER_URL;
   const secret = process.env.DECISIONS_WORKER_SHARED_SECRET;
@@ -98,6 +107,7 @@ async function build(): Promise<Container> {
     db = createDatabase(process.env.DATABASE_URL ?? "file:./local.db", process.env.DATABASE_AUTH_TOKEN);
     ready = migrateDatabase(db);
   }
+  const dispatchMode = resolveDecisionsDispatchMode();
   const service = createGameService({
     games: createGameRepository(db),
     leaderboard: createLeaderboardRepository(db),
@@ -108,6 +118,9 @@ async function build(): Promise<Container> {
     getLevel: getPrivateLevel,
     toPublicLevel,
     readLevelImage,
+    decisionsWorkerPublicUrl: process.env.DECISIONS_WORKER_URL ?? null,
+    decisionsTicketSecret: process.env.DECISIONS_WORKER_SHARED_SECRET ?? null,
+    decisionsDispatchMode: dispatchMode,
   });
   return { service, ready };
 }

@@ -1,4 +1,4 @@
-import type { ResultView, RoundStartResponse, SessionSnapshot, SubmitResponse, LeaderboardRow } from "@/game/contracts";
+import type { BeginRoundResponse, ResultView, RoundStartResponse, SessionSnapshot, SubmitResponse, LeaderboardRow } from "@/game/contracts";
 import type { AnalyticsEventName } from "@/game/schemas";
 
 export class ApiError extends Error {
@@ -27,7 +27,7 @@ export const api = {
   createSession: (body: { nickname?: string; replay?: boolean } = {}) => post<SessionSnapshot>("/api/sessions", body),
   getSession: (sessionId: string) => jsonRequest<SessionSnapshot>(`/api/sessions/${sessionId}`),
   startNextRound: (sessionId: string) => post<RoundStartResponse>(`/api/sessions/${sessionId}/rounds`),
-  beginRound: (roundId: string) => post<{ roundId: string; deadlineAt: number | null }>(`/api/rounds/${roundId}/start`),
+  beginRound: (roundId: string) => post<BeginRoundResponse>(`/api/rounds/${roundId}/start`),
   submitRound: (roundId: string, body: { choice: string | null; elapsedMs: number }) => post<SubmitResponse>(`/api/rounds/${roundId}/submit`, body),
   getRound: (roundId: string) => jsonRequest<SubmitResponse>(`/api/rounds/${roundId}`),
   getResult: (publicId: string) => jsonRequest<ResultView>(`/api/results/${publicId}`),

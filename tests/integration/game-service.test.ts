@@ -32,6 +32,7 @@ async function setup(options: { ai?: (level: number) => FakeDecisionPlan; aiReve
       clock += ms;
     },
     aiRevealWaitMs: options.aiRevealWaitMs ?? 0,
+    decisionsDispatchMode: "fake",
   });
   const advance = (ms: number) => {
     clock += ms;
