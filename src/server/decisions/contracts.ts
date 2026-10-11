@@ -21,6 +21,10 @@ export const DECISION_ERROR_CODES = [
   "worker_unavailable",
   "ai_unconfigured",
   "ai_timeout",
+  "ticket_invalid",
+  "ticket_expired",
+  "ticket_replayed",
+  "ticket_tampered",
 ] as const;
 export type DecisionErrorCode = (typeof DECISION_ERROR_CODES)[number];
 
@@ -56,6 +60,32 @@ export interface DecisionResult extends WorkerDecisionResponse {
 export interface DecisionClient {
   decide(input: DecisionInput, signal: AbortSignal): Promise<DecisionResult>;
 }
+
+/** Browser-visible Decisions Worker response: no choice or probabilities (authoritative data lives on the game service). */
+export const browserDecisionResponseSchema = z.object({
+  status: z.enum(["complete", "error"]),
+  requestId: z.string().max(80),
+  modelElapsedMs: z.number().int().min(0),
+  errorCode: z.enum(DECISION_ERROR_CODES).nullable(),
+  receivedAt: z.number().int().positive(),
+});
+
+export type BrowserDecisionResponse = z.infer<typeof browserDecisionResponseSchema>;
+
+export const publicDecideRequestSchema = z.object({
+  ticket: z.string().min(32).max(8192),
+});
+
+export type PublicDecideRequest = z.infer<typeof publicDecideRequestSchema>;
+
+export const workerAiResultReportSchema = z.object({
+  roundId: z.string().min(8),
+  jti: z.string().uuid(),
+  result: workerDecisionResponseSchema,
+  wallElapsedMs: z.number().int().min(0).optional(),
+});
+
+export type WorkerAiResultReport = z.infer<typeof workerAiResultReportSchema>;
 
 export function gridSizeFromChoices(choices: string[]) {
   return choices.length === 81 ? 9 : 3;

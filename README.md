@@ -11,12 +11,15 @@
 ## 架构
 
 ```text
-浏览器 H5 ──同源 /api/*──▶ Next.js 游戏服务 ──Bearer 共享密钥──▶ Cloudflare Worker ──▶ OpenAI POST /v1/decisions
-                              │
-                              └── 数据库：线上 Cloudflare D1，本地与测试 LibSQL（会话、关卡、结果、排行榜、埋点）
+浏览器 H5 ──同源 /api/*──▶ Next.js 游戏服务
+     │                           │
+     │  一次性 ticket            │  D1 / 排行榜 / 结算（权威 AI 结果）
+     └──▶ Decisions Worker ──▶ OpenAI POST /v1/decisions
+              │  Service Binding 回调 /api/internal/ai-result
+              └──▶ 游戏服务持久化 AI 答案
 ```
 
-线上两者都部署在 Cloudflare Workers：游戏服务 `human-ai`（https://human-ai.zdychanges.workers.dev，经 OpenNext 构建）通过 Service Binding 调用 Decisions Worker `human-ai-decisions`。
+线上两者都部署在 Cloudflare Workers。生产环境中 **浏览器** 在 DevTools Network 里能看到对 Decisions Worker 的 `POST /v1/decide-ticket`；OpenAI Key 仍只在 Worker Secret 中。Worker 把完整 AI 结果通过 Service Binding 写回游戏服务，浏览器响应 **不含** AI 选择的格子（揭晓仍来自同源 `/api/rounds/:id/submit`）。
 
 | 目录 | 职责 |
 |---|---|
@@ -33,9 +36,12 @@
 ### 单关时序
 
 1. `POST /api/sessions/:id/rounds` 创建（或复用尚未展示的）本关，返回不含答案的公开数据；客户端预加载图片。
-2. 图片完成首次绘制时，客户端开始本地计时，并调用 `POST /api/rounds/:id/start`：服务端记录展示时刻与截止时间，并在响应后（`after()`）调用 Worker 发起 AI 判断。
-3. 玩家点击或倒计时归零后锁定答案，`POST /api/rounds/:id/submit` 幂等提交。服务端把客户端耗时校准到自己观测的窗口内（见 `reconcileElapsed`），按服务端答案结算生命与关卡，再最多等待 1.5 秒 AI 结果。
-4. AI 晚到时揭晓页显示「AI 仍在判断」，客户端轮询 `GET /api/rounds/:id` 补齐；晚到结果只可能增加「比 AI 更快」次数，绝不修改生命和到达关卡。
+2. 图片完成首次绘制时，客户端开始本地计时，并调用 `POST /api/rounds/:id/start`：服务端记录展示时刻与截止时间，签发 **一次性短效 ticket**（绑定 session、round、关卡、图片 SHA256、候选格），并返回 `ai: { mode: "worker", url, ticket }`（本地/E2E 为 `mode: "fake"` 的同源 `/api/rounds/:id/ai-fake`）。
+3. 客户端立刻按 dispatch 发起 AI 请求（Network 可见）。Decisions Worker 校验 ticket、在 D1 表 `decision_ticket_uses` 中单次消费、从 `PUBLIC_BASE_URL` 拉取关卡图并校验哈希，再调用 OpenAI；结果经 Service Binding `POST /api/internal/ai-result` 写入游戏服务。
+4. 玩家点击或倒计时归零后锁定答案，`POST /api/rounds/:id/submit` 幂等提交。结算与胜负 **只** 使用服务端已持久化的 AI 数据。
+5. AI 晚到时揭晓页显示「AI 仍在判断」，客户端轮询 `GET /api/rounds/:id` 补齐；揭晓页 **手动** 点「下一关」（无自动跳转）。
+
+**防作弊取舍**：浏览器能提前看到 AI 请求与响应时间戳，但 Worker 响应体不包含 `choice`；即使篡改 Network 响应，也无法改变 D1 里由 Worker 回调写入的 authoritative 答案。玩家在关内仍无法从 Network 直接读到 AI 选了哪一格。
 
 ## 本地开发
 
@@ -53,14 +59,15 @@ npm run dev                  # http://localhost:3000，首次请求自动执行�
 
 | 变量 | 位置 | 说明 |
 |---|---|---|
-| `DECISIONS_WORKER_URL` | 游戏服务 | Worker 地址，仅服务端读取 |
-| `DECISIONS_WORKER_SHARED_SECRET` | 游戏服务 + Worker | 服务端调用 Worker 的 Bearer 密钥，≥32 字节随机值 |
+| `DECISIONS_WORKER_URL` | 游戏服务 | Decisions Worker 公网地址（写入 begin 响应，供浏览器 CORS 调用） |
+| `DECISIONS_WORKER_SHARED_SECRET` | 游戏服务 + Worker | Ticket HMAC 与 Worker→游戏内部回调 Bearer，≥32 字节随机值 |
 | `DECISIONS_MODE` | 游戏服务 | `worker` / `fake` / `off`，默认按上文自动选择 |
 | `DATABASE_URL` / `DATABASE_AUTH_TOKEN` | 游戏服务 | LibSQL 地址（本地 `file:./local.db`，线上可用 Turso） |
 | `RESULT_SIGNING_SECRET` | 游戏服务 | 签名匿名玩家 Cookie，生产必填 |
 | `PUBLIC_BASE_URL` | 游戏服务 | 分享链接与二维码使用的公网地址 |
 | `OPENAI_API_KEY` | 仅 Worker Secret | 永远不进入游戏服务、H5 包或浏览器请求 |
 | `OPENAI_DECISIONS_MODEL` / `OPENAI_DECISIONS_TIMEOUT_MS` | Worker vars | 默认 `gpt-6-luna` / `8000` |
+| `PUBLIC_BASE_URL` | Worker vars | CORS 允许来源 + Worker 拉取 `/levels/v1/*.png` 的基准 URL（与游戏服务一致） |
 
 ### 常用命令
 
@@ -93,7 +100,7 @@ npm run worker:deploy:preview
 
 ## 游戏服务部署（Cloudflare Workers + D1）
 
-配置在根目录 `wrangler.jsonc`：D1 绑定 `DB`、静态资源 `ASSETS`（服务端也从这里读关卡图）、指向 Decisions Worker 的 Service Binding `DECISIONS`。同账号的 Worker 之间不能经 workers.dev 公网地址互相调用，因此必须走 Service Binding。
+配置在根目录 `wrangler.jsonc`：D1 绑定 `DB`、静态资源 `ASSETS`（服务端也从这里读关卡图）。Decisions Worker 另绑定同一 D1（ticket 单次消费）与 `GAME` Service Binding（回调游戏服务）。游戏服务上的 `DECISIONS` Service Binding 仍保留，供集成测试与服务端 `/v1/decide` 兼容路径使用。
 
 ```bash
 npx wrangler d1 create human-ai                                   # 首次：把返回的 database_id 写入 wrangler.jsonc

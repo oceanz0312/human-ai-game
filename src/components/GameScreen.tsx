@@ -4,13 +4,13 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PublicLevel, RoundReveal, SessionSnapshot } from "@/game/contracts";
 import { PUBLIC_LEVELS_V1 } from "@/levels/public-catalog.generated";
+import { dispatchRoundAi, type AiNetworkProgress } from "@/lib/ai-dispatch";
 import { api, ApiError, haptic, track, withRetry } from "@/lib/api-client";
 import { countdown } from "@/lib/format";
 import { GameBoard } from "./GameBoard";
 import { GameHeader } from "./GameHeader";
 import { LevelReveal } from "./LevelReveal";
 
-export const AUTO_ADVANCE_MS = 1500;
 const SLOW_LOADING_MS = 800;
 const AI_POLL_MS = 500;
 const AI_POLL_LIMIT_MS = 15_000;
@@ -47,7 +47,21 @@ export function preloadImage(url: string): Promise<void> {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export function GameScreen({ sessionId, autoAdvanceMs = AUTO_ADVANCE_MS }: { sessionId: string; autoAdvanceMs?: number }) {
+function formatAiTime(ms: number | null) {
+  if (ms === null) return null;
+  return new Date(ms).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+}
+
+function describeAiProgress(progress: AiNetworkProgress | null, submitting: boolean) {
+  if (submitting) return { main: "答案已锁定", hint: "正在结算" };
+  if (!progress?.ticketIssuedAt) return { main: "AI 正在寻找", hint: "点击不同项" };
+  if (!progress.requestSentAt) return { main: "已发放凭证", hint: "正在连接 AI" };
+  if (!progress.responseReceivedAt) return { main: "已请求 AI", hint: "等待响应" };
+  const stamp = formatAiTime(progress.responseReceivedAt);
+  return { main: stamp ? `AI 已响应 · ${stamp}` : "AI 已响应", hint: progress.errorCode ? "AI 侧异常" : "等待你的答案" };
+}
+
+export function GameScreen({ sessionId }: { sessionId: string }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   const [session, setSession] = useState<SessionSnapshot | null>(null);
@@ -57,7 +71,7 @@ export function GameScreen({ sessionId, autoAdvanceMs = AUTO_ADVANCE_MS }: { ses
   const [selected, setSelected] = useState<string | null>(null);
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
   const [reveal, setReveal] = useState<RoundReveal | null>(null);
-  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
+  const [aiProgress, setAiProgress] = useState<AiNetworkProgress | null>(null);
   const [locked, setLocked] = useState(false);
   const [loadEpoch, setLoadEpoch] = useState(0);
   const [slowEpoch, setSlowEpoch] = useState(-1);
@@ -97,11 +111,10 @@ export function GameScreen({ sessionId, autoAdvanceMs = AUTO_ADVANCE_MS }: { ses
       setReveal(round);
       setSession(next);
       if (previousLives !== null && next.lives < previousLives) haptic();
-      setSecondsLeft(Math.ceil(autoAdvanceMs / 1000));
       advancingRef.current = false;
       setPhase({ kind: "reveal" });
     },
-    [autoAdvanceMs],
+    [],
   );
 
   const sendSubmission = useCallback(async () => {
@@ -152,7 +165,7 @@ export function GameScreen({ sessionId, autoAdvanceMs = AUTO_ADVANCE_MS }: { ses
     setImageReady(false);
     setPainted(false);
     setRemainingMs(null);
-    setSecondsLeft(null);
+    setAiProgress(null);
     setLocked(false);
     setLoadEpoch((value) => value + 1);
     lockedRef.current = false;
@@ -237,8 +250,25 @@ export function GameScreen({ sessionId, autoAdvanceMs = AUTO_ADVANCE_MS }: { ses
     startedAtRef.current = performance.now();
     setPainted(true);
     const roundId = roundIdRef.current;
-    beginRef.current = withRetry(() => api.beginRound(roundId), 3);
-  }, []);
+    beginRef.current = withRetry(async () => {
+      const begun = await api.beginRound(roundId);
+      if (begun.ai) {
+        setAiProgress({ ticketIssuedAt: begun.ai.mode === "worker" ? begun.ai.issuedAt : Date.now(), requestSentAt: null, responseReceivedAt: null, requestId: null, errorCode: null });
+        try {
+          const outcome = await dispatchRoundAi(begun.ai);
+          setAiProgress(outcome.progress);
+          track("ai_dispatch_complete", {
+            sessionId,
+            level: level?.level ?? null,
+            metadata: { requestId: outcome.progress.requestId, errorCode: outcome.progress.errorCode },
+          });
+        } catch {
+          track("ai_dispatch_failed", { sessionId, level: level?.level ?? null });
+        }
+      }
+      return begun;
+    }, 3);
+  }, [sessionId, level]);
 
   // Absolute-deadline countdown; backgrounding the page does not pause it.
   useEffect(() => {
@@ -281,22 +311,6 @@ export function GameScreen({ sessionId, autoAdvanceMs = AUTO_ADVANCE_MS }: { ses
     else void loadNextRound();
   }, [session, goToResult, loadNextRound]);
 
-  // Auto-advance after the reveal, with a visible countdown.
-  useEffect(() => {
-    if (phase.kind !== "reveal") return;
-    const startedAt = performance.now();
-    const interval = window.setInterval(() => {
-      const left = autoAdvanceMs - (performance.now() - startedAt);
-      if (left <= 0) {
-        window.clearInterval(interval);
-        advance();
-      } else {
-        setSecondsLeft(Math.ceil(left / 1000));
-      }
-    }, 100);
-    return () => window.clearInterval(interval);
-  }, [phase.kind, autoAdvanceMs, advance]);
-
   // A late AI answer is filled in without touching lives or level.
   useEffect(() => {
     if (phase.kind !== "reveal" || !reveal || (reveal.ai.status !== "running" && reveal.ai.status !== "pending")) return;
@@ -327,7 +341,7 @@ export function GameScreen({ sessionId, autoAdvanceMs = AUTO_ADVANCE_MS }: { ses
   }, [phase.kind, reveal]);
 
   if (phase.kind === "reveal" && reveal && session) {
-    return <LevelReveal round={reveal} fasterThanAiCount={session.fasterThanAiCount} ended={session.status === "ended"} secondsLeft={secondsLeft} onNext={advance} />;
+    return <LevelReveal round={reveal} fasterThanAiCount={session.fasterThanAiCount} ended={session.status === "ended"} onNext={advance} />;
   }
 
   if (phase.kind === "countdown") {
@@ -372,6 +386,7 @@ export function GameScreen({ sessionId, autoAdvanceMs = AUTO_ADVANCE_MS }: { ses
   const remaining = remainingMs ?? limit;
   const interactive = phase.kind === "playing" && painted && !locked;
   const slowLoading = phase.kind === "loading" && slowEpoch === loadEpoch;
+  const aiCopy = describeAiProgress(aiProgress, phase.kind === "submitting");
 
   return (
     <main className="mobile-shell game">
@@ -392,12 +407,12 @@ export function GameScreen({ sessionId, autoAdvanceMs = AUTO_ADVANCE_MS }: { ses
         onImagePainted={onImagePainted}
       />
       <div className="game-spacer" />
-      <footer className="ai-status">
+      <footer className="ai-status" data-testid="ai-status">
         <span className="ai">
           <span className="ai-dot" aria-hidden />
-          AI 正在寻找
+          {aiCopy.main}
         </span>
-        <span className="hint">{phase.kind === "submitting" ? "已锁定" : "点击不同项"}</span>
+        <span className="hint">{aiCopy.hint}</span>
       </footer>
     </main>
   );

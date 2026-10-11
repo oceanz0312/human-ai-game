@@ -10,5 +10,5 @@
     "isolatedModules": true,
     "types": ["@cloudflare/workers-types"]
   },
-  "include": ["src/**/*.ts", "../../src/server/decisions/contracts.ts"]
+  "include": ["src/**/*.ts", "../../src/server/decisions/contracts.ts", "../../src/server/decisions/ticket.ts"]
 }

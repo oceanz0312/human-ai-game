@@ -1,4 +1,5 @@
 // @vitest-environment node
+import type { WorkerDecisionResponse } from "@/server/decisions/contracts";
 import { createWorkerHandler, type WorkerEnv } from "../../workers/decisions/src/index";
 
 const SECRET = "test-shared-secret-with-enough-entropy";
@@ -43,7 +44,7 @@ test("forwards a validated 9-cell puzzle without exposing secrets", async () => 
   expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
   expect(response.headers.get("X-Request-Id")).toBe("req-1");
   expect(response.headers.get("Access-Control-Allow-Origin")).toBeNull();
-  const body = await response.json();
+  const body = (await response.json()) as WorkerDecisionResponse;
   expect(body).toMatchObject({ status: "complete", choice: "r2c2", confidence: 0.91, errorCode: null, requestId: "req-1" });
   expect(body.modelElapsedMs).toBeGreaterThan(0);
   expect(JSON.stringify(body)).not.toContain(OPENAI_KEY);
@@ -71,8 +72,8 @@ test("accepts 81 candidates for 9×9 levels", async () => {
   const openAiFetch = openAiReturning(choiceAnswer("r5c7"));
   const { handler } = setup(openAiFetch);
   const response = await handler.fetch(request({ imageDataUrl: IMAGE, choices: eightyOne }), env);
-  expect((await response.json()).choice).toBe("r5c7");
-  expect(JSON.parse(openAiFetch.mock.calls[0][1].body).questions[0].choices).toHaveLength(81);
+  expect(((await response.json()) as WorkerDecisionResponse).choice).toBe("r5c7");
+  expect(JSON.parse(String(openAiFetch.mock.calls[0][1]?.body)).questions[0].choices).toHaveLength(81);
 });
 
 test.each([
@@ -121,6 +122,6 @@ test("times out a slow OpenAI call once without retrying", async () => {
   );
   const handler = createWorkerHandler({ fetchImpl: openAiFetch as unknown as typeof fetch, log: () => undefined });
   const response = await handler.fetch(request({ imageDataUrl: IMAGE, choices: nine }), { ...env, OPENAI_DECISIONS_TIMEOUT_MS: "50" });
-  expect((await response.json()).errorCode).toBe("upstream_timeout");
+  expect(((await response.json()) as WorkerDecisionResponse).errorCode).toBe("upstream_timeout");
   expect(openAiFetch).toHaveBeenCalledTimes(1);
 });

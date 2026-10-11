@@ -9,10 +9,11 @@
 ## 1. 当前状态
 
 - 游戏已经部署到 Cloudflare 并可公开访问。游戏服务、AI 转发 Worker、数据库全部在 Cloudflare 上，不使用 Vercel。
-- AI 是真实对手：每关由游戏服务经 Decisions Worker 调用 OpenAI Decisions API（`gpt-6-luna`），使用与玩家相同的关卡图片，不传答案，不人为延迟。
-- 线上已验证：整局 20 关跑通；手机尺寸浏览器实际游玩到结算；分享页、Open Graph 图、全服排行榜正常；浏览器只访问游戏自身域名，看不到 OpenAI 或 Worker 地址。
+- AI 是真实对手：每关由 **浏览器** 携带一次性 ticket 调用 Decisions Worker（DevTools Network 可见 `POST /v1/decide-ticket`），Worker 调用 OpenAI Decisions API（`gpt-6-luna`），使用与玩家相同的关卡图片（按 ticket 内 SHA256 校验），不传答案，不人为延迟。
+- Worker 通过 Service Binding 把 authoritative AI 结果写回游戏服务 `POST /api/internal/ai-result`；结算只看服务端 D1，浏览器 Worker 响应不含 AI 选的格子。
+- 线上已验证：整局 20 关跑通；手机尺寸浏览器实际游玩到结算；分享页、Open Graph 图、全服排行榜正常；浏览器可看到对 Decisions Worker 的 CORS 请求，但看不到 OpenAI Key。
 - 线上 D1 的测试数据已清空，排行榜从零开始。
-- 本地验证：lint、类型检查（游戏服务与 Worker）、83 个单元/集成/Worker 契约测试、14 个 Playwright E2E（375/390/430 三种视口）全部通过。
+- 本地验证：lint、类型检查（游戏服务与 Worker）、89 个单元/集成/Worker 契约测试、14 个 Playwright E2E（375/390/430 三种视口）全部通过。
 
 ## 2. 提交记录
 
@@ -37,7 +38,7 @@ Decisions API 在判断不出答案时会返回 `refusal`。原实现把它和�
 | 问题 | 处理 |
 |---|---|
 | D1 不支持交互式事务（Drizzle 在 D1 上发 `BEGIN` 会被拒绝） | 仓储层所有多语句写入改为 `db.batch` 原子批量；用条件更新防重复：会话只在仍处于该关卡时才更新；「比 AI 更快」次数按已结算关卡重新计数而不是自增。删除了进程内写锁 |
-| 同账号 Worker 之间不能经 workers.dev 公网地址互调 | 游戏服务通过 Service Binding `DECISIONS` 调用 Decisions Worker（`createCloudflareDecisionClient` 注入 `fetchImpl`） |
+| 同账号 Worker 之间不能经 workers.dev 公网地址互调 | Decisions Worker 通过 Service Binding `GAME` 回调游戏服务；浏览器经 CORS 公网调 Worker；游戏服务仍保留 `DECISIONS` binding 供 `/v1/decide` 集成测试 |
 | Workers 没有文件系统 | 服务端读关卡图改为经静态资源绑定 `ASSETS` |
 | Next.js 需要适配 | 使用 OpenNext（`@opennextjs/cloudflare`），新增 `open-next.config.ts`、根目录 `wrangler.jsonc`、`cf:*` 脚本 |
 | OpenNext 1.20.10 漏打包 Next 16.4 新增的 `.next/server/preview-props.json`，线上所有请求 500 | `patches/@opennextjs+cloudflare+1.20.10.patch`，由 `postinstall: patch-package` 自动应用 |
@@ -75,12 +76,21 @@ Decisions API 在判断不出答案时会返回 `refusal`。原实现把它和�
 | `DECISIONS` | Service Binding | 指向 `human-ai-decisions` |
 | `WORKER_SELF_REFERENCE` | Service Binding | OpenNext 需要，指向自身 |
 | `DECISIONS_MODE` | 变量 | `worker` |
-| `DECISIONS_WORKER_URL` | 变量 | Decisions Worker 地址（走 Service Binding 时只用于拼路径） |
+| `DECISIONS_WORKER_URL` | 变量 | Decisions Worker 公网地址（begin 响应交给浏览器；ticket HMAC 与内部回调共用 `DECISIONS_WORKER_SHARED_SECRET`） |
 | `PUBLIC_BASE_URL` | 变量 | `https://human-ai.zdychanges.workers.dev`，用于分享链接、二维码、OG 图 |
 | `DECISIONS_WORKER_SHARED_SECRET` | Secret | 与 Decisions Worker 一致 |
 | `RESULT_SIGNING_SECRET` | Secret | 签名匿名玩家 Cookie |
 
-Decisions Worker（正式和预览各一套）：变量 `OPENAI_BASE_URL`、`OPENAI_DECISIONS_MODEL`（`gpt-6-luna`）、`OPENAI_DECISIONS_TIMEOUT_MS`（`8000`）；Secret `OPENAI_API_KEY`、`DECISIONS_WORKER_SHARED_SECRET`。
+Decisions Worker（正式和预览各一套）：
+
+| 名称 | 类型 | 说明 |
+|---|---|---|
+| `DB` | D1 | 与游戏服务同一库 `human-ai`；表 `decision_ticket_uses` 做单次 ticket 消费 |
+| `GAME` | Service Binding | 指向 `human-ai`，回调 `POST /api/internal/ai-result` |
+| `PUBLIC_BASE_URL` | 变量 | 与游戏服务一致；CORS 允许来源 + Worker 拉关卡 PNG |
+| `OPENAI_BASE_URL` / `OPENAI_DECISIONS_MODEL` / `OPENAI_DECISIONS_TIMEOUT_MS` | 变量 | 默认 `https://api.openai.com/v1` / `gpt-6-luna` / `8000` |
+| `OPENAI_API_KEY` | Secret | 仅 Worker |
+| `DECISIONS_WORKER_SHARED_SECRET` | Secret | Ticket HMAC + 内部回调 Bearer（与游戏服务相同） |
 
 ### 3.2 密钥存放
 
@@ -125,6 +135,19 @@ npm run test:e2e    # 构建后用假 AI 跑移动端 E2E，约 3.5 分钟
 ```bash
 set -a && . ~/.config/human-ai-game/cf.env && set +a
 ```
+
+### 5.0 推荐顺序（浏览器 → Worker 流程）
+
+1. **D1 迁移**（新增 `decision_ticket_uses`）：`npm run cf:db:migrate`
+2. **Secrets**（若尚未设置或需轮换）：
+   - 生成共享密钥（游戏服务 + Decisions Worker 各写一份相同值）：`openssl rand -base64 32`
+   - 游戏服务 `human-ai`：`npx wrangler secret put DECISIONS_WORKER_SHARED_SECRET`、`npx wrangler secret put RESULT_SIGNING_SECRET`
+   - Decisions Worker：`npx wrangler secret put OPENAI_API_KEY --config workers/decisions/wrangler.jsonc`（预览加 `--env preview`）、`npx wrangler secret put DECISIONS_WORKER_SHARED_SECRET --config workers/decisions/wrangler.jsonc`
+3. **确认 wrangler 变量**：根目录 `DECISIONS_WORKER_URL`、`PUBLIC_BASE_URL`；`workers/decisions/wrangler.jsonc` 中 `PUBLIC_BASE_URL`、`GAME`/`DB` binding（见 3.1 节）。
+4. **先部署 Decisions Worker**：`npm run worker:deploy:preview` 或 `npm run worker:deploy`
+5. **再部署游戏服务**：`npm run cf:deploy`
+
+本地/E2E 仍用 `DECISIONS_MODE=fake`，不依赖 Worker 公网可达。
 
 ### 5.1 游戏服务
 

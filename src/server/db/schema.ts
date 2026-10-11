@@ -81,6 +81,12 @@ export const bests = sqliteTable(
   (table) => [primaryKey({ columns: [table.playerId, table.levelSetVersion] }), index("bests_version_level_idx").on(table.levelSetVersion, table.bestLevel)],
 );
 
+export const decisionTicketUses = sqliteTable("decision_ticket_uses", {
+  jti: text("jti").primaryKey(),
+  roundId: text("round_id").notNull(),
+  createdAt: integer("created_at").notNull(),
+});
+
 export const events = sqliteTable(
   "events",
   {

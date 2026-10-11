@@ -8,11 +8,10 @@ interface LevelRevealProps {
   round: RoundReveal;
   fasterThanAiCount: number;
   ended: boolean;
-  secondsLeft: number | null;
   onNext: () => void;
 }
 
-export function LevelReveal({ round, fasterThanAiCount, ended, secondsLeft, onNext }: LevelRevealProps) {
+export function LevelReveal({ round, fasterThanAiCount, ended, onNext }: LevelRevealProps) {
   const copy = describeReveal(round);
   const nextLabel = ended ? "查看结果" : "下一关";
 
@@ -54,7 +53,7 @@ export function LevelReveal({ round, fasterThanAiCount, ended, secondsLeft, onNe
 
       <div className="bottom-actions">
         <button type="button" className="primary-action num" onClick={onNext}>
-          {secondsLeft !== null && secondsLeft > 0 ? `${nextLabel} · ${secondsLeft}` : nextLabel}
+          {nextLabel}
         </button>
       </div>
     </main>
