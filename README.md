@@ -6,6 +6,7 @@
 - [实施计划](docs/superpowers/plans/2026-10-08-human-vs-ai-vision-game.md)
 - [视觉规范](docs/design/visual-style.md)
 - [发布检查清单](docs/release-checklist.md)
+- [交接文档](docs/handover.md)（线上资源、部署、密钥轮换、已知问题、待办）
 
 ## 架构
 
