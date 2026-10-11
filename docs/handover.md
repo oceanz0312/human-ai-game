@@ -180,6 +180,20 @@ npx wrangler rollback --config workers/decisions/wrangler.jsonc    # Decisions W
 
 Decisions Worker 不可用时，游戏服务按「AI 掉线」处理，玩家结算不受影响。
 
+### 5.4.1 `POST /api/sessions/:id/rounds` 性能
+
+该接口 **不应** 等待 Decisions Worker 或 ASSETS 读图（AI 在 `POST /api/rounds/:id/start` 由浏览器直连 Worker）。若线上仍慢，在 DevTools → Network 响应头查看 **`Server-Timing`**：
+
+| 指标 | 含义 |
+|---|---|
+| `auth` | 解析玩家 Cookie |
+| `d1` | 并行查询「会话归属 + 未结算关卡」 |
+| `d1-create` | 新建 `rounds` 行（仅首次进入该关） |
+| `assemble` | 组装 JSON（无 I/O） |
+| `total` | 整段路由 |
+
+常见根因：**D1 在 WNAM、Worker 默认全球边缘** 导致每条约 30–80ms+ 的往返；旧实现对该接口最多 **5 次串行 D1**（另 `sessionSnapshot` 重复查 open round），在中国用户侧易累计 **300ms–1s+**。已通过并行查询、去掉重复 `getOpenRound`、`INSERT … RETURNING`、以及根 `wrangler.jsonc` 的 **`placement.mode: smart`** 缓解。`/start` 签发 ticket 时使用 **`image-sha256.generated.ts` 预计算哈希**，不再经 ASSETS 拉 ~50KB PNG。
+
 ### 5.5 冒烟检查
 
 ```bash

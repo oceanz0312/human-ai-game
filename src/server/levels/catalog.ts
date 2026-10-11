@@ -1,6 +1,7 @@
 import "server-only";
 import { readFile } from "node:fs/promises";
 import path from "node:path";
+import { LEVEL_IMAGE_SHA256_V1 } from "./image-sha256.generated";
 import { LEVELS_V1, type LevelSpec } from "./spec";
 
 export type PrivateLevel = LevelSpec;
@@ -10,6 +11,13 @@ export function getPrivateLevel(levelNumber: number): PrivateLevel {
   const found = PRIVATE_LEVELS_V1.find((item) => item.level === levelNumber);
   if (!found) throw new Error(`Unknown v1 level: ${levelNumber}`);
   return found;
+}
+
+/** SHA-256 of the frozen PNG bytes; used for AI tickets without loading images at request time. */
+export function getLevelImageSha256(levelNumber: number): string {
+  const hash = LEVEL_IMAGE_SHA256_V1[levelNumber];
+  if (!hash) throw new Error(`Missing image SHA256 for v1 level: ${levelNumber}`);
+  return hash;
 }
 
 export function toPublicLevel(level: PrivateLevel) {

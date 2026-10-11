@@ -3,10 +3,11 @@ import { LEVEL_SET_VERSION } from "../game/contracts";
 import { parseStoredProbabilities } from "../game/ai-insights";
 import { advanceSession, reconcileElapsed, resolveHumanAnswer, resolveRace } from "../game/rules";
 import type { DecisionClient, DecisionResult, WorkerDecisionResponse } from "./decisions/contracts";
-import { signDecisionTicket, sha256HexFromDataUrl, ticketExpiresAt } from "./decisions/ticket";
+import { signDecisionTicket, ticketExpiresAt } from "./decisions/ticket";
 import { GameError } from "./errors";
-import type { PrivateLevel } from "./levels/catalog";
+import { getLevelImageSha256, type PrivateLevel } from "./levels/catalog";
 import type { GameRepository, LeaderboardRepository, RoundRow, SessionRow } from "./repositories/game-repository";
+import type { ServerTiming } from "./server-timing";
 
 export interface GameServiceDeps {
   games: GameRepository;
@@ -56,9 +57,23 @@ export function createGameService(deps: GameServiceDeps) {
   }
 
   async function loadOwnedSession(sessionId: string, playerId: string): Promise<SessionRow> {
-    const session = await deps.games.getSession(sessionId);
-    if (!session || session.playerId !== playerId) throw new GameError("not_found");
+    const session = await deps.games.getOwnedSession(sessionId, playerId);
+    if (!session) throw new GameError("not_found");
     return session;
+  }
+
+  function toSessionSnapshot(session: SessionRow, open: RoundRow | null): SessionSnapshot {
+    return {
+      id: session.id,
+      level: session.level,
+      lives: session.lives,
+      fasterThanAiCount: session.fasterThanAiCount,
+      status: session.status,
+      reachedLevel: session.reachedLevel,
+      cleared: session.cleared,
+      publicId: null,
+      activeRound: open ? { id: open.id, level: open.level, shown: open.shownAt !== null } : null,
+    };
   }
 
   async function loadOwnedRound(roundId: string, playerId: string) {
@@ -73,17 +88,7 @@ export function createGameService(deps: GameServiceDeps) {
       session.status === "active" ? deps.games.getOpenRound(session.id) : Promise.resolve(null),
       session.status === "ended" ? deps.games.getResultBySession(session.id) : Promise.resolve(null),
     ]);
-    return {
-      id: session.id,
-      level: session.level,
-      lives: session.lives,
-      fasterThanAiCount: session.fasterThanAiCount,
-      status: session.status,
-      reachedLevel: session.reachedLevel,
-      cleared: session.cleared,
-      publicId: result?.publicId ?? null,
-      activeRound: open ? { id: open.id, level: open.level, shown: open.shownAt !== null } : null,
-    };
+    return { ...toSessionSnapshot(session, open), publicId: result?.publicId ?? null };
   }
 
   async function refreshSession(sessionId: string) {
@@ -185,8 +190,7 @@ export function createGameService(deps: GameServiceDeps) {
     const mode = deps.decisionsDispatchMode ?? "off";
     if (mode === "fake") return { mode: "fake", url: `/api/rounds/${round.id}/ai-fake` };
     if (mode !== "worker" || !deps.decisionsWorkerPublicUrl || !deps.decisionsTicketSecret) return null;
-    const imageDataUrl = await deps.readLevelImage(round.level);
-    const imageSha256 = await sha256HexFromDataUrl(imageDataUrl);
+    const imageSha256 = getLevelImageSha256(round.level);
     const now = deps.now();
     const ticket = await signDecisionTicket(
       {
@@ -229,17 +233,29 @@ export function createGameService(deps: GameServiceDeps) {
       return sessionSnapshot(await loadOwnedSession(sessionId, playerId));
     },
 
-    async startNextRound(sessionId: string, playerId: string): Promise<RoundStartResponse> {
-      const session = await loadOwnedSession(sessionId, playerId);
+    async startNextRound(sessionId: string, playerId: string, timing?: ServerTiming): Promise<RoundStartResponse> {
+      const d1Start = performance.now();
+      const [session, open] = await Promise.all([deps.games.getOwnedSession(sessionId, playerId), deps.games.getOpenRound(sessionId)]);
+      timing?.mark("d1", d1Start, "owned-session-and-open-round");
+      if (!session) throw new GameError("not_found");
       if (session.status !== "active") throw new GameError("session_ended");
-      const open = await deps.games.getOpenRound(session.id);
       if (open && open.shownAt !== null) throw new GameError("round_in_progress");
-      const round = open ?? (await deps.games.createRound({ id: deps.randomId(), sessionId: session.id, level: session.level, now: deps.now() }));
-      return {
+
+      let round = open;
+      if (!round) {
+        const createStart = performance.now();
+        round = await deps.games.createRound({ id: deps.randomId(), sessionId: session.id, level: session.level, now: deps.now() });
+        timing?.mark("d1-create", createStart, "insert-round");
+      }
+
+      const assembleStart = performance.now();
+      const response: RoundStartResponse = {
         round: { id: round.id, level: round.level },
         level: deps.toPublicLevel(deps.getLevel(round.level)),
-        session: await sessionSnapshot(session),
+        session: toSessionSnapshot(session, round),
       };
+      timing?.mark("assemble", assembleStart, "build-json");
+      return response;
     },
 
     /** Called when the image has been painted; starts the server clock and returns a browser AI dispatch ticket when configured. */
