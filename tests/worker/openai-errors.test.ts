@@ -1,5 +1,5 @@
 // @vitest-environment node
-import { requestOddCell } from "../../workers/decisions/src/openai";
+import { requestOddCell } from "@/server/decisions/openai";
 
 const IMAGE = `data:image/png;base64,${Buffer.from("fake-png-bytes").toString("base64")}`;
 const nine = Array.from({ length: 9 }, (_, i) => `r${Math.floor(i / 3) + 1}c${(i % 3) + 1}`);

@@ -1,4 +1,4 @@
-import { buildOddCellInstructions, type DecisionErrorCode, type DecisionInput, gridSizeFromChoices } from "../../../src/server/decisions/contracts";
+import { buildOddCellInstructions, type DecisionErrorCode, type DecisionInput, gridSizeFromChoices } from "./contracts";
 import { classifyOpenAiHttpFailure, formatOpenAiErrorDetail, openAiErrorCodeFromBody, sanitizeOpenAiSnippet } from "./openai-detail";
 
 export interface OpenAiConfig {

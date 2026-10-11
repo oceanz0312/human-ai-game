@@ -2,6 +2,7 @@ import "server-only";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { DecisionClient } from "./decisions/contracts";
 import { createCloudflareDecisionClient, createUnconfiguredDecisionClient } from "./decisions/client";
+import { createDirectOpenAiDecisionClient } from "./decisions/direct-openai-client";
 import { FakeDecisionClient } from "./decisions/fake";
 import type { Database } from "./db/client";
 import { createGameService, type GameService } from "./game-service";
@@ -70,6 +71,7 @@ function resolveDecisionsDispatchMode(): "worker" | "fake" | "off" {
 }
 
 function selectDecisionClient(decisionsBinding?: Fetcher): DecisionClient {
+  if (process.env.OPENAI_API_KEY) return createDirectOpenAiDecisionClient();
   const url = process.env.DECISIONS_WORKER_URL;
   const secret = process.env.DECISIONS_WORKER_SHARED_SECRET;
   const mode = process.env.DECISIONS_MODE || (url ? "worker" : process.env.NODE_ENV === "production" ? "off" : "fake");
