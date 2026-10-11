@@ -3,7 +3,7 @@ import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { DecisionClient } from "./decisions/contracts";
 import { createCloudflareDecisionClient, createUnconfiguredDecisionClient } from "./decisions/client";
 import { FakeDecisionClient } from "./decisions/fake";
-import { createDatabase, migrateDatabase } from "./db/client";
+import type { Database } from "./db/client";
 import { createGameService, type GameService } from "./game-service";
 import { getPrivateLevel, PRIVATE_LEVELS_V1, readLevelImageDataUrl, toPublicLevel } from "./levels/catalog";
 import { createGameRepository, createLeaderboardRepository } from "./repositories/game-repository";
@@ -35,11 +35,39 @@ function createDevDecisionClient(): DecisionClient {
   });
 }
 
-function selectDecisionClient(): DecisionClient {
+interface Fetcher {
+  fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response>;
+}
+
+/** Bindings declared in the root wrangler.jsonc when the game runs on Cloudflare Workers. */
+interface CloudflareBindings {
+  DB: unknown;
+  ASSETS: Fetcher;
+  /** Service binding to the Decisions Worker; Workers cannot fetch another workers.dev Worker on the same account. */
+  DECISIONS?: Fetcher;
+}
+
+async function cloudflareBindings(): Promise<CloudflareBindings | null> {
+  // Outside workerd, getCloudflareContext spins up a local wrangler emulator with an empty D1.
+  if (globalThis.navigator?.userAgent !== "Cloudflare-Workers") return null;
+  try {
+    const { getCloudflareContext } = await import("@opennextjs/cloudflare");
+    const { env } = await getCloudflareContext({ async: true });
+    const bindings = env as unknown as Partial<CloudflareBindings>;
+    return bindings.DB && bindings.ASSETS ? (bindings as CloudflareBindings) : null;
+  } catch {
+    return null;
+  }
+}
+
+function selectDecisionClient(decisionsBinding?: Fetcher): DecisionClient {
   const url = process.env.DECISIONS_WORKER_URL;
   const secret = process.env.DECISIONS_WORKER_SHARED_SECRET;
   const mode = process.env.DECISIONS_MODE || (url ? "worker" : process.env.NODE_ENV === "production" ? "off" : "fake");
-  if (mode === "worker" && url && secret) return createCloudflareDecisionClient({ url, sharedSecret: secret });
+  if (mode === "worker" && url && secret) {
+    const fetchImpl = decisionsBinding ? ((input, init) => decisionsBinding.fetch(input, init)) satisfies typeof fetch : undefined;
+    return createCloudflareDecisionClient({ url, sharedSecret: secret, fetchImpl });
+  }
   if (mode === "fake") {
     console.warn("[decisions] using the local fake AI; configure DECISIONS_WORKER_URL for real Decisions answers");
     return createDevDecisionClient();
@@ -52,26 +80,41 @@ interface Container {
   ready: Promise<void>;
 }
 
-const globalForContainer = globalThis as unknown as { __humanAiContainer?: Container };
+const globalForContainer = globalThis as unknown as { __humanAiContainer?: Promise<Container> };
 
-function build(): Container {
-  const db = createDatabase(process.env.DATABASE_URL ?? "file:./local.db", process.env.DATABASE_AUTH_TOKEN);
+async function build(): Promise<Container> {
+  const cf = await cloudflareBindings();
+  let db: Database;
+  let ready = Promise.resolve();
+  let readLevelImage = (level: number) => readLevelImageDataUrl(level);
+  if (cf) {
+    // D1 schema is applied with `wrangler d1 migrations apply`, never at request time.
+    const { createD1Database } = await import("./db/d1");
+    db = createD1Database(cf.DB);
+    readLevelImage = (level) =>
+      readLevelImageDataUrl(level, async (imageUrl) => new Uint8Array(await (await cf.ASSETS.fetch(new URL(imageUrl, "https://assets.local"))).arrayBuffer()));
+  } else {
+    const { createDatabase, migrateDatabase } = await import("./db/client");
+    db = createDatabase(process.env.DATABASE_URL ?? "file:./local.db", process.env.DATABASE_AUTH_TOKEN);
+    ready = migrateDatabase(db);
+  }
   const service = createGameService({
     games: createGameRepository(db),
     leaderboard: createLeaderboardRepository(db),
-    decisions: selectDecisionClient(),
+    decisions: selectDecisionClient(cf?.DECISIONS),
     now: () => Date.now(),
     randomId: () => randomUUID(),
     randomPublicId: () => randomBytes(16).toString("base64url"),
     getLevel: getPrivateLevel,
     toPublicLevel,
-    readLevelImage: readLevelImageDataUrl,
+    readLevelImage,
   });
-  return { service, ready: migrateDatabase(db) };
+  return { service, ready };
 }
 
 export async function getGameService(): Promise<GameService> {
   globalForContainer.__humanAiContainer ??= build();
-  await globalForContainer.__humanAiContainer.ready;
-  return globalForContainer.__humanAiContainer.service;
+  const container = await globalForContainer.__humanAiContainer;
+  await container.ready;
+  return container.service;
 }

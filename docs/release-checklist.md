@@ -8,14 +8,14 @@
 
 ## 2. 环境与密钥
 
-- [ ] 游戏服务：`DECISIONS_WORKER_URL`、`DECISIONS_WORKER_SHARED_SECRET`、`DATABASE_URL`、`DATABASE_AUTH_TOKEN`、`RESULT_SIGNING_SECRET`、`PUBLIC_BASE_URL` 已配置，`DECISIONS_MODE` 未设为 `fake`。
+- [ ] 游戏服务（根目录 `wrangler.jsonc`）：vars 中 `DECISIONS_WORKER_URL`、`PUBLIC_BASE_URL` 正确，`DECISIONS_MODE` 为 `worker`；Secret `DECISIONS_WORKER_SHARED_SECRET`、`RESULT_SIGNING_SECRET` 已写入；`DB`、`ASSETS`、`DECISIONS` 绑定存在。
 - [ ] 游戏服务环境中不存在 `OPENAI_API_KEY`。
 - [ ] Worker：`wrangler secret put OPENAI_API_KEY` 与 `wrangler secret put DECISIONS_WORKER_SHARED_SECRET` 已执行；`wrangler.jsonc` 中没有明文密钥。
 - [ ] 两端共享密钥一致，长度 ≥ 32 字节随机值。
 
 ## 3. 数据库
 
-- [ ] 对生产 LibSQL 执行 `DATABASE_URL=... DATABASE_AUTH_TOKEN=... npm run db:migrate`。
+- [ ] 对生产 D1 执行 `npm run cf:db:migrate`。
 - [ ] 确认 `players`、`sessions`、`rounds`、`results`、`bests`、`events` 表与索引存在。
 - [ ] 备份策略已开启。
 

@@ -16,3 +16,8 @@ playwright-report/
 test-results/
 workers/decisions/.dev.vars
 workers/decisions/.wrangler/
+
+# OpenNext / Cloudflare
+.open-next/
+.wrangler/
+.dev.vars

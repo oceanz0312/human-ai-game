@@ -1,0 +1,24 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  // Game service (Next.js via OpenNext). The Decisions gateway lives in workers/decisions/wrangler.jsonc.
+  "name": "human-ai",
+  "main": ".open-next/worker.js",
+  "compatibility_date": "2026-10-01",
+  "compatibility_flags": ["nodejs_compat", "global_fetch_strictly_public"],
+  "assets": { "directory": ".open-next/assets", "binding": "ASSETS" },
+  "observability": { "enabled": true },
+  "workers_dev": true,
+  "services": [
+    { "binding": "WORKER_SELF_REFERENCE", "service": "human-ai" },
+    { "binding": "DECISIONS", "service": "human-ai-decisions" }
+  ],
+  "d1_databases": [
+    { "binding": "DB", "database_name": "human-ai", "database_id": "2cb1e22d-8042-4045-b5eb-e8b1131e6925", "migrations_dir": "drizzle" }
+  ],
+  "vars": {
+    "DECISIONS_MODE": "worker",
+    "DECISIONS_WORKER_URL": "https://human-ai-decisions.zdychanges.workers.dev",
+    "PUBLIC_BASE_URL": "https://human-ai.zdychanges.workers.dev"
+  }
+  // Secrets: wrangler secret put DECISIONS_WORKER_SHARED_SECRET / RESULT_SIGNING_SECRET (never commit values here).
+}

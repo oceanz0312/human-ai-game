@@ -5,9 +5,6 @@ import { resolveRace } from "../../game/rules";
 import type { Database } from "../db/client";
 import { bests, events, players, results, rounds, sessions } from "../db/schema";
 
-type Tx = Parameters<Parameters<Database["transaction"]>[0]>[0];
-type Exec = Database | Tx;
-
 export type SessionRow = typeof sessions.$inferSelect;
 export type RoundRow = typeof rounds.$inferSelect;
 export type ResultRow = typeof results.$inferSelect;
@@ -35,21 +32,14 @@ export interface HumanSettlementInput {
   result: { id: string; publicId: string } | null;
 }
 
-/** Serializes write transactions inside this process; SQLite allows a single writer at a time. */
-function createWriteLock() {
-  let tail: Promise<unknown> = Promise.resolve();
-  return <T>(work: () => Promise<T>): Promise<T> => {
-    const run = tail.then(work, work);
-    tail = run.catch(() => undefined);
-    return run;
-  };
-}
-
+/**
+ * Writes avoid interactive transactions because Cloudflare D1 only offers atomic batches. Every
+ * multi-statement write is one `db.batch` whose statements are guarded so duplicates are no-ops.
+ */
 export function createGameRepository(db: Database) {
-  const withWriteLock = createWriteLock();
-
-  async function settleRace(tx: Exec, roundId: string): Promise<void> {
-    const [round] = await tx.select().from(rounds).where(eq(rounds.id, roundId));
+  /** Human and AI fields are each written once, so any caller that sees both computes the same race. */
+  async function settleRace(roundId: string): Promise<void> {
+    const [round] = await db.select().from(rounds).where(eq(rounds.id, roundId));
     if (!round || !round.humanStatus || round.fasterThanAi !== null) return;
     if (round.aiStatus !== "complete" && round.aiStatus !== "error") return;
     const race = resolveRace({
@@ -59,17 +49,16 @@ export function createGameRepository(db: Database) {
       aiCorrect: round.aiCorrect,
       aiElapsedMs: round.aiElapsedMs,
     });
-    const updated = await tx
-      .update(rounds)
-      .set({ winner: race.winner as Exclude<Winner, "pending">, fasterThanAi: race.fasterThanAi })
-      .where(and(eq(rounds.id, roundId), isNull(rounds.fasterThanAi)))
-      .returning({ id: rounds.id });
-    if (updated.length === 1 && race.fasterThanAi) {
-      await tx
+    await db.batch([
+      db
+        .update(rounds)
+        .set({ winner: race.winner as Exclude<Winner, "pending">, fasterThanAi: race.fasterThanAi })
+        .where(and(eq(rounds.id, roundId), isNull(rounds.fasterThanAi))),
+      db
         .update(sessions)
-        .set({ fasterThanAiCount: sql`${sessions.fasterThanAiCount} + 1` })
-        .where(eq(sessions.id, round.sessionId));
-    }
+        .set({ fasterThanAiCount: sql`(SELECT count(*) FROM rounds WHERE rounds.session_id = ${round.sessionId} AND rounds.faster_than_ai = 1)` })
+        .where(eq(sessions.id, round.sessionId)),
+    ]);
   }
 
   return {
@@ -170,103 +159,115 @@ export function createGameRepository(db: Database) {
     },
 
     async saveAiAnswer(roundId: string, answer: AiAnswerInput, now: number) {
-      return withWriteLock(() =>
-        db.transaction(async (tx) => {
-          const saved = await tx
-            .update(rounds)
-            .set({
-              aiStatus: answer.status,
-              aiCompletedAt: now,
-              aiChoice: answer.choice,
-              aiCorrect: answer.correct,
-              aiElapsedMs: answer.elapsedMs,
-              aiModelElapsedMs: answer.modelElapsedMs,
-              aiConfidence: answer.confidence,
-              aiProbabilities: JSON.stringify(answer.probabilities),
-              aiErrorCode: answer.errorCode,
-              aiRequestId: answer.requestId,
-            })
-            .where(and(eq(rounds.id, roundId), eq(rounds.aiStatus, "running")))
-            .returning({ id: rounds.id });
-          if (saved.length === 1) await settleRace(tx, roundId);
-          return saved.length === 1;
-        }),
-      );
+      const saved = await db
+        .update(rounds)
+        .set({
+          aiStatus: answer.status,
+          aiCompletedAt: now,
+          aiChoice: answer.choice,
+          aiCorrect: answer.correct,
+          aiElapsedMs: answer.elapsedMs,
+          aiModelElapsedMs: answer.modelElapsedMs,
+          aiConfidence: answer.confidence,
+          aiProbabilities: JSON.stringify(answer.probabilities),
+          aiErrorCode: answer.errorCode,
+          aiRequestId: answer.requestId,
+        })
+        .where(and(eq(rounds.id, roundId), eq(rounds.aiStatus, "running")))
+        .returning({ id: rounds.id });
+      if (saved.length === 1) await settleRace(roundId);
+      return saved.length === 1;
     },
 
     /** A running lease older than the Worker timeout is closed as an AI timeout instead of re-billing. */
     async expireStaleAi(roundId: string, staleBefore: number, now: number) {
-      return withWriteLock(() =>
-        db.transaction(async (tx) => {
-          const expired = await tx
-            .update(rounds)
-            .set({ aiStatus: "error", aiErrorCode: "ai_timeout", aiCompletedAt: now })
-            .where(and(eq(rounds.id, roundId), eq(rounds.aiStatus, "running"), lt(rounds.aiStartedAt, staleBefore)))
-            .returning({ id: rounds.id });
-          if (expired.length === 1) await settleRace(tx, roundId);
-          return expired.length === 1;
-        }),
-      );
+      const expired = await db
+        .update(rounds)
+        .set({ aiStatus: "error", aiErrorCode: "ai_timeout", aiCompletedAt: now })
+        .where(and(eq(rounds.id, roundId), eq(rounds.aiStatus, "running"), lt(rounds.aiStartedAt, staleBefore)))
+        .returning({ id: rounds.id });
+      if (expired.length === 1) await settleRace(roundId);
+      return expired.length === 1;
     },
 
-    /** Persists the first human settlement only; returns false when the round was already settled. */
+    /**
+     * Persists the first human settlement only; returns false when the round was already settled.
+     * The session update only applies while the session still sits on this round's level, so a
+     * duplicate or late retry can never overwrite newer progress.
+     */
     async submitHumanAnswer(input: HumanSettlementInput): Promise<boolean> {
-      return withWriteLock(() =>
-        db.transaction(async (tx) => {
-          const settled = await tx
-            .update(rounds)
-            .set({
-              humanStatus: input.status,
-              humanChoice: input.choice,
-              humanElapsedMs: input.elapsedMs,
-              humanClientElapsedMs: input.clientElapsedMs,
-              humanSubmittedAt: input.now,
-            })
-            .where(and(eq(rounds.id, input.roundId), isNull(rounds.humanStatus)))
-            .returning({ sessionId: rounds.sessionId });
-          if (settled.length !== 1) return false;
-          const sessionId = settled[0].sessionId;
-
-          await tx
-            .update(sessions)
-            .set({
-              level: input.session.level,
-              lives: input.session.lives,
-              status: input.session.status,
-              reachedLevel: input.session.reachedLevel,
-              cleared: input.session.cleared,
-              endedAt: input.session.status === "ended" ? input.now : null,
-            })
-            .where(eq(sessions.id, sessionId));
-
-          if (input.result) {
-            const [session] = await tx.select().from(sessions).where(eq(sessions.id, sessionId));
-            await tx.insert(results).values({
-              id: input.result.id,
-              sessionId,
-              publicId: input.result.publicId,
-              playerId: session.playerId,
-              levelSetVersion: session.levelSetVersion,
-              reachedLevel: input.session.reachedLevel,
-              cleared: input.session.cleared,
-              createdAt: input.now,
-            });
-            await tx
-              .insert(bests)
-              .values({ playerId: session.playerId, levelSetVersion: session.levelSetVersion, bestLevel: input.session.reachedLevel, achievedAt: input.now })
-              .onConflictDoUpdate({
-                target: [bests.playerId, bests.levelSetVersion],
-                set: {
-                  achievedAt: sql`CASE WHEN excluded.best_level > ${bests.bestLevel} THEN excluded.achieved_at ELSE ${bests.achievedAt} END`,
-                  bestLevel: sql`MAX(${bests.bestLevel}, excluded.best_level)`,
-                },
-              });
-          }
-
-          await settleRace(tx, input.roundId);
-          return true;
-        }),
-      );
+      const roundSession = sql`(SELECT session_id FROM rounds WHERE rounds.id = ${input.roundId})`;
+      const roundLevel = sql`(SELECT level FROM rounds WHERE rounds.id = ${input.roundId})`;
+      const endedSession = and(eq(sessions.id, roundSession), eq(sessions.status, "ended"));
+      const [settled] = await db.batch([
+        db
+          .update(rounds)
+          .set({
+            humanStatus: input.status,
+            humanChoice: input.choice,
+            humanElapsedMs: input.elapsedMs,
+            humanClientElapsedMs: input.clientElapsedMs,
+            humanSubmittedAt: input.now,
+          })
+          .where(and(eq(rounds.id, input.roundId), isNull(rounds.humanStatus)))
+          .returning({ id: rounds.id }),
+        db
+          .update(sessions)
+          .set({
+            level: input.session.level,
+            lives: input.session.lives,
+            status: input.session.status,
+            reachedLevel: input.session.reachedLevel,
+            cleared: input.session.cleared,
+            endedAt: input.session.status === "ended" ? input.now : null,
+          })
+          .where(and(eq(sessions.id, roundSession), eq(sessions.level, roundLevel), eq(sessions.status, "active"))),
+        ...(input.result
+          ? [
+              db
+                .insert(results)
+                .select(
+                  db
+                    .select({
+                      id: sql`${input.result.id}`.as("id"),
+                      sessionId: sessions.id,
+                      publicId: sql`${input.result.publicId}`.as("public_id"),
+                      playerId: sessions.playerId,
+                      levelSetVersion: sessions.levelSetVersion,
+                      reachedLevel: sql`${input.session.reachedLevel}`.as("reached_level"),
+                      cleared: sql`${input.session.cleared ? 1 : 0}`.as("cleared"),
+                      createdAt: sql`${input.now}`.as("created_at"),
+                    })
+                    .from(sessions)
+                    .where(endedSession),
+                )
+                .onConflictDoNothing(),
+              db
+                .insert(bests)
+                .select(
+                  db
+                    .select({
+                      playerId: sessions.playerId,
+                      levelSetVersion: sessions.levelSetVersion,
+                      bestLevel: sql`${input.session.reachedLevel}`.as("best_level"),
+                      achievedAt: sql`${input.now}`.as("achieved_at"),
+                    })
+                    .from(sessions)
+                    .where(endedSession),
+                )
+                .onConflictDoUpdate({
+                  target: [bests.playerId, bests.levelSetVersion],
+                  set: {
+                    achievedAt: sql`CASE WHEN excluded.best_level > ${bests.bestLevel} THEN excluded.achieved_at ELSE ${bests.achievedAt} END`,
+                    bestLevel: sql`MAX(${bests.bestLevel}, excluded.best_level)`,
+                  },
+                }),
+            ]
+          : []),
+      ]);
+      if (settled.length !== 1) return false;
+      await settleRace(input.roundId);
+      return true;
     },
 
     async getResultBySession(sessionId: string): Promise<ResultRow | null> {

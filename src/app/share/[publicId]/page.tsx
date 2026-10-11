@@ -4,7 +4,7 @@ import { StartButton } from "@/components/StartButton";
 import { shareHeadline } from "@/game/reveal-copy";
 import { pad2 } from "@/lib/format";
 import { getGameService } from "@/server/container";
-import { isPublicId } from "@/server/public-url";
+import { isPublicId, publicBaseUrl } from "@/server/public-url";
 
 export const dynamic = "force-dynamic";
 
@@ -17,7 +17,12 @@ export async function generateMetadata({ params }: { params: Promise<{ publicId:
   const result = await load((await params).publicId);
   if (!result) return { title: "HUMAN / AI" };
   const title = `${shareHeadline(result)} · HUMAN / AI`;
-  return { title, description: "同样的 20 关，你能走到哪里？", openGraph: { title, description: "同样的 20 关，你能走到哪里？" } };
+  return {
+    metadataBase: new URL(await publicBaseUrl()),
+    title,
+    description: "同样的 20 关，你能走到哪里？",
+    openGraph: { title, description: "同样的 20 关，你能走到哪里？" },
+  };
 }
 
 export default async function ShareLandingPage({ params }: { params: Promise<{ publicId: string }> }) {

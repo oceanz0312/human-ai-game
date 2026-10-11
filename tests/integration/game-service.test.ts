@@ -164,6 +164,39 @@ test("a duplicate submission returns the original settlement", async () => {
   expect(again.session.lives).toBe(2);
 });
 
+test("concurrent duplicate submissions settle once and remove one life", async () => {
+  ctx = await setup();
+  const playerId = await ctx.player();
+  const session = await ctx.service.createSession({ playerId });
+  const started = await ctx.service.startNextRound(session.id, playerId);
+  await ctx.service.beginRound(started.round.id, playerId);
+  ctx.advance(1000);
+  const wrong = getPrivateLevel(1).choices.find((choice) => choice !== getPrivateLevel(1).correctChoice)!;
+  const submissions = await Promise.all([1, 2, 3].map(() => ctx.service.submitRound(started.round.id, playerId, { choice: wrong, elapsedMs: 1000 })));
+  expect(submissions.map((item) => item.session.lives)).toEqual([2, 2, 2]);
+  expect(await ctx.service.getSession(session.id, playerId)).toMatchObject({ level: 2, lives: 2 });
+});
+
+test("a late settlement write for an earlier round never overwrites newer progress", async () => {
+  ctx = await setup();
+  const playerId = await ctx.player();
+  const session = await ctx.service.createSession({ playerId });
+  const first = await ctx.playRound(session.id, playerId, "correct");
+  await ctx.playRound(session.id, playerId, "wrong");
+  const applied = await ctx.games.submitHumanAnswer({
+    roundId: first.roundId,
+    status: "incorrect",
+    choice: null,
+    elapsedMs: 1,
+    clientElapsedMs: 1,
+    now: Date.now(),
+    session: { level: 2, lives: 0, status: "ended", reachedLevel: 1, cleared: false },
+    result: { id: "late-result", publicId: "late-public-id-0000000" },
+  });
+  expect(applied).toBe(false);
+  expect(await ctx.service.getSession(session.id, playerId)).toMatchObject({ level: 3, lives: 2, status: "active", publicId: null });
+});
+
 test("concurrent AI runs claim one lease and invoke the Worker once", async () => {
   ctx = await setup({ ai: (level) => ({ choice: getPrivateLevel(level).correctChoice, latencyMs: 20 }) });
   const playerId = await ctx.player();

@@ -25,12 +25,15 @@ export function toPublicLevel(level: PrivateLevel) {
 
 const imageCache = new Map<number, string>();
 
-export async function readLevelImageDataUrl(levelNumber: number): Promise<string> {
+const readPublicFile = (imageUrl: string) => readFile(path.join(process.cwd(), "public", imageUrl));
+
+/** `loadBytes` reads a public asset path; Cloudflare passes its static-assets binding instead of the file system. */
+export async function readLevelImageDataUrl(levelNumber: number, loadBytes: (imageUrl: string) => Promise<Uint8Array> = readPublicFile): Promise<string> {
   const cached = imageCache.get(levelNumber);
   if (cached) return cached;
   const level = getPrivateLevel(levelNumber);
-  const bytes = await readFile(path.join(process.cwd(), "public", level.imageUrl));
-  const dataUrl = `data:image/png;base64,${bytes.toString("base64")}`;
+  const bytes = await loadBytes(level.imageUrl);
+  const dataUrl = `data:image/png;base64,${Buffer.from(bytes).toString("base64")}`;
   imageCache.set(levelNumber, dataUrl);
   return dataUrl;
 }

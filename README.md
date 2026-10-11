@@ -12,15 +12,17 @@
 ```text
 浏览器 H5 ──同源 /api/*──▶ Next.js 游戏服务 ──Bearer 共享密钥──▶ Cloudflare Worker ──▶ OpenAI POST /v1/decisions
                               │
-                              └── LibSQL（会话、关卡、结果、排行榜、埋点）
+                              └── 数据库：线上 Cloudflare D1，本地与测试 LibSQL（会话、关卡、结果、排行榜、埋点）
 ```
+
+线上两者都部署在 Cloudflare Workers：游戏服务 `human-ai`（https://human-ai.zdychanges.workers.dev，经 OpenNext 构建）通过 Service Binding 调用 Decisions Worker `human-ai-decisions`。
 
 | 目录 | 职责 |
 |---|---|
 | `src/game` | 纯规则：生命、推进、胜负、速度对比、服务端耗时校准、揭晓文案 |
 | `src/server/levels` | 冻结的 v1 关卡表（含答案，仅服务端与脚本可读） |
 | `src/levels/public-catalog.generated.ts` | 生成的公开关卡元数据（不含答案） |
-| `src/server/repositories` | 事务化持久层：AI 租约、一次性结算、原子最好成绩、并列排名 |
+| `src/server/repositories` | 持久层（原子批量语句，兼容 D1）：AI 租约、一次性结算、原子最好成绩、并列排名 |
 | `src/server/game-service.ts` | 应用服务：会话、开局、AI 调度、提交结算 |
 | `src/server/decisions` | Worker 线协议（与 Worker 共用）、服务端 Worker 客户端、测试用假客户端 |
 | `workers/decisions` | 唯一持有 `OPENAI_API_KEY` 的 Cloudflare Worker |
@@ -87,6 +89,23 @@ npm run worker:deploy:preview
 正式环境去掉 `--env preview` 并使用 `npm run worker:deploy`。账号需要具备 Decisions API 访问权限。
 
 轮换共享密钥：先给 Worker 写入新密钥并部署，再更新游戏服务的 `DECISIONS_WORKER_SHARED_SECRET` 并重启；期间的 AI 请求会表现为「AI 掉线」，不影响玩家结算。
+
+## 游戏服务部署（Cloudflare Workers + D1）
+
+配置在根目录 `wrangler.jsonc`：D1 绑定 `DB`、静态资源 `ASSETS`（服务端也从这里读关卡图）、指向 Decisions Worker 的 Service Binding `DECISIONS`。同账号的 Worker 之间不能经 workers.dev 公网地址互相调用，因此必须走 Service Binding。
+
+```bash
+npx wrangler d1 create human-ai                                   # 首次：把返回的 database_id 写入 wrangler.jsonc
+npm run cf:db:migrate                                             # 对线上 D1 执行 drizzle/ 下的迁移
+npx wrangler secret put DECISIONS_WORKER_SHARED_SECRET            # 与 Decisions Worker 相同
+npx wrangler secret put RESULT_SIGNING_SECRET
+npm run cf:deploy                                                 # OpenNext 构建并部署
+```
+
+- 线上只用 D1，不在请求时迁移；改 schema 后先 `npm run db:generate`，再 `npm run cf:db:migrate`。
+- D1 不支持交互式事务，持久层的多语句写入全部是 `db.batch`，并用条件更新保证重复提交无副作用；不要在仓储层引入 `db.transaction`。
+- `patches/` 里的补丁（`postinstall` 自动应用）让 OpenNext 把 Next 16.4 新增的 `preview-props.json` 打进 Worker，否则线上所有请求 500。升级 `@opennextjs/cloudflare` 后先确认上游是否已修复。
+- 本地用 `npm run cf:preview` 在 workerd 中预览构建产物；日常开发仍是 `npm run dev` + LibSQL。
 
 ## 关卡版本
 
