@@ -33,7 +33,6 @@ test("the reveal shows both elapsed times and the faster count", () => {
       round={{ id: "r", level: 6, gridSize: 9, human: { status: "correct", choice: "r5c7", elapsedMs: 2480 }, ai: { status: "complete", correct: true, elapsedMs: 2910, refused: false }, winner: "human", fasterThanAi: true }}
       fasterThanAiCount={3}
       ended={false}
-      secondsLeft={1}
       onNext={() => undefined}
     />,
   );
@@ -41,5 +40,19 @@ test("the reveal shows both elapsed times and the faster count", () => {
   expect(screen.getByText("2.48s")).toBeInTheDocument();
   expect(screen.getByText("2.91s")).toBeInTheDocument();
   expect(screen.getByText("本局已有 3 关比 AI 更快")).toBeInTheDocument();
-  expect(screen.getByRole("button", { name: "下一关 · 1" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "下一关" })).toBeInTheDocument();
+});
+
+test("tapping next on the reveal invokes the handler", () => {
+  const onNext = vi.fn();
+  render(
+    <LevelReveal
+      round={{ id: "r", level: 1, gridSize: 3, human: { status: "correct", choice: "r1c1", elapsedMs: 1000 }, ai: { status: "complete", correct: true, elapsedMs: 2000, refused: false }, winner: "human", fasterThanAi: true }}
+      fasterThanAiCount={0}
+      ended={false}
+      onNext={onNext}
+    />,
+  );
+  fireEvent.click(screen.getByRole("button", { name: "下一关" }));
+  expect(onNext).toHaveBeenCalledTimes(1);
 });

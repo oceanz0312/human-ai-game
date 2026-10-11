@@ -10,7 +10,6 @@ import { GameBoard } from "./GameBoard";
 import { GameHeader } from "./GameHeader";
 import { LevelReveal } from "./LevelReveal";
 
-export const AUTO_ADVANCE_MS = 1500;
 const SLOW_LOADING_MS = 800;
 const AI_POLL_MS = 500;
 const AI_POLL_LIMIT_MS = 15_000;
@@ -47,7 +46,7 @@ export function preloadImage(url: string): Promise<void> {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export function GameScreen({ sessionId, autoAdvanceMs = AUTO_ADVANCE_MS }: { sessionId: string; autoAdvanceMs?: number }) {
+export function GameScreen({ sessionId }: { sessionId: string }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   const [session, setSession] = useState<SessionSnapshot | null>(null);
@@ -57,7 +56,6 @@ export function GameScreen({ sessionId, autoAdvanceMs = AUTO_ADVANCE_MS }: { ses
   const [selected, setSelected] = useState<string | null>(null);
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
   const [reveal, setReveal] = useState<RoundReveal | null>(null);
-  const [secondsLeft, setSecondsLeft] = useState<number | null>(null);
   const [locked, setLocked] = useState(false);
   const [loadEpoch, setLoadEpoch] = useState(0);
   const [slowEpoch, setSlowEpoch] = useState(-1);
@@ -97,11 +95,10 @@ export function GameScreen({ sessionId, autoAdvanceMs = AUTO_ADVANCE_MS }: { ses
       setReveal(round);
       setSession(next);
       if (previousLives !== null && next.lives < previousLives) haptic();
-      setSecondsLeft(Math.ceil(autoAdvanceMs / 1000));
       advancingRef.current = false;
       setPhase({ kind: "reveal" });
     },
-    [autoAdvanceMs],
+    [],
   );
 
   const sendSubmission = useCallback(async () => {
@@ -152,7 +149,6 @@ export function GameScreen({ sessionId, autoAdvanceMs = AUTO_ADVANCE_MS }: { ses
     setImageReady(false);
     setPainted(false);
     setRemainingMs(null);
-    setSecondsLeft(null);
     setLocked(false);
     setLoadEpoch((value) => value + 1);
     lockedRef.current = false;
@@ -281,22 +277,6 @@ export function GameScreen({ sessionId, autoAdvanceMs = AUTO_ADVANCE_MS }: { ses
     else void loadNextRound();
   }, [session, goToResult, loadNextRound]);
 
-  // Auto-advance after the reveal, with a visible countdown.
-  useEffect(() => {
-    if (phase.kind !== "reveal") return;
-    const startedAt = performance.now();
-    const interval = window.setInterval(() => {
-      const left = autoAdvanceMs - (performance.now() - startedAt);
-      if (left <= 0) {
-        window.clearInterval(interval);
-        advance();
-      } else {
-        setSecondsLeft(Math.ceil(left / 1000));
-      }
-    }, 100);
-    return () => window.clearInterval(interval);
-  }, [phase.kind, autoAdvanceMs, advance]);
-
   // A late AI answer is filled in without touching lives or level.
   useEffect(() => {
     if (phase.kind !== "reveal" || !reveal || (reveal.ai.status !== "running" && reveal.ai.status !== "pending")) return;
@@ -327,7 +307,7 @@ export function GameScreen({ sessionId, autoAdvanceMs = AUTO_ADVANCE_MS }: { ses
   }, [phase.kind, reveal]);
 
   if (phase.kind === "reveal" && reveal && session) {
-    return <LevelReveal round={reveal} fasterThanAiCount={session.fasterThanAiCount} ended={session.status === "ended"} secondsLeft={secondsLeft} onNext={advance} />;
+    return <LevelReveal round={reveal} fasterThanAiCount={session.fasterThanAiCount} ended={session.status === "ended"} onNext={advance} />;
   }
 
   if (phase.kind === "countdown") {

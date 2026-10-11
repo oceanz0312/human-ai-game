@@ -70,6 +70,17 @@ test("three failures end the run at the third failed level", async ({ page }) =>
   await expect(page.getByText("挑战结束")).toBeVisible();
 });
 
+test("the reveal screen waits for a tap and does not auto-advance", async ({ page }) => {
+  await startGame(page);
+  await answer(page, 1, "correct");
+  await expect(page.getByRole("button", { name: "下一关" })).toBeVisible();
+  await page.waitForTimeout(2500);
+  await expect(page.getByText("答案揭晓")).toBeVisible();
+  await expect(page.getByRole("button", { name: /第 \d 行第 \d 列/ })).toHaveCount(0);
+  await next(page);
+  await waitForPlayable(page, 2);
+});
+
 test("a level that runs out of time counts as a timeout and keeps going", async ({ page }) => {
   await startGame(page);
   await waitForPlayable(page, 1);
