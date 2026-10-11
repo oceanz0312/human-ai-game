@@ -40,10 +40,16 @@ export function AiRevealInsights({ round }: AiRevealInsightsProps) {
   }
 
   if (ai.status === "error") {
+    const code = round.ai.errorCode ?? "unknown";
+    const detail = round.ai.errorDetail;
     return (
       <section className="ai-insights">
         <h2 className="insights-title">AI 决策过程</h2>
-        <p className="insights-muted">AI 掉线，未能记录本次概率分布。</p>
+        <p className="insights-muted">
+          AI 掉线 · <span className="num">{code}</span>
+          {detail ? <> — {detail}</> : null}
+          ，未能记录本次概率分布。
+        </p>
       </section>
     );
   }

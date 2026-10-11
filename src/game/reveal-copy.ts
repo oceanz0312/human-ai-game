@@ -28,7 +28,10 @@ export function describeReveal(round: RoundReveal): RevealCopy {
         : { tag: "判断中", time: null };
 
   if (round.ai.status === "error" && !round.ai.refused) {
-    return { symbol: "—", title: "AI 掉线", detail: humanCorrect ? "你答对了 · 本关照常结算" : `${humanMissed}${lifeNote}`, humanValue, aiValue };
+    const code = round.ai.errorCode ?? "unknown";
+    const extra = round.ai.errorDetail ? ` · ${round.ai.errorDetail}` : "";
+    const baseDetail = humanCorrect ? "你答对了 · 本关照常结算" : `${humanMissed}${lifeNote}`;
+    return { symbol: "—", title: `AI 掉线 · ${code}`, detail: `${baseDetail}${extra}`, humanValue, aiValue };
   }
   if (round.winner === "pending") {
     return { symbol: humanCorrect ? "✓" : "×", title: "AI 仍在判断", detail: humanCorrect ? "你答对了 · 稍后补齐 AI 结果" : `${humanMissed}${lifeNote}`, humanValue, aiValue };

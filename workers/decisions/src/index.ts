@@ -60,13 +60,14 @@ export function createWorkerHandler(deps: HandlerDeps = {}) {
         log({ requestId, status, elapsedMs: Math.round(now() - startedAt), errorCode: errorCode ?? null, choiceCount });
         return new Response(JSON.stringify(body), { status, headers: { ...SECURITY_HEADERS, "X-Request-Id": requestId } });
       };
-      const failure = (errorCode: DecisionErrorCode, modelElapsedMs = 0): WorkerDecisionResponse => ({
+      const failure = (errorCode: DecisionErrorCode, modelElapsedMs = 0, detail: string | null = null): WorkerDecisionResponse => ({
         status: "error",
         choice: null,
         confidence: null,
         probabilities: {},
         modelElapsedMs,
         errorCode,
+        detail,
         requestId,
       });
 
@@ -106,9 +107,9 @@ export function createWorkerHandler(deps: HandlerDeps = {}) {
           model: env.OPENAI_DECISIONS_MODEL || "gpt-6-luna",
           timeoutMs: Number(env.OPENAI_DECISIONS_TIMEOUT_MS) || 8000,
         },
-        { fetchImpl, now },
+        { fetchImpl, now, log: (entry) => log({ requestId, ...entry }) },
       );
-      if (!outcome.ok) return respond(200, failure(outcome.errorCode, outcome.modelElapsedMs));
+      if (!outcome.ok) return respond(200, failure(outcome.errorCode, outcome.modelElapsedMs, outcome.detail));
       return respond(200, {
         status: "complete",
         choice: outcome.choice,

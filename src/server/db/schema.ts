@@ -48,6 +48,7 @@ export const rounds = sqliteTable(
     aiConfidence: real("ai_confidence"),
     aiProbabilities: text("ai_probabilities"),
     aiErrorCode: text("ai_error_code"),
+    aiErrorDetail: text("ai_error_detail"),
     aiRequestId: text("ai_request_id"),
     winner: text("winner", { enum: ["human", "ai", "none"] }),
     fasterThanAi: integer("faster_than_ai", { mode: "boolean" }),

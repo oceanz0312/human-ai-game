@@ -103,13 +103,18 @@ test.each([
   ["5xx", openAiReturning({ error: { message: "boom" } }, 503), "upstream_error"],
   ["malformed body", vi.fn().mockResolvedValue(new Response("<html>", { status: 200 })), "invalid_response"],
   ["network failure", vi.fn().mockRejectedValue(new TypeError("fetch failed")), "network_error"],
-])("maps %s to a stable error without leaking the upstream body", async (_name, openAiFetch, errorCode) => {
-  const { handler } = setup(openAiFetch);
+])("maps %s to a stable error with sanitized detail", async (_name, openAiFetch, errorCode) => {
+  const { handler, logs } = setup(openAiFetch);
   const response = await handler.fetch(request({ imageDataUrl: IMAGE, choices: nine }), env);
   expect(response.status).toBe(200);
-  const body = await response.json();
+  const body = (await response.json()) as WorkerDecisionResponse;
   expect(body).toMatchObject({ status: "error", choice: null, errorCode });
-  expect(JSON.stringify(body)).not.toMatch(/slow down|boom|html/);
+  if (errorCode !== "network_error" && errorCode !== "refused" && errorCode !== "invalid_choice") {
+    expect(body.detail).toBeTruthy();
+  }
+  expect(JSON.stringify(body)).not.toContain(OPENAI_KEY);
+  if (errorCode === "network_error") expect(logs.some((line) => line.includes("openai_fetch_failed"))).toBe(true);
+  else if (errorCode !== "refused" && errorCode !== "invalid_choice") expect(logs.some((line) => line.includes("openai_"))).toBe(true);
   expect(openAiFetch).toHaveBeenCalledTimes(1);
 });
 

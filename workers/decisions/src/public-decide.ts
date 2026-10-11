@@ -83,13 +83,14 @@ export function createPublicDecideHandler(deps: PublicDecideDeps = {}) {
       const respond = (status: number, body: Record<string, unknown>) =>
         new Response(JSON.stringify(body), { status, headers: { ...SECURITY_HEADERS, ...cors, "X-Request-Id": requestId } });
 
-      const failure = (errorCode: DecisionErrorCode, modelElapsedMs = 0): WorkerDecisionResponse => ({
+      const failure = (errorCode: DecisionErrorCode, modelElapsedMs = 0, detail: string | null = null): WorkerDecisionResponse => ({
         status: "error",
         choice: null,
         confidence: null,
         probabilities: {},
         modelElapsedMs,
         errorCode,
+        detail,
         requestId,
       });
 
@@ -192,7 +193,7 @@ export function createPublicDecideHandler(deps: PublicDecideDeps = {}) {
           model: env.OPENAI_DECISIONS_MODEL || "gpt-6-luna",
           timeoutMs: Number(env.OPENAI_DECISIONS_TIMEOUT_MS) || 8000,
         },
-        { fetchImpl, now },
+        { fetchImpl, now, log: (entry) => log({ requestId, ...entry }) },
       );
 
       const workerResult: WorkerDecisionResponse = outcome.ok
@@ -205,7 +206,7 @@ export function createPublicDecideHandler(deps: PublicDecideDeps = {}) {
             errorCode: null,
             requestId,
           }
-        : failure(outcome.errorCode, outcome.modelElapsedMs);
+        : failure(outcome.errorCode, outcome.modelElapsedMs, outcome.detail);
 
       const reportResponse = await reportToGame(
         env,

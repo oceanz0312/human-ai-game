@@ -46,6 +46,8 @@ export interface RoundReveal {
     confidence: number | null;
     probabilities: Record<string, number> | null;
     modelElapsedMs: number | null;
+    errorCode: string | null;
+    errorDetail: string | null;
   };
   winner: Winner;
   fasterThanAi: boolean | null;
