@@ -107,6 +107,30 @@ test("level 20 finalizes the run regardless of remaining lives", async () => {
   expect(last!.session).toMatchObject({ status: "ended", lives: 3, reachedLevel: 20, cleared: true });
 });
 
+test("a complete AI answer persists probabilities and timing for the reveal page", async () => {
+  ctx = await setup({
+    ai: (level) => ({
+      choice: getPrivateLevel(level).correctChoice,
+      latencyMs: 42,
+      confidence: 0.76,
+      probabilities: { [getPrivateLevel(level).correctChoice]: 0.76, r1c1: 0.12 },
+    }),
+  });
+  const playerId = await ctx.player();
+  const session = await ctx.service.createSession({ playerId });
+  const result = await ctx.playRound(session.id, playerId, "correct", { elapsedMs: 900 });
+  expect(result.round.ai).toMatchObject({
+    status: "complete",
+    choice: getPrivateLevel(1).correctChoice,
+    confidence: 0.76,
+    probabilities: expect.objectContaining({ r1c1: 0.12 }),
+    modelElapsedMs: 42,
+    elapsedMs: 42,
+  });
+  expect(result.round.imageUrl).toBe("/levels/v1/01.png");
+  expect(result.round.correctChoice).toBe(getPrivateLevel(1).correctChoice);
+});
+
 test("an AI error does not modify lives and is never a speed win", async () => {
   ctx = await setup({ ai: () => ({ errorCode: "upstream_error" }) });
   const playerId = await ctx.player();
@@ -139,7 +163,16 @@ test("a late AI answer updates fasterThanAiCount exactly once and never touches 
   await Promise.all([ctx.service.runAiForRound(result.roundId), ctx.service.runAiForRound(result.roundId)]);
   await ctx.service.runAiForRound(result.roundId);
   const after = await ctx.service.getRound(result.roundId, playerId);
-  expect(after.round.ai).toEqual({ status: "complete", correct: true, elapsedMs: 60, refused: false });
+  expect(after.round.ai).toMatchObject({
+    status: "complete",
+    correct: true,
+    elapsedMs: 60,
+    refused: false,
+    choice: getPrivateLevel(1).correctChoice,
+    confidence: expect.any(Number),
+    probabilities: expect.any(Object),
+    modelElapsedMs: 60,
+  });
   expect(after.round.winner).toBe("human");
   expect(after.round.fasterThanAi).toBe(true);
   expect(after.session).toMatchObject({ fasterThanAiCount: 1, lives: 3, level: 2 });

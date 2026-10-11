@@ -1,5 +1,6 @@
 import type { AiDispatch, BeginRoundResponse, LeaderboardRow, ResultView, RoundReveal, RoundStartResponse, SessionSnapshot, SubmitResponse } from "../game/contracts";
 import { LEVEL_SET_VERSION } from "../game/contracts";
+import { parseStoredProbabilities } from "../game/ai-insights";
 import { advanceSession, reconcileElapsed, resolveHumanAnswer, resolveRace } from "../game/rules";
 import type { DecisionClient, DecisionResult, WorkerDecisionResponse } from "./decisions/contracts";
 import { signDecisionTicket, sha256HexFromDataUrl, ticketExpiresAt } from "./decisions/ticket";
@@ -91,6 +92,20 @@ export function createGameService(deps: GameServiceDeps) {
     return sessionSnapshot(session);
   }
 
+  function aiRevealFields(round: RoundRow) {
+    const complete = round.aiStatus === "complete";
+    return {
+      status: round.aiStatus,
+      correct: complete ? round.aiCorrect : null,
+      elapsedMs: complete ? round.aiElapsedMs : null,
+      refused: round.aiStatus === "error" && round.aiErrorCode === "refused",
+      choice: complete ? round.aiChoice : null,
+      confidence: complete ? round.aiConfidence : null,
+      probabilities: complete ? parseStoredProbabilities(round.aiProbabilities) : null,
+      modelElapsedMs: complete ? round.aiModelElapsedMs : null,
+    };
+  }
+
   function toReveal(round: RoundRow): RoundReveal {
     const level = deps.getLevel(round.level);
     const human = round.humanStatus ? { status: round.humanStatus, choice: round.humanChoice, elapsedMs: round.humanElapsedMs ?? 0 } : null;
@@ -100,20 +115,27 @@ export function createGameService(deps: GameServiceDeps) {
       (human && aiFinal
         ? resolveRace({ humanCorrect: human.status === "correct", humanElapsedMs: human.elapsedMs, aiStatus: round.aiStatus, aiCorrect: round.aiCorrect, aiElapsedMs: round.aiElapsedMs }).winner
         : "pending");
+    const lockedIn = Boolean(human);
     return {
       id: round.id,
       level: round.level,
       gridSize: level.gridSize,
+      imageUrl: level.imageUrl,
+      correctChoice: lockedIn ? level.correctChoice : null,
       human,
       // The AI outcome stays hidden until the player has locked in an answer.
-      ai: human
-        ? {
-            status: round.aiStatus,
-            correct: round.aiStatus === "complete" ? round.aiCorrect : null,
-            elapsedMs: round.aiStatus === "complete" ? round.aiElapsedMs : null,
-            refused: round.aiStatus === "error" && round.aiErrorCode === "refused",
-          }
-        : { status: round.aiStatus === "pending" ? "pending" : "running", correct: null, elapsedMs: null, refused: false },
+      ai: lockedIn
+        ? aiRevealFields(round)
+        : {
+            status: round.aiStatus === "pending" ? "pending" : "running",
+            correct: null,
+            elapsedMs: null,
+            refused: false,
+            choice: null,
+            confidence: null,
+            probabilities: null,
+            modelElapsedMs: null,
+          },
       winner: human ? winner : "pending",
       fasterThanAi: round.fasterThanAi,
     };

@@ -31,6 +31,8 @@ test("@layout a full clear run follows the approved mobile layout on every view"
     await answer(page, n, "correct");
     if (n === 1) {
       await expect(page.getByRole("heading", { name: /你赢了|AI 赢了|AI 仍在判断/ })).toBeVisible();
+      await expect(page.getByText("AI 决策过程")).toBeVisible();
+      await expect(page.getByText(/AI 最看好|等待 AI 返回最终答案|AI 放弃作答|未能记录本次概率/)).toBeVisible();
       await assertMobileLayout(page);
       await screenshot(page, testInfo, "3-reveal");
     }
@@ -68,6 +70,17 @@ test("three failures end the run at the third failed level", async ({ page }) =>
   await page.waitForURL(/\/result\//);
   await expect(page.getByTestId("reached-level")).toHaveText("04");
   await expect(page.getByText("挑战结束")).toBeVisible();
+});
+
+test("the reveal screen waits for a tap and does not auto-advance", async ({ page }) => {
+  await startGame(page);
+  await answer(page, 1, "correct");
+  await expect(page.getByRole("button", { name: "下一关" })).toBeVisible();
+  await page.waitForTimeout(2500);
+  await expect(page.getByText("答案揭晓")).toBeVisible();
+  await expect(page.getByRole("button", { name: /第 \d 行第 \d 列/ })).toHaveCount(0);
+  await next(page);
+  await waitForPlayable(page, 2);
 });
 
 test("a level that runs out of time counts as a timeout and keeps going", async ({ page }) => {

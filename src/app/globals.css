@@ -576,6 +576,159 @@ p {
   color: var(--color-text-secondary);
 }
 
+.reveal-body-expanded {
+  justify-content: flex-start;
+  padding-top: var(--space-4);
+  padding-bottom: var(--space-4);
+  gap: var(--space-5);
+}
+
+.reveal-summary {
+  width: 100%;
+}
+
+.reveal-visual {
+  width: 100%;
+  text-align: left;
+}
+
+.board.reveal-board {
+  width: min(calc(100vw - 36px), 320px);
+}
+
+@media (min-width: 391px) {
+  .board.reveal-board {
+    width: min(calc(100vw - 40px), 320px);
+  }
+}
+
+.heatmap-cell {
+  border-radius: 7px;
+  box-sizing: border-box;
+}
+
+.board.size-3 .heatmap-cell {
+  border-radius: 12px;
+}
+
+.heatmap-cell.ai-pick {
+  box-shadow: inset 0 0 0 2px var(--color-text);
+}
+
+.heatmap-cell.correct-pick {
+  outline: 2px dashed var(--color-text-secondary);
+  outline-offset: -3px;
+}
+
+.heatmap-legend {
+  margin-top: var(--space-3);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+}
+
+.legend-ai {
+  font-weight: 600;
+  color: var(--color-text);
+}
+
+.legend-correct {
+  border-bottom: 1px dashed var(--color-text-secondary);
+}
+
+.ai-insights {
+  margin-top: var(--space-5);
+  padding: var(--space-4);
+  border-radius: var(--radius-hint);
+  background: var(--color-surface);
+}
+
+.insights-title {
+  font-size: 12px;
+  line-height: 1.4;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-text-secondary);
+}
+
+.insights-lead {
+  margin-top: var(--space-3);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.insights-muted,
+.insights-waiting,
+.insights-refusal,
+.insights-hesitation,
+.insights-speed {
+  margin-top: var(--space-3);
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--color-text-secondary);
+}
+
+.insights-refusal {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+.confidence-block {
+  margin-top: var(--space-4);
+}
+
+.confidence-head,
+.timing-head,
+.timing-legend {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-3);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.confidence-track {
+  margin-top: var(--space-2);
+  height: 8px;
+  border-radius: 999px;
+  background: var(--color-border);
+  overflow: hidden;
+}
+
+.confidence-fill {
+  height: 100%;
+  background: var(--color-text);
+  border-radius: inherit;
+}
+
+.timing-block {
+  margin-top: var(--space-4);
+}
+
+.timing-bar {
+  display: flex;
+  margin-top: var(--space-2);
+  height: 10px;
+  border-radius: 999px;
+  overflow: hidden;
+  background: var(--color-border);
+}
+
+.timing-segment.model {
+  background: var(--color-text);
+}
+
+.timing-segment.overhead {
+  background: var(--color-text-tertiary);
+}
+
+.timing-legend {
+  margin-top: var(--space-2);
+  color: var(--color-text-secondary);
+}
+
 .bottom-actions {
   display: grid;
   gap: var(--space-2);
