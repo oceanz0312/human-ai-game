@@ -16,7 +16,11 @@ test("@layout a full clear run follows the approved mobile layout on every view"
 
   await waitForPlayable(page, 1);
   await expect(page.getByRole("button", { name: /第 \d 行第 \d 列/ })).toHaveCount(9);
-  await expect(page.getByTestId("ai-status")).toContainText(/AI|凭证|请求/);
+  await expect(page.getByTestId("ai-activity")).toBeVisible();
+  await expect(page.getByTestId("ai-activity-step").filter({ hasText: "决策凭证已签发" })).toBeVisible({ timeout: 15_000 });
+  await expect(page.getByTestId("ai-activity-step").filter({ hasText: /Worker 已响应|等待 Worker 响应/ }).first()).toBeVisible({
+    timeout: 15_000,
+  });
   await expect(page.getByText(/AI 赢了|你赢了|AI 掉线/)).toHaveCount(0);
   await assertMobileLayout(page);
   await screenshot(page, testInfo, "2-game-3x3");
@@ -32,6 +36,9 @@ test("@layout a full clear run follows the approved mobile layout on every view"
     if (n === 1) {
       await expect(page.getByRole("heading", { name: /你赢了|AI 赢了|AI 仍在判断/ })).toBeVisible();
       await expect(page.getByText("AI 决策过程")).toBeVisible();
+      await expect(page.getByTestId("ai-activity")).toBeVisible();
+      await expect(page.getByTestId("ai-activity-step").filter({ hasText: "决策凭证已签发" })).toBeVisible();
+      await expect(page.locator(".ai-activity-time.num").first()).toBeVisible();
       await expect(page.getByText(/AI 最看好|等待 AI 返回最终答案|AI 放弃作答|未能记录本次概率/)).toBeVisible();
       await assertMobileLayout(page);
       await screenshot(page, testInfo, "3-reveal");

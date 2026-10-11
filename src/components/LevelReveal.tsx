@@ -1,6 +1,8 @@
 "use client";
 
+import type { AiActivitySnapshot } from "@/game/ai-activity";
 import type { RoundReveal } from "@/game/contracts";
+import { AiActivityPanel } from "./AiActivityPanel";
 import { describeReveal } from "@/game/reveal-copy";
 import { pad2 } from "@/lib/format";
 import { AiRevealInsights } from "./AiRevealInsights";
@@ -11,9 +13,10 @@ interface LevelRevealProps {
   fasterThanAiCount: number;
   ended: boolean;
   onNext: () => void;
+  browserAiActivity?: AiActivitySnapshot | null;
 }
 
-export function LevelReveal({ round, fasterThanAiCount, ended, onNext }: LevelRevealProps) {
+export function LevelReveal({ round, fasterThanAiCount, ended, onNext, browserAiActivity }: LevelRevealProps) {
   const copy = describeReveal(round);
   const nextLabel = ended ? "查看结果" : "下一关";
   const showHeatmap = round.correctChoice !== null;
@@ -68,6 +71,12 @@ export function LevelReveal({ round, fasterThanAiCount, ended, onNext }: LevelRe
               深色表示 AI 认为更可能的格子；<span className="legend-ai">实线框</span> 为 AI 选择，<span className="legend-correct">虚线框</span> 为正确答案。
             </p>
             <AiRevealInsights round={round} />
+          </div>
+        ) : null}
+
+        {browserAiActivity ? (
+          <div className="reveal-activity">
+            <AiActivityPanel progress={null} snapshot={browserAiActivity} />
           </div>
         ) : null}
       </section>

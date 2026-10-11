@@ -74,6 +74,7 @@ export interface BrowserDecisionResponse {
   status: "complete" | "error";
   requestId: string;
   modelElapsedMs: number;
+  imageLoadMs?: number;
   errorCode: string | null;
   receivedAt: number;
 }

@@ -470,9 +470,109 @@ p {
 }
 
 .game-spacer {
-  min-height: var(--space-5);
+  min-height: var(--space-3);
   flex: 1;
-  max-height: var(--space-7);
+  max-height: var(--space-5);
+}
+
+.ai-activity {
+  margin-top: auto;
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.ai-activity-compact {
+  max-height: 38vh;
+  overflow: hidden;
+}
+
+.ai-activity-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-2);
+}
+
+.ai-activity-title {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--color-text-secondary);
+  text-transform: uppercase;
+}
+
+.ai-activity-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.ai-activity-step {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-rows: auto auto;
+  column-gap: var(--space-2);
+  align-items: baseline;
+  padding: 2px 0;
+}
+
+.ai-activity-step.is-active .ai-activity-label {
+  color: var(--color-text);
+  font-weight: 700;
+}
+
+.ai-activity-step.is-done .ai-activity-label {
+  color: var(--color-text-secondary);
+  font-weight: 600;
+}
+
+.ai-activity-step.is-error .ai-activity-label {
+  color: var(--color-danger, #c0392b);
+  font-weight: 700;
+}
+
+.ai-activity-label {
+  grid-column: 1;
+}
+
+.ai-activity-meta {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.ai-activity-time {
+  font-variant-numeric: tabular-nums;
+  color: var(--color-text-tertiary);
+  font-size: 10px;
+}
+
+.ai-activity-time.pending {
+  letter-spacing: 0.12em;
+}
+
+.ai-activity-detail {
+  grid-column: 1 / -1;
+  font-size: 10px;
+  color: var(--color-text-tertiary);
+  font-weight: 500;
+}
+
+.reveal-activity {
+  width: 100%;
+  max-width: 360px;
+  margin-top: var(--space-5);
+  text-align: left;
+}
+
+.reveal-activity .ai-activity {
+  border-top: none;
+  padding-top: 0;
 }
 
 /* ---------- Reveal ---------- */
