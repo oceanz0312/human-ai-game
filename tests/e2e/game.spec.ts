@@ -31,6 +31,8 @@ test("@layout a full clear run follows the approved mobile layout on every view"
     await answer(page, n, "correct");
     if (n === 1) {
       await expect(page.getByRole("heading", { name: /你赢了|AI 赢了|AI 仍在判断/ })).toBeVisible();
+      await expect(page.getByText("AI 决策过程")).toBeVisible();
+      await expect(page.getByText(/AI 最看好|等待 AI 返回最终答案|AI 放弃作答|未能记录本次概率/)).toBeVisible();
       await assertMobileLayout(page);
       await screenshot(page, testInfo, "3-reveal");
     }

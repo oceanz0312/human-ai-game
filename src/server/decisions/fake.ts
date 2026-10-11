@@ -1,3 +1,4 @@
+import { buildSyntheticProbabilities } from "../../game/ai-insights";
 import type { DecisionClient, DecisionErrorCode, DecisionInput, DecisionResult } from "./contracts";
 
 export interface FakeDecisionPlan {
@@ -5,6 +6,7 @@ export interface FakeDecisionPlan {
   errorCode?: DecisionErrorCode;
   latencyMs?: number;
   confidence?: number;
+  probabilities?: Record<string, number>;
 }
 
 /**
@@ -34,11 +36,12 @@ export class FakeDecisionClient implements DecisionClient {
     if (plan.errorCode) return error(plan.errorCode, latencyMs, requestId);
     const choice = plan.choice ?? input.choices[0];
     const confidence = plan.confidence ?? 0.9;
+    const probabilities = plan.probabilities ?? buildSyntheticProbabilities(input.choices, choice, confidence);
     return {
       status: "complete",
       choice,
       confidence,
-      probabilities: { [choice]: confidence },
+      probabilities,
       modelElapsedMs: latencyMs,
       errorCode: null,
       requestId,

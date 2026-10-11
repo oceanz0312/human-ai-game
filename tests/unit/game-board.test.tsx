@@ -30,7 +30,26 @@ test("no grid is rendered before the image is ready", () => {
 test("the reveal shows both elapsed times and the faster count", () => {
   render(
     <LevelReveal
-      round={{ id: "r", level: 6, gridSize: 9, human: { status: "correct", choice: "r5c7", elapsedMs: 2480 }, ai: { status: "complete", correct: true, elapsedMs: 2910, refused: false }, winner: "human", fasterThanAi: true }}
+      round={{
+        id: "r",
+        level: 6,
+        gridSize: 9,
+        imageUrl: "/levels/v1/06.png",
+        correctChoice: "r5c7",
+        human: { status: "correct", choice: "r5c7", elapsedMs: 2480 },
+        ai: {
+          status: "complete",
+          correct: true,
+          elapsedMs: 2910,
+          refused: false,
+          choice: "r5c7",
+          confidence: 0.88,
+          probabilities: { r5c7: 0.71, r1c1: 0.18, r2c3: 0.05 },
+          modelElapsedMs: 2600,
+        },
+        winner: "human",
+        fasterThanAi: true,
+      }}
       fasterThanAiCount={3}
       ended={false}
       secondsLeft={1}
@@ -39,7 +58,8 @@ test("the reveal shows both elapsed times and the faster count", () => {
   );
   expect(screen.getByRole("heading", { name: "你赢了" })).toBeInTheDocument();
   expect(screen.getByText("2.48s")).toBeInTheDocument();
-  expect(screen.getByText("2.91s")).toBeInTheDocument();
+  expect(screen.getAllByText("2.91s").length).toBeGreaterThanOrEqual(1);
   expect(screen.getByText("本局已有 3 关比 AI 更快")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "下一关 · 1" })).toBeInTheDocument();
+  expect(screen.getByText("AI 决策过程")).toBeInTheDocument();
 });
