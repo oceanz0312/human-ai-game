@@ -8,8 +8,8 @@ import type { GameService } from "./game-service";
 
 const NO_STORE = { "Cache-Control": "no-store" };
 
-export function json(body: unknown, status = 200) {
-  return NextResponse.json(body, { status, headers: NO_STORE });
+export function json(body: unknown, status = 200, extraHeaders: Record<string, string> = {}) {
+  return NextResponse.json(body, { status, headers: { ...NO_STORE, ...extraHeaders } });
 }
 
 export function errorResponse(error: unknown) {

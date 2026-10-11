@@ -109,6 +109,11 @@ export function createGameRepository(db: Database) {
       return row ?? null;
     },
 
+    async getOwnedSession(sessionId: string, playerId: string): Promise<SessionRow | null> {
+      const [row] = await db.select().from(sessions).where(and(eq(sessions.id, sessionId), eq(sessions.playerId, playerId)));
+      return row ?? null;
+    },
+
     async getOpenRound(sessionId: string): Promise<RoundRow | null> {
       const [row] = await db
         .select()
@@ -125,10 +130,12 @@ export function createGameRepository(db: Database) {
     },
 
     async createRound(input: { id: string; sessionId: string; level: number; now: number }) {
-      await db
+      const inserted = await db
         .insert(rounds)
         .values({ id: input.id, sessionId: input.sessionId, level: input.level, createdAt: input.now, aiStatus: "pending" })
-        .onConflictDoNothing();
+        .onConflictDoNothing()
+        .returning();
+      if (inserted.length === 1) return inserted[0];
       const [row] = await db.select().from(rounds).where(and(eq(rounds.sessionId, input.sessionId), eq(rounds.level, input.level)));
       return row;
     },
@@ -140,10 +147,12 @@ export function createGameRepository(db: Database) {
 
     /** Records the first paint reported by the client; later calls keep the original start. */
     async markShown(roundId: string, now: number, limitMs: number) {
-      await db
+      const updated = await db
         .update(rounds)
         .set({ shownAt: now, deadlineAt: now + limitMs })
-        .where(and(eq(rounds.id, roundId), isNull(rounds.shownAt), isNull(rounds.humanStatus)));
+        .where(and(eq(rounds.id, roundId), isNull(rounds.shownAt), isNull(rounds.humanStatus)))
+        .returning();
+      if (updated.length === 1) return updated[0];
       const [row] = await db.select().from(rounds).where(eq(rounds.id, roundId));
       return row;
     },
