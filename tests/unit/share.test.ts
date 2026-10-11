@@ -19,6 +19,8 @@ const aiExtras = {
   confidence: null,
   probabilities: null,
   modelElapsedMs: null,
+  errorCode: null,
+  errorDetail: null,
 } as const;
 
 const base: RoundReveal = {
@@ -37,6 +39,8 @@ const base: RoundReveal = {
     confidence: 0.88,
     probabilities: { r5c7: 0.71, r1c1: 0.18 },
     modelElapsedMs: 2400,
+    errorCode: null,
+    errorDetail: null,
   },
   winner: "human",
   fasterThanAi: true,
@@ -49,7 +53,10 @@ test("reveal copy covers every outcome with the allowed titles", () => {
     detail: "双方正确 · AI 快了 0.58 秒",
   });
   expect(describeReveal({ ...base, human: { status: "timeout", choice: null, elapsedMs: 7000 }, winner: "ai" })).toMatchObject({ title: "AI 赢了", detail: "你超时了 · 失去 1 条命" });
-  expect(describeReveal({ ...base, ai: { status: "error", correct: null, elapsedMs: null, refused: false, ...aiExtras }, winner: "human" })).toMatchObject({ title: "AI 掉线", symbol: "—" });
+  expect(describeReveal({ ...base, ai: { status: "error", correct: null, elapsedMs: null, refused: false, ...aiExtras, errorCode: "invalid_response" }, winner: "human" })).toMatchObject({
+    title: "AI 掉线 · invalid_response",
+    symbol: "—",
+  });
   expect(describeReveal({ ...base, ai: { status: "running", correct: null, elapsedMs: null, refused: false, ...aiExtras }, winner: "pending" }).title).toBe("AI 仍在判断");
   expect(
     describeReveal({ ...base, human: { status: "incorrect", choice: "r1c1", elapsedMs: 1000 }, ai: { status: "complete", correct: false, elapsedMs: 900, refused: false, ...aiExtras }, winner: "none" }).title,

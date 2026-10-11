@@ -1,4 +1,5 @@
 import { buildOddCellInstructions, type DecisionErrorCode, type DecisionInput, gridSizeFromChoices } from "../../../src/server/decisions/contracts";
+import { formatOpenAiErrorDetail, sanitizeOpenAiSnippet } from "./openai-detail";
 
 export interface OpenAiConfig {
   apiKey: string;
@@ -9,7 +10,7 @@ export interface OpenAiConfig {
 
 export type OpenAiOutcome =
   | { ok: true; choice: string; confidence: number; probabilities: Record<string, number>; modelElapsedMs: number }
-  | { ok: false; errorCode: DecisionErrorCode; modelElapsedMs: number };
+  | { ok: false; errorCode: DecisionErrorCode; modelElapsedMs: number; detail: string | null };
 
 export function buildDecisionBody(input: DecisionInput, model: string) {
   const gridSize = gridSizeFromChoices(input.choices);
@@ -38,12 +39,23 @@ interface ChoiceAnswer {
   probabilities: Array<{ value: unknown; probability: unknown }>;
 }
 
+function httpErrorCode(status: number): DecisionErrorCode {
+  if (status === 429) return "rate_limited";
+  if (status >= 500) return "upstream_error";
+  return "invalid_response";
+}
+
 /** Calls POST /v1/decisions exactly once. Requests that may have reached OpenAI are never retried. */
 export async function requestOddCell(
   input: DecisionInput,
   config: OpenAiConfig,
-  deps: { fetchImpl: typeof fetch; now: () => number },
+  deps: {
+    fetchImpl: typeof fetch;
+    now: () => number;
+    log?: (entry: Record<string, string | number | null>) => void;
+  },
 ): Promise<OpenAiOutcome> {
+  const log = deps.log ?? (() => undefined);
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), config.timeoutMs);
   const startedAt = deps.now();
@@ -58,29 +70,70 @@ export async function requestOddCell(
         signal: controller.signal,
       });
     } catch {
-      return { ok: false, errorCode: controller.signal.aborted ? "upstream_timeout" : "network_error", modelElapsedMs: elapsed() };
+      const errorCode = controller.signal.aborted ? "upstream_timeout" : "network_error";
+      log({ kind: "openai_fetch_failed", errorCode, modelElapsedMs: elapsed() });
+      return { ok: false, errorCode, modelElapsedMs: elapsed(), detail: errorCode === "upstream_timeout" ? "fetch aborted (timeout)" : "fetch failed" };
     }
-    if (response.status === 429) return { ok: false, errorCode: "rate_limited", modelElapsedMs: elapsed() };
-    if (!response.ok) return { ok: false, errorCode: response.status >= 500 ? "upstream_error" : "invalid_response", modelElapsedMs: elapsed() };
+
+    const rawBody = await response.text();
+    const snippet = sanitizeOpenAiSnippet(rawBody);
+
+    if (response.status === 429) {
+      log({ kind: "openai_http_error", httpStatus: 429, errorCode: "rate_limited", bodyPreview: snippet || null });
+      return { ok: false, errorCode: "rate_limited", modelElapsedMs: elapsed(), detail: formatOpenAiErrorDetail(429, snippet || null) };
+    }
+    if (!response.ok) {
+      const errorCode = httpErrorCode(response.status);
+      const detail = formatOpenAiErrorDetail(response.status, snippet || null);
+      log({ kind: "openai_http_error", httpStatus: response.status, errorCode, bodyPreview: snippet || null, modelElapsedMs: elapsed() });
+      return { ok: false, errorCode, modelElapsedMs: elapsed(), detail };
+    }
 
     let body: { answers?: unknown };
     try {
-      body = (await response.json()) as { answers?: unknown };
+      body = JSON.parse(rawBody) as { answers?: unknown };
     } catch {
-      return { ok: false, errorCode: controller.signal.aborted ? "upstream_timeout" : "invalid_response", modelElapsedMs: elapsed() };
+      log({ kind: "openai_parse_error", httpStatus: response.status, bodyPreview: snippet || null });
+      return {
+        ok: false,
+        errorCode: "invalid_response",
+        modelElapsedMs: elapsed(),
+        detail: formatOpenAiErrorDetail(response.status, snippet || null, "non-JSON body"),
+      };
     }
     const modelElapsedMs = elapsed();
     const answers = Array.isArray(body.answers) ? body.answers : [];
     const answer = answers.find((item) => item && typeof item === "object" && ((item as { name?: unknown }).name === "odd_cell" || answers.length === 1)) as
       | { type?: unknown }
       | undefined;
-    if (!answer) return { ok: false, errorCode: "invalid_response", modelElapsedMs };
-    if (answer.type === "refusal") return { ok: false, errorCode: "refused", modelElapsedMs };
-    if (answer.type !== "choice") return { ok: false, errorCode: "invalid_response", modelElapsedMs };
+    if (!answer) {
+      log({ kind: "openai_shape_error", httpStatus: response.status, errorCode: "invalid_response", bodyPreview: snippet || null });
+      return {
+        ok: false,
+        errorCode: "invalid_response",
+        modelElapsedMs,
+        detail: formatOpenAiErrorDetail(response.status, snippet || null, "missing odd_cell answer"),
+      };
+    }
+    if (answer.type === "refusal") return { ok: false, errorCode: "refused", modelElapsedMs, detail: null };
+    if (answer.type !== "choice") {
+      log({ kind: "openai_shape_error", httpStatus: response.status, errorCode: "invalid_response", answerType: String(answer.type) });
+      return {
+        ok: false,
+        errorCode: "invalid_response",
+        modelElapsedMs,
+        detail: formatOpenAiErrorDetail(response.status, null, `unexpected answer type ${String(answer.type)}`),
+      };
+    }
 
     const choiceAnswer = answer as ChoiceAnswer;
     if (typeof choiceAnswer.choice !== "string" || !input.choices.includes(choiceAnswer.choice)) {
-      return { ok: false, errorCode: "invalid_choice", modelElapsedMs };
+      return {
+        ok: false,
+        errorCode: "invalid_choice",
+        modelElapsedMs,
+        detail: formatOpenAiErrorDetail(response.status, null, "choice outside candidate set"),
+      };
     }
     const confidence = typeof choiceAnswer.confidence === "number" ? Math.min(1, Math.max(0, choiceAnswer.confidence)) : 0;
     const probabilities: Record<string, number> = {};

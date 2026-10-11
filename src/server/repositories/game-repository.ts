@@ -18,6 +18,7 @@ export interface AiAnswerInput {
   confidence: number | null;
   probabilities: Record<string, number>;
   errorCode: string | null;
+  errorDetail: string | null;
   requestId: string | null;
 }
 
@@ -180,6 +181,7 @@ export function createGameRepository(db: Database) {
           aiConfidence: answer.confidence,
           aiProbabilities: JSON.stringify(answer.probabilities),
           aiErrorCode: answer.errorCode,
+          aiErrorDetail: answer.errorDetail,
           aiRequestId: answer.requestId,
         })
         .where(and(eq(rounds.id, roundId), eq(rounds.aiStatus, "running")))

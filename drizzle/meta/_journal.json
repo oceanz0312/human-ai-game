@@ -15,6 +15,13 @@
       "when": 1791735027123,
       "tag": "0001_nice_moondragon",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1792000000000,
+      "tag": "0002_ai_error_detail",
+      "breakpoints": true
     }
   ]
 }

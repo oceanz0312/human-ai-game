@@ -48,6 +48,8 @@ export const workerDecisionResponseSchema = z.object({
   probabilities: z.record(z.string(), z.number()),
   modelElapsedMs: z.number().int().min(0),
   errorCode: z.enum(DECISION_ERROR_CODES).nullable(),
+  /** Sanitized OpenAI HTTP context for operator debugging (no secrets). */
+  detail: z.string().max(512).nullable().optional(),
   requestId: z.string().max(80),
 });
 

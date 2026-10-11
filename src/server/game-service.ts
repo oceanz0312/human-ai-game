@@ -108,6 +108,8 @@ export function createGameService(deps: GameServiceDeps) {
       confidence: complete ? round.aiConfidence : null,
       probabilities: complete ? parseStoredProbabilities(round.aiProbabilities) : null,
       modelElapsedMs: complete ? round.aiModelElapsedMs : null,
+      errorCode: round.aiStatus === "error" ? round.aiErrorCode : null,
+      errorDetail: round.aiStatus === "error" ? round.aiErrorDetail : null,
     };
   }
 
@@ -140,6 +142,8 @@ export function createGameService(deps: GameServiceDeps) {
             confidence: null,
             probabilities: null,
             modelElapsedMs: null,
+            errorCode: null,
+            errorDetail: null,
           },
       winner: human ? winner : "pending",
       fasterThanAi: round.fasterThanAi,
@@ -169,6 +173,7 @@ export function createGameService(deps: GameServiceDeps) {
         confidence: complete ? answer.confidence : null,
         probabilities: complete ? answer.probabilities : {},
         errorCode: complete ? null : (answer.errorCode ?? "invalid_choice"),
+        errorDetail: complete ? null : ("detail" in answer ? (answer.detail ?? null) : null),
         requestId: answer.requestId,
       },
       deps.now(),

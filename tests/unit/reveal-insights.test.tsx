@@ -18,6 +18,8 @@ const completeRound: RoundReveal = {
     confidence: 0.82,
     probabilities: { r2c2: 0.71, r1c1: 0.18, r3c3: 0.04 },
     modelElapsedMs: 1600,
+    errorCode: null,
+    errorDetail: null,
   },
   winner: "human",
   fasterThanAi: true,
@@ -37,7 +39,18 @@ test("a refusal shows the dedicated copy without faking progress", () => {
     <LevelReveal
       round={{
         ...completeRound,
-        ai: { status: "error", correct: null, elapsedMs: null, refused: true, choice: null, confidence: null, probabilities: null, modelElapsedMs: null },
+        ai: {
+          status: "error",
+          correct: null,
+          elapsedMs: null,
+          refused: true,
+          choice: null,
+          confidence: null,
+          probabilities: null,
+          modelElapsedMs: null,
+          errorCode: "refused",
+          errorDetail: null,
+        },
         winner: "human",
       }}
       fasterThanAiCount={0}
