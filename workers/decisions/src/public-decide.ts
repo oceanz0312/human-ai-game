@@ -6,7 +6,7 @@ import {
 } from "../../../src/server/decisions/contracts";
 import { sha256Hex, verifyDecisionTicket } from "../../../src/server/decisions/ticket";
 import { LevelImageLoadError, levelImageToDataUrl, loadLevelImageBytes } from "./load-level-image";
-import { requestOddCell } from "./openai";
+import { requestOpenAiViaGame } from "./game-openai-proxy";
 import type { TicketConsumeStore } from "./ticket-store";
 import type { WorkerEnv } from "./env";
 
@@ -172,7 +172,7 @@ export function createPublicDecideHandler(deps: PublicDecideDeps = {}) {
         return respond(409, browserBody);
       }
 
-      if (!env.OPENAI_API_KEY) {
+      if (!env.GAME || !env.DECISIONS_WORKER_SHARED_SECRET) {
         const result = failure("ai_unconfigured");
         await reportToGame(env, { roundId: payload.roundId, jti: payload.jti, result }, fetchImpl);
         const browserBody = browserDecisionResponseSchema.parse({
@@ -185,28 +185,19 @@ export function createPublicDecideHandler(deps: PublicDecideDeps = {}) {
         return respond(200, browserBody);
       }
 
-      const outcome = await requestOddCell(
-        { imageDataUrl, choices: payload.choices },
-        {
-          apiKey: env.OPENAI_API_KEY,
-          baseUrl: env.OPENAI_BASE_URL || "https://api.openai.com/v1",
-          model: env.OPENAI_DECISIONS_MODEL || "gpt-6-luna",
-          timeoutMs: Number(env.OPENAI_DECISIONS_TIMEOUT_MS) || 8000,
-        },
-        { fetchImpl, now, log: (entry) => log({ requestId, ...entry }) },
-      );
+      const workerResult =
+        (await requestOpenAiViaGame(
+          env,
+          requestId,
+          { imageDataUrl, choices: payload.choices },
+          fetchImpl,
+          (entry) => log({ requestId, ...entry }),
+        )) ??
+        failure("worker_unavailable", 0, "game OpenAI proxy unavailable");
 
-      const workerResult: WorkerDecisionResponse = outcome.ok
-        ? {
-            status: "complete",
-            choice: outcome.choice,
-            confidence: outcome.confidence,
-            probabilities: outcome.probabilities,
-            modelElapsedMs: outcome.modelElapsedMs,
-            errorCode: null,
-            requestId,
-          }
-        : failure(outcome.errorCode, outcome.modelElapsedMs, outcome.detail);
+      if (workerResult.requestId !== requestId) {
+        workerResult.requestId = requestId;
+      }
 
       const reportResponse = await reportToGame(
         env,

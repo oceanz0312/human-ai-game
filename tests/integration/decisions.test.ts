@@ -1,15 +1,17 @@
 // @vitest-environment node
 import { createCloudflareDecisionClient } from "@/server/decisions/client";
 import { createWorkerHandler } from "../../workers/decisions/src/index";
+import { createGameBindingMock } from "../worker/game-binding-mock";
 
 const SECRET = "shared-secret-for-tests-0123456789";
 const IMAGE = `data:image/png;base64,${Buffer.from("png").toString("base64")}`;
 const choices = Array.from({ length: 9 }, (_, i) => `r${Math.floor(i / 3) + 1}c${(i % 3) + 1}`);
 
 function clientAgainstWorker(openAiFetch: ReturnType<typeof vi.fn>, workerSecret = SECRET) {
-  const worker = createWorkerHandler({ fetchImpl: openAiFetch as unknown as typeof fetch, log: () => undefined });
+  const game = createGameBindingMock(new Uint8Array(0), [], openAiFetch);
+  const worker = createWorkerHandler({ fetchImpl: vi.fn() as unknown as typeof fetch, log: () => undefined });
   const fetchImpl = (async (input: RequestInfo | URL, init?: RequestInit) =>
-    worker.fetch(new Request(input, init), { OPENAI_API_KEY: "sk-test", DECISIONS_WORKER_SHARED_SECRET: workerSecret })) as typeof fetch;
+    worker.fetch(new Request(input, init), { DECISIONS_WORKER_SHARED_SECRET: workerSecret, GAME: game })) as typeof fetch;
   let tick = 0;
   return createCloudflareDecisionClient({ url: "https://worker.test", sharedSecret: SECRET, fetchImpl, now: () => (tick += 250) });
 }

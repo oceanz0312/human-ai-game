@@ -1,7 +1,7 @@
 import { decisionRequestSchema, type DecisionErrorCode, MAX_IMAGE_BYTES, type WorkerDecisionResponse } from "../../../src/server/decisions/contracts";
 import type { WorkerEnv } from "./env";
 import { createPublicDecideHandler } from "./public-decide";
-import { requestOddCell } from "./openai";
+import { requestOpenAiViaGame } from "./game-openai-proxy";
 import { createD1TicketStore, createMemoryTicketStore } from "./ticket-store";
 
 export type { WorkerEnv } from "./env";
@@ -97,28 +97,12 @@ export function createWorkerHandler(deps: HandlerDeps = {}) {
       if (!parsed.success) return respond(400, failure("invalid_request"));
       choiceCount = parsed.data.choices.length;
       if (approximateBase64Bytes(parsed.data.imageDataUrl) > MAX_IMAGE_BYTES) return respond(413, failure("payload_too_large"));
-      if (!env.OPENAI_API_KEY) return respond(200, failure("ai_unconfigured"));
+      if (!env.GAME || !env.DECISIONS_WORKER_SHARED_SECRET) return respond(200, failure("ai_unconfigured"));
 
-      const outcome = await requestOddCell(
-        parsed.data,
-        {
-          apiKey: env.OPENAI_API_KEY,
-          baseUrl: env.OPENAI_BASE_URL || "https://api.openai.com/v1",
-          model: env.OPENAI_DECISIONS_MODEL || "gpt-6-luna",
-          timeoutMs: Number(env.OPENAI_DECISIONS_TIMEOUT_MS) || 8000,
-        },
-        { fetchImpl, now, log: (entry) => log({ requestId, ...entry }) },
-      );
-      if (!outcome.ok) return respond(200, failure(outcome.errorCode, outcome.modelElapsedMs, outcome.detail));
-      return respond(200, {
-        status: "complete",
-        choice: outcome.choice,
-        confidence: outcome.confidence,
-        probabilities: outcome.probabilities,
-        modelElapsedMs: outcome.modelElapsedMs,
-        errorCode: null,
-        requestId,
-      });
+      const proxied =
+        (await requestOpenAiViaGame(env, requestId, parsed.data, fetchImpl, (entry) => log({ requestId, ...entry }) )) ??
+        failure("worker_unavailable", 0, "game OpenAI proxy unavailable");
+      return respond(200, proxied);
     },
   };
 }

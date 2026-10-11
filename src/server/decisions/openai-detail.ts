@@ -1,4 +1,4 @@
-import type { DecisionErrorCode } from "../../../src/server/decisions/contracts";
+import type { DecisionErrorCode } from "./contracts";
 
 const SECRET_PATTERNS: RegExp[] = [
   /\bsk-[A-Za-z0-9_-]{8,}\b/g,

@@ -9,8 +9,8 @@
 ## 1. 当前状态
 
 - 游戏已经部署到 Cloudflare 并可公开访问。游戏服务、AI 转发 Worker、数据库全部在 Cloudflare 上，不使用 Vercel。
-- AI 是真实对手：每关由 **浏览器** 携带一次性 ticket 调用 Decisions Worker（DevTools Network 可见 `POST /v1/decide-ticket`），Worker 调用 OpenAI Decisions API（`gpt-6-luna`），使用与玩家相同的关卡图片（按 ticket 内 SHA256 校验），不传答案，不人为延迟。
-- Worker 通过 Service Binding 写回 `POST /api/internal/ai-result`，并经同一 `GAME` binding 读取 `GET /api/internal/levels/:level/image`（**不得**用 workers.dev 公网拉 `PUBLIC_BASE_URL/levels/...`，同账号会被拦截 → 502 `level_image_unavailable`）。结算只看服务端 D1，浏览器 Worker 响应不含 AI 选的格子。
+- AI 是真实对手：每关由 **浏览器** 携带一次性 ticket 调用 Decisions Worker（DevTools Network 可见 `POST /v1/decide-ticket`）。Decisions Worker **不**直接 `fetch` OpenAI；验 ticket、经 `GAME` binding 拉图后，再经 **`POST /api/internal/openai/decide`** 让游戏服务 Worker（`placement.mode: smart`、D1 WNAM）从美国侧 egress 调用 OpenAI Decisions API（`gpt-6-luna`）。图片按 ticket 内 SHA256 校验，不传答案，不人为延迟。
+- Decisions Worker 通过 Service Binding 写回 `POST /api/internal/ai-result`，并经同一 `GAME` binding 读取 `GET /api/internal/levels/:level/image`（**不得**用 workers.dev 公网拉 `PUBLIC_BASE_URL/levels/...`，同账号会被拦截 → 502 `level_image_unavailable`）。**OpenAI API Key 仅存在于游戏服务 `human-ai`**。结算只看服务端 D1，浏览器 Worker 响应不含 AI 选的格子。
 - 线上已验证：整局 20 关跑通；手机尺寸浏览器实际游玩到结算；分享页、Open Graph 图、全服排行榜正常；浏览器可看到对 Decisions Worker 的 CORS 请求，但看不到 OpenAI Key。
 - 线上 D1 的测试数据已清空，排行榜从零开始。
 - 本地验证：lint、类型检查（游戏服务与 Worker）、89 个单元/集成/Worker 契约测试、14 个 Playwright E2E（375/390/430 三种视口）全部通过。
@@ -80,26 +80,26 @@ Decisions API 在判断不出答案时会返回 `refusal`。原实现把它和�
 | `PUBLIC_BASE_URL` | 变量 | `https://human-ai.zdychanges.workers.dev`，用于分享链接、二维码、OG 图 |
 | `DECISIONS_WORKER_SHARED_SECRET` | Secret | 与 Decisions Worker 一致 |
 | `RESULT_SIGNING_SECRET` | Secret | 签名匿名玩家 Cookie |
+| `OPENAI_BASE_URL` / `OPENAI_DECISIONS_MODEL` / `OPENAI_DECISIONS_TIMEOUT_MS` | 变量 | 根目录 `wrangler.jsonc` |
+| `OPENAI_API_KEY` | Secret | **仅游戏服务**（OpenAI Decisions 代理） |
 
 Decisions Worker（正式和预览各一套）：
 
 | 名称 | 类型 | 说明 |
 |---|---|---|
 | `DB` | D1 | 与游戏服务同一库 `human-ai`；表 `decision_ticket_uses` 做单次 ticket 消费 |
-| `GAME` | Service Binding | 指向 `human-ai`，回调 `POST /api/internal/ai-result` |
-| `PUBLIC_BASE_URL` | 变量 | 与游戏服务一致；CORS 允许来源 + Worker 拉关卡 PNG |
-| `OPENAI_BASE_URL` / `OPENAI_DECISIONS_MODEL` / `OPENAI_DECISIONS_TIMEOUT_MS` | 变量 | 默认 `https://api.openai.com/v1` / `gpt-6-luna` / `8000` |
-| `OPENAI_API_KEY` | Secret | 仅 Worker |
-| `DECISIONS_WORKER_SHARED_SECRET` | Secret | Ticket HMAC + 内部回调 Bearer（与游戏服务相同） |
-| **Placement** | `workers/decisions/wrangler.jsonc` | **`placement.mode: targeted` + `hostname: api.openai.com`**：让 `fetch` 事件在靠近 OpenAI 美国出口的 PoP 执行，避免玩家在中国等地触发时 Worker 在当地 egress → OpenAI 返回 `403 unsupported_country_region_territory`。与 D1（WNAM）对齐的备选：`region: aws:us-west-2`。 |
+| `GAME` | Service Binding | 指向 `human-ai`：拉图、`/api/internal/openai/decide`、`/api/internal/ai-result` |
+| `PUBLIC_BASE_URL` | 变量 | CORS 允许来源 |
+| `DECISIONS_WORKER_SHARED_SECRET` | Secret | Ticket HMAC + 内部 Bearer（与游戏服务相同） |
+| **Placement** | `workers/decisions/wrangler.jsonc` | 辅助：`targeted` + `region: aws:us-west-2`（**不能**单独解决 OpenAI 地区限制） |
 
-**Placement 说明（必读）**
+**OpenAI  egress 与 Placement（必读）**
 
-- 浏览器直连 `POST /v1/decide-ticket` 时，若 **未** 配置 Placement，Worker 默认在 **离玩家最近** 的边缘运行，出站 OpenAI 会带上当地 IP，非支持地区会失败（揭晓 `AI 不可用 · 地区限制` / `region_unsupported`）。
-- **`mode: smart`**（游戏服务 `human-ai` 已启用）需持续多地域流量分析，**不能** 保证首包就从美国 egress；Decisions Worker 使用 **Placement Hint（targeted hostname）** 作为确定修复。
-- Smart / Placement Hints 在 **Workers Paid** 可用；本账号已是 Paid。Dashboard：**Workers & Pages → human-ai-decisions → Settings → Placement** 可查看状态（部署 wrangler 配置后应与 `targeted` / hostname 一致）。
-- 响应头 **`cf-placement`**（beta）可区分是否被转发到远端 PoP（如 `remote-…` vs `local-…`），便于验收。
-- 参考：[Cloudflare Workers Placement](https://developers.cloudflare.com/workers/configuration/smart-placement/)
+- 玩家浏览器位置无关；OpenAI 校验的是 **发起 `fetch("api.openai.com")` 的 Worker 出站 IP**。
+- 仅给 Decisions Worker 配 `hostname: api.openai.com` 在中国入口流量下 **仍可能** `403 unsupported_country_region_territory`（生产已复现）。
+- **架构**：Decisions 验 ticket + 拉图后，经 `GAME` 调用游戏服务 **`POST /api/internal/openai/decide`**；`human-ai` 使用 `placement.mode: smart`（D1 WNAM）从美国侧 egress。
+- Decisions 上 `aws:us-west-2` 为辅助；Dashboard：**Workers → human-ai-decisions → Settings → Placement**。
+- 参考：[Workers Placement](https://developers.cloudflare.com/workers/configuration/smart-placement/)
 
 ### 3.2 密钥存放
 
@@ -148,14 +148,13 @@ set -a && . ~/.config/human-ai-game/cf.env && set +a
 ### 5.0 推荐顺序（浏览器 → Worker 流程）
 
 1. **D1 迁移**（新增 `decision_ticket_uses`）：`npm run cf:db:migrate`
-2. **Secrets**（若尚未设置或需轮换）：
-   - 生成共享密钥（游戏服务 + Decisions Worker 各写一份相同值）：`openssl rand -base64 32`
-   - 游戏服务 `human-ai`：`npx wrangler secret put DECISIONS_WORKER_SHARED_SECRET`、`npx wrangler secret put RESULT_SIGNING_SECRET`
-   - Decisions Worker：`npx wrangler secret put OPENAI_API_KEY --config workers/decisions/wrangler.jsonc`（预览加 `--env preview`）、`npx wrangler secret put DECISIONS_WORKER_SHARED_SECRET --config workers/decisions/wrangler.jsonc`
-3. **确认 wrangler 变量**：根目录 `DECISIONS_WORKER_URL`、`PUBLIC_BASE_URL`；`workers/decisions/wrangler.jsonc` 中 `PUBLIC_BASE_URL`、`GAME`/`DB` binding（见 3.1 节）。
-4. **先部署游戏服务**（含 `GET /api/internal/levels/:level/image`）：`npm run cf:deploy`
-5. **再部署 Decisions Worker**（`GAME` binding 拉图 + **Placement → api.openai.com**）：`npm run worker:deploy:preview` 或 `npm run worker:deploy`
-6. **（可选）部署游戏服务**（若本版本含揭晓文案/UI 变更）：`npm run cf:deploy`
+2. **Secrets**（若尚未设置；**不要**仅为迁移而轮换 Key）：
+   - 共享密钥（游戏 + Decisions 相同）：`openssl rand -base64 32`
+   - 游戏服务 `human-ai`：`npx wrangler secret put OPENAI_API_KEY`、`npx wrangler secret put DECISIONS_WORKER_SHARED_SECRET`、`npx wrangler secret put RESULT_SIGNING_SECRET`
+   - Decisions Worker：`npx wrangler secret put DECISIONS_WORKER_SHARED_SECRET --config workers/decisions/wrangler.jsonc`（预览加 `--env preview`）。**勿**再写入 `OPENAI_API_KEY`（可保留旧 secret 于 Cloudflare 但不使用）。
+3. **确认 wrangler 变量**：根目录含 `OPENAI_*` 与 `DECISIONS_WORKER_URL`；Decisions 仅需 `PUBLIC_BASE_URL` + `GAME`/`DB`（见 3.1 节）。
+4. **先部署游戏服务**（含 `GET /api/internal/levels/:level/image` 与 **`POST /api/internal/openai/decide`**）：`npm run cf:deploy`
+5. **再部署 Decisions Worker**（ticket 路径经 GAME 代理 OpenAI）：`npm run worker:deploy:preview` 或 `npm run worker:deploy`
 
 本地/E2E 仍用 `DECISIONS_MODE=fake`，不依赖 Worker 公网可达。
 
@@ -218,15 +217,14 @@ npx wrangler tail human-ai --format pretty     # 实时日志
 ### 6.1 OpenAI Key
 
 1. 在 OpenAI 控制台创建新 Key，确认账号有 Decisions API 与 `gpt-6-luna` 权限。
-2. 写入两个环境的 Decisions Worker：
+2. 写入游戏服务（OpenAI Key 唯一存放处）：
 
    ```bash
-   npx wrangler secret put OPENAI_API_KEY --config workers/decisions/wrangler.jsonc
-   npx wrangler secret put OPENAI_API_KEY --config workers/decisions/wrangler.jsonc --env preview
+   npx wrangler secret put OPENAI_API_KEY
    ```
 
 3. 线上玩一关确认 AI 正常作答后，在 OpenAI 控制台删除旧 Key。
-4. 同步更新本地 `workers/decisions/.dev.vars`。
+4. 本地：`.env.local` 或 Worker 预览用 `OPENAI_API_KEY`；Decisions 本地仅需 `DECISIONS_WORKER_SHARED_SECRET`。
 
 ### 6.2 Cloudflare API Token
 
@@ -277,7 +275,8 @@ npx wrangler secret put DECISIONS_WORKER_SHARED_SECRET
 | `src/server/game-service.ts` | 会话、开局、AI 调度、结算 |
 | `src/server/db/client.ts`、`src/server/db/d1.ts` | LibSQL 与 D1 的 Drizzle 实例 |
 | `src/server/decisions/` | Worker 线协议、服务端客户端、测试用假客户端 |
-| `workers/decisions/src/` | Decisions Worker（唯一持有 OpenAI Key） |
+| `workers/decisions/src/` | Decisions Worker（ticket/CORS；OpenAI 经 GAME 代理） |
+| `src/app/api/internal/openai/decide/route.ts` | 游戏服务内 OpenAI Decisions 代理（美国 egress） |
 | `src/game/reveal-copy.ts` | 揭晓页文案（含拒答与掉线区分） |
 | `wrangler.jsonc`、`open-next.config.ts` | 游戏服务的 Cloudflare 部署配置 |
 | `patches/` | OpenNext 补丁 |

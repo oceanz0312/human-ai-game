@@ -83,6 +83,13 @@ export const publicDecideRequestSchema = z.object({
 
 export type PublicDecideRequest = z.infer<typeof publicDecideRequestSchema>;
 
+/** Service-binding request: Decisions Worker → game service OpenAI proxy (Bearer shared secret). */
+export const internalOpenAiDecideRequestSchema = decisionRequestSchema.extend({
+  requestId: z.string().max(80),
+});
+
+export type InternalOpenAiDecideRequest = z.infer<typeof internalOpenAiDecideRequestSchema>;
+
 export const workerAiResultReportSchema = z.object({
   roundId: z.string().min(8),
   jti: z.string().uuid(),

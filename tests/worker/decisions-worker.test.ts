@@ -1,10 +1,11 @@
 // @vitest-environment node
 import type { WorkerDecisionResponse } from "@/server/decisions/contracts";
 import { createWorkerHandler, type WorkerEnv } from "../../workers/decisions/src/index";
+import { createGameBindingMock } from "./game-binding-mock";
 
 const SECRET = "test-shared-secret-with-enough-entropy";
 const OPENAI_KEY = "sk-test-openai-key-should-never-leak";
-const env: WorkerEnv = { OPENAI_API_KEY: OPENAI_KEY, DECISIONS_WORKER_SHARED_SECRET: SECRET, OPENAI_DECISIONS_TIMEOUT_MS: "200" };
+const env = (game?: Fetcher): WorkerEnv => ({ DECISIONS_WORKER_SHARED_SECRET: SECRET, GAME: game });
 const IMAGE = `data:image/png;base64,${Buffer.from("fake-png-bytes").toString("base64")}`;
 const nine = Array.from({ length: 9 }, (_, i) => `r${Math.floor(i / 3) + 1}c${(i % 3) + 1}`);
 const eightyOne = Array.from({ length: 81 }, (_, i) => `r${Math.floor(i / 9) + 1}c${(i % 9) + 1}`);
@@ -28,17 +29,24 @@ const choiceAnswer = (choice: string, confidence = 0.91) => ({
   answers: [{ type: "choice", name: "odd_cell", choice, confidence, probabilities: [{ value: choice, probability: confidence }, { value: "r1c1", probability: 0.05 }] }],
 });
 
-function setup(fetchImpl: ReturnType<typeof vi.fn>) {
+function setup(openAiFetch: ReturnType<typeof vi.fn>) {
   const logs: string[] = [];
+  const gameReports: unknown[] = [];
+  const game = createGameBindingMock(new Uint8Array(Buffer.from("fake-png-bytes")), gameReports, openAiFetch);
   let tick = 1000;
-  const handler = createWorkerHandler({ fetchImpl: fetchImpl as unknown as typeof fetch, now: () => (tick += 7), log: (entry) => logs.push(JSON.stringify(entry)), randomId: () => "req-1" });
-  return { handler, logs };
+  const handler = createWorkerHandler({
+    fetchImpl: vi.fn() as unknown as typeof fetch,
+    now: () => (tick += 7),
+    log: (entry) => logs.push(JSON.stringify(entry)),
+    randomId: () => "req-1",
+  });
+  return { handler, logs, game };
 }
 
 test("forwards a validated 9-cell puzzle without exposing secrets", async () => {
   const openAiFetch = openAiReturning(choiceAnswer("r2c2"));
-  const { handler, logs } = setup(openAiFetch);
-  const response = await handler.fetch(request({ imageDataUrl: IMAGE, choices: nine }), env);
+  const { handler, logs, game } = setup(openAiFetch);
+  const response = await handler.fetch(request({ imageDataUrl: IMAGE, choices: nine }), env(game));
   expect(response.status).toBe(200);
   expect(response.headers.get("Cache-Control")).toBe("no-store");
   expect(response.headers.get("X-Content-Type-Options")).toBe("nosniff");
@@ -49,31 +57,25 @@ test("forwards a validated 9-cell puzzle without exposing secrets", async () => 
   expect(body.modelElapsedMs).toBeGreaterThan(0);
   expect(JSON.stringify(body)).not.toContain(OPENAI_KEY);
 
-  const [url, init] = openAiFetch.mock.calls[0];
-  expect(url).toBe("https://api.openai.com/v1/decisions");
-  expect(init.headers.Authorization).toBe(`Bearer ${OPENAI_KEY}`);
-  const sent = JSON.parse(init.body);
-  expect(sent.model).toBe("gpt-6-luna");
-  expect(sent.input).toEqual([{ type: "message", role: "user", content: [{ type: "input_image", image_url: IMAGE, detail: "high" }] }]);
-  expect(sent.questions).toHaveLength(1);
-  expect(sent.questions[0]).toMatchObject({ type: "choice", name: "odd_cell" });
-  expect(sent.questions[0].choices).toHaveLength(9);
-  expect(sent.questions[0].choices[4]).toEqual({ value: "r2c2", description: "row 2, column 2" });
-  expect(JSON.stringify(sent)).not.toMatch(/correct/i);
+  expect(vi.mocked(game.fetch).mock.calls.some((call) => (call[0] as Request).url.includes("/api/internal/openai/decide"))).toBe(true);
+  expect(openAiFetch).toHaveBeenCalledWith("https://api.openai.com/v1/decisions", expect.anything());
 
   const logText = logs.join("\n");
   expect(logText).not.toContain(SECRET);
   expect(logText).not.toContain(OPENAI_KEY);
   expect(logText).not.toContain("base64");
-  expect(JSON.parse(logs[0])).toMatchObject({ requestId: "req-1", status: 200, choiceCount: 9, errorCode: null });
+  const entries = logs.map((line) => JSON.parse(line) as Record<string, unknown>);
+  expect(entries.find((entry) => entry.choiceCount === 9)).toMatchObject({ requestId: "req-1", status: 200, errorCode: null });
+  expect(entries.some((entry) => entry.kind === "game_openai_proxy_ok")).toBe(true);
 });
 
 test("accepts 81 candidates for 9×9 levels", async () => {
   const openAiFetch = openAiReturning(choiceAnswer("r5c7"));
-  const { handler } = setup(openAiFetch);
-  const response = await handler.fetch(request({ imageDataUrl: IMAGE, choices: eightyOne }), env);
+  const { handler, game } = setup(openAiFetch);
+  const response = await handler.fetch(request({ imageDataUrl: IMAGE, choices: eightyOne }), env(game));
   expect(((await response.json()) as WorkerDecisionResponse).choice).toBe("r5c7");
-  expect(JSON.parse(String(openAiFetch.mock.calls[0][1]?.body)).questions[0].choices).toHaveLength(81);
+  expect(vi.mocked(game.fetch).mock.calls.some((call) => (call[0] as Request).url.includes("/api/internal/openai/decide"))).toBe(true);
+  expect(openAiFetch).toHaveBeenCalledTimes(1);
 });
 
 test.each([
@@ -91,7 +93,7 @@ test.each([
 ])("rejects %s without calling OpenAI", async (_name, req, status) => {
   const openAiFetch = openAiReturning(choiceAnswer("r1c1"));
   const { handler } = setup(openAiFetch);
-  const response = await handler.fetch(req, env);
+  const response = await handler.fetch(req, env(undefined));
   expect(response.status).toBe(status);
   expect(openAiFetch).not.toHaveBeenCalled();
 });
@@ -104,8 +106,8 @@ test.each([
   ["malformed body", vi.fn().mockResolvedValue(new Response("<html>", { status: 200 })), "invalid_response"],
   ["network failure", vi.fn().mockRejectedValue(new TypeError("fetch failed")), "network_error"],
 ])("maps %s to a stable error with sanitized detail", async (_name, openAiFetch, errorCode) => {
-  const { handler, logs } = setup(openAiFetch);
-  const response = await handler.fetch(request({ imageDataUrl: IMAGE, choices: nine }), env);
+  const { handler, logs, game } = setup(openAiFetch);
+  const response = await handler.fetch(request({ imageDataUrl: IMAGE, choices: nine }), env(game));
   expect(response.status).toBe(200);
   const body = (await response.json()) as WorkerDecisionResponse;
   expect(body).toMatchObject({ status: "error", choice: null, errorCode });
@@ -113,20 +115,14 @@ test.each([
     expect(body.detail).toBeTruthy();
   }
   expect(JSON.stringify(body)).not.toContain(OPENAI_KEY);
-  if (errorCode === "network_error") expect(logs.some((line) => line.includes("openai_fetch_failed"))).toBe(true);
-  else if (errorCode !== "refused" && errorCode !== "invalid_choice") expect(logs.some((line) => line.includes("openai_"))).toBe(true);
+  expect(logs.some((line) => line.includes("game_openai_proxy"))).toBe(true);
   expect(openAiFetch).toHaveBeenCalledTimes(1);
 });
 
-test("times out a slow OpenAI call once without retrying", async () => {
-  const openAiFetch = vi.fn().mockImplementation(
-    (_url: string, init: RequestInit) =>
-      new Promise((_resolve, reject) => {
-        init.signal?.addEventListener("abort", () => reject(new DOMException("aborted", "AbortError")));
-      }),
-  );
-  const handler = createWorkerHandler({ fetchImpl: openAiFetch as unknown as typeof fetch, log: () => undefined });
-  const response = await handler.fetch(request({ imageDataUrl: IMAGE, choices: nine }), { ...env, OPENAI_DECISIONS_TIMEOUT_MS: "50" });
-  expect(((await response.json()) as WorkerDecisionResponse).errorCode).toBe("upstream_timeout");
-  expect(openAiFetch).toHaveBeenCalledTimes(1);
+test("returns ai_unconfigured when GAME binding is missing", async () => {
+  const openAiFetch = openAiReturning(choiceAnswer("r1c1"));
+  const { handler } = setup(openAiFetch);
+  const response = await handler.fetch(request({ imageDataUrl: IMAGE, choices: nine }), env(undefined));
+  expect(((await response.json()) as WorkerDecisionResponse).errorCode).toBe("ai_unconfigured");
+  expect(openAiFetch).not.toHaveBeenCalled();
 });

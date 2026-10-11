@@ -3,9 +3,9 @@ import { signDecisionTicket } from "@/server/decisions/ticket";
 import { createWorkerHandler } from "../../workers/decisions/src/index";
 import { createMemoryTicketStore } from "../../workers/decisions/src/ticket-store";
 import type { WorkerEnv } from "../../workers/decisions/src/env";
+import { createGameBindingMock } from "./game-binding-mock";
 
 const SECRET = "public-ticket-secret-with-enough-entropy-123456789";
-const OPENAI_KEY = "sk-test-openai-key-should-never-leak";
 const IMAGE_BYTES = Buffer.from("level-image-bytes");
 const IMAGE_SHA256 = "5c4fbade79b44684d4d651782051ce05c092d7c106d00c32e6c1312319ce3851";
 const FIXED_NOW = 1_500_000;
@@ -27,40 +27,21 @@ async function makeTicket(overrides: Partial<{ exp: number; imageSha256: string;
   );
 }
 
-function mockGameFetcher(imageBytes: Uint8Array, gameReports: unknown[]) {
-  return {
-    fetch: vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
-      const url = input instanceof Request ? input.url : String(input);
-      if (url.includes("/api/internal/levels/")) {
-        return new Response(Buffer.from(imageBytes), { status: 200, headers: { "Content-Type": "image/png" } });
-      }
-      if (url.includes("/api/internal/ai-result")) {
-        const body = input instanceof Request ? await input.clone().text() : String(init?.body ?? "");
-        gameReports.push(JSON.parse(body));
-        return new Response(JSON.stringify({ accepted: true }), { status: 200 });
-      }
-      return new Response("missing", { status: 404 });
-    }),
-  } as unknown as Fetcher;
-}
-
 function env(game?: Fetcher): WorkerEnv {
   return {
-    OPENAI_API_KEY: OPENAI_KEY,
     DECISIONS_WORKER_SHARED_SECRET: SECRET,
     PUBLIC_BASE_URL: "https://game.test",
-    OPENAI_DECISIONS_TIMEOUT_MS: "200",
     GAME: game,
   };
 }
 
 test("accepts a valid ticket via GAME binding without public PNG fetch", async () => {
   const gameReports: unknown[] = [];
-  const game = mockGameFetcher(IMAGE_BYTES, gameReports);
   const openAiFetch = vi.fn().mockResolvedValue(
     new Response(JSON.stringify({ answers: [{ type: "choice", name: "odd_cell", choice: "r2c2", confidence: 0.8, probabilities: [{ value: "r2c2", probability: 0.8 }] }] })),
   );
-  const fetchImpl = vi.fn(openAiFetch) as unknown as typeof fetch;
+  const game = createGameBindingMock(IMAGE_BYTES, gameReports, openAiFetch);
+  const fetchImpl = vi.fn() as unknown as typeof fetch;
   const handler = createWorkerHandler({ fetchImpl, ticketStore: createMemoryTicketStore(), randomId: () => "req-public-1", now: () => FIXED_NOW });
   const ticket = await makeTicket();
   const response = await handler.fetch(
@@ -76,7 +57,9 @@ test("accepts a valid ticket via GAME binding without public PNG fetch", async (
   expect(gameFetch).toHaveBeenCalled();
   const gameUrl = (gameFetch.mock.calls[0][0] as Request).url;
   expect(gameUrl).toContain("/api/internal/levels/1/image");
-  expect(fetchImpl).not.toHaveBeenCalledWith(expect.stringContaining("/levels/v1/01.png"), expect.anything());
+  expect(gameFetch.mock.calls.some((call) => (call[0] as Request).url.includes("/api/internal/openai/decide"))).toBe(true);
+  expect(openAiFetch).toHaveBeenCalledWith("https://api.openai.com/v1/decisions", expect.anything());
+  expect(fetchImpl).not.toHaveBeenCalled();
   const body = (await response.json()) as { status: string; requestId: string; errorCode: string | null; choice?: string };
   expect(body).toMatchObject({ status: "complete", requestId: "req-public-1", errorCode: null });
   expect(body.choice).toBeUndefined();
@@ -85,12 +68,12 @@ test("accepts a valid ticket via GAME binding without public PNG fetch", async (
 
 test("replayed still-valid ticket returns 409 ticket_replayed (not 401)", async () => {
   const gameReports: unknown[] = [];
-  const game = mockGameFetcher(IMAGE_BYTES, gameReports);
   const openAiFetch = vi.fn().mockResolvedValue(
     new Response(JSON.stringify({ answers: [{ type: "choice", name: "odd_cell", choice: "r1c1", confidence: 1, probabilities: [] }] })),
   );
+  const game = createGameBindingMock(IMAGE_BYTES, gameReports, openAiFetch);
   const handler = createWorkerHandler({
-    fetchImpl: openAiFetch as unknown as typeof fetch,
+    fetchImpl: vi.fn() as unknown as typeof fetch,
     ticketStore: createMemoryTicketStore(),
     now: () => FIXED_NOW,
   });

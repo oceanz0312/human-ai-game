@@ -20,7 +20,10 @@
   "vars": {
     "DECISIONS_MODE": "worker",
     "DECISIONS_WORKER_URL": "https://human-ai-decisions.zdychanges.workers.dev",
-    "PUBLIC_BASE_URL": "https://human-ai.zdychanges.workers.dev"
+    "PUBLIC_BASE_URL": "https://human-ai.zdychanges.workers.dev",
+    "OPENAI_BASE_URL": "https://api.openai.com/v1",
+    "OPENAI_DECISIONS_MODEL": "gpt-6-luna",
+    "OPENAI_DECISIONS_TIMEOUT_MS": "8000"
   }
-  // Secrets: wrangler secret put DECISIONS_WORKER_SHARED_SECRET / RESULT_SIGNING_SECRET (never commit values here).
+  // Secrets: wrangler secret put DECISIONS_WORKER_SHARED_SECRET / RESULT_SIGNING_SECRET / OPENAI_API_KEY (never commit values here).
 }
