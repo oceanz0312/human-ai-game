@@ -122,6 +122,7 @@ export function createPublicDecideHandler(deps: PublicDecideDeps = {}) {
       const payload = verified.payload;
 
       let imageDataUrl: string;
+      let imageLoadMs = 0;
       try {
         const imageStart = now();
         const bytes = await loadLevelImageBytes(env, payload.level, fetchImpl);
@@ -139,8 +140,9 @@ export function createPublicDecideHandler(deps: PublicDecideDeps = {}) {
           });
           return respond(400, browserBody);
         }
+        imageLoadMs = Math.max(0, now() - imageStart);
         imageDataUrl = levelImageToDataUrl(bytes);
-        log({ requestId, kind: "level_image_loaded", level: payload.level, elapsedMs: Math.max(0, now() - imageStart), via: env.GAME ? "game_binding" : "public_fallback" });
+        log({ requestId, kind: "level_image_loaded", level: payload.level, elapsedMs: imageLoadMs, via: env.GAME ? "game_binding" : "public_fallback" });
       } catch (error) {
         const httpStatus = error instanceof LevelImageLoadError ? error.httpStatus : null;
         const detail = error instanceof Error ? error.message : "unknown";
@@ -218,6 +220,7 @@ export function createPublicDecideHandler(deps: PublicDecideDeps = {}) {
         status: workerResult.status,
         requestId,
         modelElapsedMs: workerResult.modelElapsedMs,
+        imageLoadMs,
         errorCode: workerResult.errorCode,
         receivedAt: now(),
       });

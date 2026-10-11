@@ -4,7 +4,9 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PublicLevel, RoundReveal, SessionSnapshot } from "@/game/contracts";
 import { PUBLIC_LEVELS_V1 } from "@/levels/public-catalog.generated";
+import { snapshotAiActivity, type AiActivitySnapshot } from "@/game/ai-activity";
 import { dispatchRoundAi, type AiNetworkProgress } from "@/lib/ai-dispatch";
+import { AiActivityPanel } from "./AiActivityPanel";
 import { api, ApiError, haptic, track, withRetry } from "@/lib/api-client";
 import { countdown } from "@/lib/format";
 import { GameBoard } from "./GameBoard";
@@ -47,20 +49,6 @@ export function preloadImage(url: string): Promise<void> {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-function formatAiTime(ms: number | null) {
-  if (ms === null) return null;
-  return new Date(ms).toLocaleTimeString(undefined, { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-}
-
-function describeAiProgress(progress: AiNetworkProgress | null, submitting: boolean) {
-  if (submitting) return { main: "答案已锁定", hint: "正在结算" };
-  if (!progress?.ticketIssuedAt) return { main: "AI 正在寻找", hint: "点击不同项" };
-  if (!progress.requestSentAt) return { main: "已发放凭证", hint: "正在连接 AI" };
-  if (!progress.responseReceivedAt) return { main: "已请求 AI", hint: "等待响应" };
-  const stamp = formatAiTime(progress.responseReceivedAt);
-  return { main: stamp ? `AI 已响应 · ${stamp}` : "AI 已响应", hint: progress.errorCode ? "AI 侧异常" : "等待你的答案" };
-}
-
 export function GameScreen({ sessionId }: { sessionId: string }) {
   const router = useRouter();
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
@@ -72,6 +60,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
   const [remainingMs, setRemainingMs] = useState<number | null>(null);
   const [reveal, setReveal] = useState<RoundReveal | null>(null);
   const [aiProgress, setAiProgress] = useState<AiNetworkProgress | null>(null);
+  const [aiActivitySnapshot, setAiActivitySnapshot] = useState<AiActivitySnapshot | null>(null);
   const [locked, setLocked] = useState(false);
   const [loadEpoch, setLoadEpoch] = useState(0);
   const [slowEpoch, setSlowEpoch] = useState(-1);
@@ -86,6 +75,13 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
   const livesRef = useRef<number | null>(null);
   const bootRef = useRef<() => Promise<void>>(async () => undefined);
   const advancingRef = useRef(false);
+  const aiProgressRef = useRef<AiNetworkProgress | null>(null);
+
+  const syncAiActivity = useCallback((progress: AiNetworkProgress | null, submitting = false) => {
+    aiProgressRef.current = progress;
+    setAiProgress(progress);
+    setAiActivitySnapshot(snapshotAiActivity(progress, submitting));
+  }, []);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -122,6 +118,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
     const submission = pendingSubmitRef.current;
     if (!roundId || !submission) return;
     setPhase({ kind: "submitting" });
+    syncAiActivity(aiProgressRef.current, true);
     try {
       await withRetry(async () => {
         if (beginRef.current) await beginRef.current.catch(() => undefined);
@@ -141,7 +138,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
     } catch {
       if (mountedRef.current) setPhase({ kind: "error", message: "网络不稳定，答案已锁定，请重试提交。", action: "resubmit" });
     }
-  }, [sessionId, showReveal]);
+  }, [sessionId, showReveal, syncAiActivity]);
 
   const lockAnswer = useCallback(
     (choice: string | null) => {
@@ -166,6 +163,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
     setPainted(false);
     setRemainingMs(null);
     setAiProgress(null);
+    setAiActivitySnapshot(null);
     setLocked(false);
     setLoadEpoch((value) => value + 1);
     lockedRef.current = false;
@@ -253,10 +251,22 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
     beginRef.current = withRetry(async () => {
       const begun = await api.beginRound(roundId);
       if (begun.ai) {
-        setAiProgress({ ticketIssuedAt: begun.ai.mode === "worker" ? begun.ai.issuedAt : Date.now(), requestSentAt: null, responseReceivedAt: null, requestId: null, errorCode: null });
+        const ticketIssuedAt = begun.ai.mode === "worker" ? begun.ai.issuedAt : Date.now();
+        syncAiActivity({
+          ticketIssuedAt,
+          requestSentAt: null,
+          responseReceivedAt: null,
+          requestId: null,
+          errorCode: null,
+          modelElapsedMs: null,
+          totalElapsedMs: null,
+          imageLoadMs: null,
+        });
         try {
-          const outcome = await dispatchRoundAi(begun.ai);
-          setAiProgress(outcome.progress);
+          const outcome = await dispatchRoundAi(begun.ai, {
+            onProgress: (progress) => syncAiActivity(progress),
+          });
+          syncAiActivity(outcome.progress);
           track("ai_dispatch_complete", {
             sessionId,
             level: level?.level ?? null,
@@ -268,7 +278,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
       }
       return begun;
     }, 3);
-  }, [sessionId, level]);
+  }, [sessionId, level, syncAiActivity]);
 
   // Absolute-deadline countdown; backgrounding the page does not pause it.
   useEffect(() => {
@@ -341,7 +351,15 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
   }, [phase.kind, reveal]);
 
   if (phase.kind === "reveal" && reveal && session) {
-    return <LevelReveal round={reveal} fasterThanAiCount={session.fasterThanAiCount} ended={session.status === "ended"} onNext={advance} />;
+    return (
+      <LevelReveal
+        round={reveal}
+        fasterThanAiCount={session.fasterThanAiCount}
+        ended={session.status === "ended"}
+        onNext={advance}
+        browserAiActivity={aiActivitySnapshot}
+      />
+    );
   }
 
   if (phase.kind === "countdown") {
@@ -386,7 +404,6 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
   const remaining = remainingMs ?? limit;
   const interactive = phase.kind === "playing" && painted && !locked;
   const slowLoading = phase.kind === "loading" && slowEpoch === loadEpoch;
-  const aiCopy = describeAiProgress(aiProgress, phase.kind === "submitting");
 
   return (
     <main className="mobile-shell game">
@@ -407,13 +424,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
         onImagePainted={onImagePainted}
       />
       <div className="game-spacer" />
-      <footer className="ai-status" data-testid="ai-status">
-        <span className="ai">
-          <span className="ai-dot" aria-hidden />
-          {aiCopy.main}
-        </span>
-        <span className="hint">{aiCopy.hint}</span>
-      </footer>
+      <AiActivityPanel progress={aiProgress} submitting={phase.kind === "submitting"} compact />
     </main>
   );
 }

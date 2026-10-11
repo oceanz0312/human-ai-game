@@ -67,6 +67,7 @@ export const browserDecisionResponseSchema = z.object({
   status: z.enum(["complete", "error"]),
   requestId: z.string().max(80),
   modelElapsedMs: z.number().int().min(0),
+  imageLoadMs: z.number().int().min(0).optional(),
   errorCode: z.enum(DECISION_ERROR_CODES).nullable(),
   receivedAt: z.number().int().positive(),
 });
