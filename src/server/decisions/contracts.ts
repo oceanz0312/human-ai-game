@@ -18,6 +18,7 @@ export const DECISION_ERROR_CODES = [
   "upstream_error",
   "upstream_timeout",
   "network_error",
+  "level_image_unavailable",
   "worker_unavailable",
   "ai_unconfigured",
   "ai_timeout",

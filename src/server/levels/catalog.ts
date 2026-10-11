@@ -33,7 +33,21 @@ export function toPublicLevel(level: PrivateLevel) {
 
 const imageCache = new Map<number, string>();
 
-const readPublicFile = (imageUrl: string) => readFile(path.join(process.cwd(), "public", imageUrl));
+const readPublicFile = async (imageUrl: string) => readFile(path.join(process.cwd(), "public", imageUrl));
+
+/** Raw PNG bytes for a frozen v1 level (ASSETS binding on Cloudflare, filesystem locally). */
+export async function readLevelImageBytes(
+  levelNumber: number,
+  loadBytes: (imageUrl: string) => Promise<Uint8Array> = async (imageUrl) => new Uint8Array(await readPublicFile(imageUrl)),
+): Promise<Uint8Array> {
+  const level = getPrivateLevel(levelNumber);
+  return loadBytes(level.imageUrl);
+}
+
+/** Cloudflare Worker runtime: read level PNG via the ASSETS binding (never workers.dev). */
+export async function readLevelImageBytesFromAssets(assets: { fetch(input: RequestInfo | URL, init?: RequestInit): Promise<Response> }, levelNumber: number) {
+  return readLevelImageBytes(levelNumber, async (imageUrl) => new Uint8Array(await (await assets.fetch(new URL(imageUrl, "https://assets.local"))).arrayBuffer()));
+}
 
 /** `loadBytes` reads a public asset path; Cloudflare passes its static-assets binding instead of the file system. */
 export async function readLevelImageDataUrl(levelNumber: number, loadBytes: (imageUrl: string) => Promise<Uint8Array> = readPublicFile): Promise<string> {

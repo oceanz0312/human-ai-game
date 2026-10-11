@@ -10,7 +10,7 @@
 
 - 游戏已经部署到 Cloudflare 并可公开访问。游戏服务、AI 转发 Worker、数据库全部在 Cloudflare 上，不使用 Vercel。
 - AI 是真实对手：每关由 **浏览器** 携带一次性 ticket 调用 Decisions Worker（DevTools Network 可见 `POST /v1/decide-ticket`），Worker 调用 OpenAI Decisions API（`gpt-6-luna`），使用与玩家相同的关卡图片（按 ticket 内 SHA256 校验），不传答案，不人为延迟。
-- Worker 通过 Service Binding 把 authoritative AI 结果写回游戏服务 `POST /api/internal/ai-result`；结算只看服务端 D1，浏览器 Worker 响应不含 AI 选的格子。
+- Worker 通过 Service Binding 写回 `POST /api/internal/ai-result`，并经同一 `GAME` binding 读取 `GET /api/internal/levels/:level/image`（**不得**用 workers.dev 公网拉 `PUBLIC_BASE_URL/levels/...`，同账号会被拦截 → 502 `level_image_unavailable`）。结算只看服务端 D1，浏览器 Worker 响应不含 AI 选的格子。
 - 线上已验证：整局 20 关跑通；手机尺寸浏览器实际游玩到结算；分享页、Open Graph 图、全服排行榜正常；浏览器可看到对 Decisions Worker 的 CORS 请求，但看不到 OpenAI Key。
 - 线上 D1 的测试数据已清空，排行榜从零开始。
 - 本地验证：lint、类型检查（游戏服务与 Worker）、89 个单元/集成/Worker 契约测试、14 个 Playwright E2E（375/390/430 三种视口）全部通过。
@@ -144,8 +144,8 @@ set -a && . ~/.config/human-ai-game/cf.env && set +a
    - 游戏服务 `human-ai`：`npx wrangler secret put DECISIONS_WORKER_SHARED_SECRET`、`npx wrangler secret put RESULT_SIGNING_SECRET`
    - Decisions Worker：`npx wrangler secret put OPENAI_API_KEY --config workers/decisions/wrangler.jsonc`（预览加 `--env preview`）、`npx wrangler secret put DECISIONS_WORKER_SHARED_SECRET --config workers/decisions/wrangler.jsonc`
 3. **确认 wrangler 变量**：根目录 `DECISIONS_WORKER_URL`、`PUBLIC_BASE_URL`；`workers/decisions/wrangler.jsonc` 中 `PUBLIC_BASE_URL`、`GAME`/`DB` binding（见 3.1 节）。
-4. **先部署 Decisions Worker**：`npm run worker:deploy:preview` 或 `npm run worker:deploy`
-5. **再部署游戏服务**：`npm run cf:deploy`
+4. **先部署游戏服务**（含 `GET /api/internal/levels/:level/image`）：`npm run cf:deploy`
+5. **再部署 Decisions Worker**（经 `GAME` binding 拉图）：`npm run worker:deploy:preview` 或 `npm run worker:deploy`
 
 本地/E2E 仍用 `DECISIONS_MODE=fake`，不依赖 Worker 公网可达。
 
