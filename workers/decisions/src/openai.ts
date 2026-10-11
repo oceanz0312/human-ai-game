@@ -1,5 +1,5 @@
 import { buildOddCellInstructions, type DecisionErrorCode, type DecisionInput, gridSizeFromChoices } from "../../../src/server/decisions/contracts";
-import { formatOpenAiErrorDetail, sanitizeOpenAiSnippet } from "./openai-detail";
+import { classifyOpenAiHttpFailure, formatOpenAiErrorDetail, openAiErrorCodeFromBody, sanitizeOpenAiSnippet } from "./openai-detail";
 
 export interface OpenAiConfig {
   apiKey: string;
@@ -78,14 +78,30 @@ export async function requestOddCell(
     const rawBody = await response.text();
     const snippet = sanitizeOpenAiSnippet(rawBody);
 
+    let parsedBody: unknown = null;
+    if (rawBody) {
+      try {
+        parsedBody = JSON.parse(rawBody);
+      } catch {
+        parsedBody = null;
+      }
+    }
+
     if (response.status === 429) {
       log({ kind: "openai_http_error", httpStatus: 429, errorCode: "rate_limited", bodyPreview: snippet || null });
       return { ok: false, errorCode: "rate_limited", modelElapsedMs: elapsed(), detail: formatOpenAiErrorDetail(429, snippet || null) };
     }
     if (!response.ok) {
-      const errorCode = httpErrorCode(response.status);
+      const errorCode = classifyOpenAiHttpFailure(response.status, parsedBody) ?? httpErrorCode(response.status);
       const detail = formatOpenAiErrorDetail(response.status, snippet || null);
-      log({ kind: "openai_http_error", httpStatus: response.status, errorCode, bodyPreview: snippet || null, modelElapsedMs: elapsed() });
+      log({
+        kind: errorCode === "region_unsupported" ? "openai_region_blocked" : "openai_http_error",
+        httpStatus: response.status,
+        errorCode,
+        openAiErrorCode: openAiErrorCodeFromBody(parsedBody),
+        bodyPreview: snippet || null,
+        modelElapsedMs: elapsed(),
+      });
       return { ok: false, errorCode, modelElapsedMs: elapsed(), detail };
     }
 
