@@ -67,7 +67,26 @@ test("tapping next on the reveal invokes the handler", () => {
   const onNext = vi.fn();
   render(
     <LevelReveal
-      round={{ id: "r", level: 1, gridSize: 3, human: { status: "correct", choice: "r1c1", elapsedMs: 1000 }, ai: { status: "complete", correct: true, elapsedMs: 2000, refused: false }, winner: "human", fasterThanAi: true }}
+      round={{
+        id: "r",
+        level: 1,
+        gridSize: 3,
+        imageUrl: "/levels/v1/01.png",
+        correctChoice: "r1c1",
+        human: { status: "correct", choice: "r1c1", elapsedMs: 1000 },
+        ai: {
+          status: "complete",
+          correct: true,
+          elapsedMs: 2000,
+          refused: false,
+          choice: "r1c1",
+          confidence: null,
+          probabilities: null,
+          modelElapsedMs: null,
+        },
+        winner: "human",
+        fasterThanAi: true,
+      }}
       fasterThanAiCount={0}
       ended={false}
       onNext={onNext}

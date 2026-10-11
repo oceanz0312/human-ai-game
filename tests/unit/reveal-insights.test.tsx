@@ -24,7 +24,7 @@ const completeRound: RoundReveal = {
 };
 
 test("the reveal page surfaces probability, confidence, and measured timing", () => {
-  render(<LevelReveal round={completeRound} fasterThanAiCount={1} ended={false} secondsLeft={null} onNext={() => undefined} />);
+  render(<LevelReveal round={completeRound} fasterThanAiCount={1} ended={false} onNext={() => undefined} />);
   expect(screen.getByTestId("reveal-board")).toBeInTheDocument();
   expect(screen.getByText(/AI 最看好/)).toHaveTextContent("第 2 行第 2 列 71%");
   expect(screen.getByText("82%")).toBeInTheDocument();
@@ -42,7 +42,6 @@ test("a refusal shows the dedicated copy without faking progress", () => {
       }}
       fasterThanAiCount={0}
       ended={false}
-      secondsLeft={null}
       onNext={() => undefined}
     />,
   );
