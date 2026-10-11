@@ -5,6 +5,7 @@ import {
   publicDecideRequestSchema,
 } from "../../../src/server/decisions/contracts";
 import { sha256Hex, verifyDecisionTicket } from "../../../src/server/decisions/ticket";
+import { LevelImageLoadError, levelImageToDataUrl, loadLevelImageBytes } from "./load-level-image";
 import { requestOddCell } from "./openai";
 import type { TicketConsumeStore } from "./ticket-store";
 import type { WorkerEnv } from "./env";
@@ -22,10 +23,6 @@ const SECURITY_HEADERS = {
   "Cache-Control": "no-store",
   "X-Content-Type-Options": "nosniff",
 };
-
-function levelImagePath(level: number) {
-  return `/levels/v1/${String(level).padStart(2, "0")}.png`;
-}
 
 function allowedOrigins(env: WorkerEnv) {
   const origins = new Set<string>(["http://localhost:3000", "http://127.0.0.1:3000", "http://127.0.0.1:3100"]);
@@ -67,17 +64,6 @@ async function reportToGame(env: WorkerEnv, body: unknown, fetchImpl: typeof fet
     },
     body: JSON.stringify(body),
   });
-}
-
-async function loadLevelImage(baseUrl: string, level: number, fetchImpl: typeof fetch) {
-  const response = await fetchImpl(`${baseUrl.replace(/\/$/, "")}${levelImagePath(level)}`);
-  if (!response.ok) throw new Error("image_fetch_failed");
-  const bytes = new Uint8Array(await response.arrayBuffer());
-  let binary = "";
-  const chunk = 0x8000;
-  for (let i = 0; i < bytes.length; i += chunk) binary += String.fromCharCode(...bytes.subarray(i, i + chunk));
-  const base64 = btoa(binary);
-  return { dataUrl: `data:image/png;base64,${base64}`, bytes };
 }
 
 export function createPublicDecideHandler(deps: PublicDecideDeps = {}) {
@@ -134,26 +120,14 @@ export function createPublicDecideHandler(deps: PublicDecideDeps = {}) {
         return respond(401, browserBody);
       }
       const payload = verified.payload;
-      const consumed = await ticketStore.consume(payload.jti, payload.roundId, now());
-      if (consumed === "replayed") {
-        const browserBody = browserDecisionResponseSchema.parse({
-          status: "error",
-          requestId,
-          modelElapsedMs: 0,
-          errorCode: "ticket_replayed",
-          receivedAt: now(),
-        });
-        return respond(409, browserBody);
-      }
-
-      const imageBase = env.PUBLIC_BASE_URL;
-      if (!imageBase) return respond(500, { error: "ai_unconfigured" });
 
       let imageDataUrl: string;
       try {
-        const loaded = await loadLevelImage(imageBase, payload.level, fetchImpl);
-        const hash = await sha256Hex(loaded.bytes);
+        const imageStart = now();
+        const bytes = await loadLevelImageBytes(env, payload.level, fetchImpl);
+        const hash = await sha256Hex(bytes);
         if (hash !== payload.imageSha256) {
+          log({ requestId, kind: "level_image_hash_mismatch", level: payload.level, roundId: payload.roundId });
           const result = failure("invalid_request");
           await reportToGame(env, { roundId: payload.roundId, jti: payload.jti, result }, fetchImpl);
           const browserBody = browserDecisionResponseSchema.parse({
@@ -165,18 +139,34 @@ export function createPublicDecideHandler(deps: PublicDecideDeps = {}) {
           });
           return respond(400, browserBody);
         }
-        imageDataUrl = loaded.dataUrl;
-      } catch {
-        const result = failure("network_error");
+        imageDataUrl = levelImageToDataUrl(bytes);
+        log({ requestId, kind: "level_image_loaded", level: payload.level, elapsedMs: Math.max(0, now() - imageStart), via: env.GAME ? "game_binding" : "public_fallback" });
+      } catch (error) {
+        const httpStatus = error instanceof LevelImageLoadError ? error.httpStatus : null;
+        const detail = error instanceof Error ? error.message : "unknown";
+        log({ requestId, kind: "level_image_load_failed", level: payload.level, roundId: payload.roundId, httpStatus, detail });
+        const result = failure("level_image_unavailable");
         await reportToGame(env, { roundId: payload.roundId, jti: payload.jti, result }, fetchImpl);
         const browserBody = browserDecisionResponseSchema.parse({
           status: "error",
           requestId,
           modelElapsedMs: 0,
-          errorCode: "network_error",
+          errorCode: "level_image_unavailable",
           receivedAt: now(),
         });
         return respond(502, browserBody);
+      }
+
+      const consumed = await ticketStore.consume(payload.jti, payload.roundId, now());
+      if (consumed === "replayed") {
+        const browserBody = browserDecisionResponseSchema.parse({
+          status: "error",
+          requestId,
+          modelElapsedMs: 0,
+          errorCode: "ticket_replayed",
+          receivedAt: now(),
+        });
+        return respond(409, browserBody);
       }
 
       if (!env.OPENAI_API_KEY) {
