@@ -91,6 +91,15 @@ Decisions Worker（正式和预览各一套）：
 | `OPENAI_BASE_URL` / `OPENAI_DECISIONS_MODEL` / `OPENAI_DECISIONS_TIMEOUT_MS` | 变量 | 默认 `https://api.openai.com/v1` / `gpt-6-luna` / `8000` |
 | `OPENAI_API_KEY` | Secret | 仅 Worker |
 | `DECISIONS_WORKER_SHARED_SECRET` | Secret | Ticket HMAC + 内部回调 Bearer（与游戏服务相同） |
+| **Placement** | `workers/decisions/wrangler.jsonc` | **`placement.mode: targeted` + `hostname: api.openai.com`**：让 `fetch` 事件在靠近 OpenAI 美国出口的 PoP 执行，避免玩家在中国等地触发时 Worker 在当地 egress → OpenAI 返回 `403 unsupported_country_region_territory`。与 D1（WNAM）对齐的备选：`region: aws:us-west-2`。 |
+
+**Placement 说明（必读）**
+
+- 浏览器直连 `POST /v1/decide-ticket` 时，若 **未** 配置 Placement，Worker 默认在 **离玩家最近** 的边缘运行，出站 OpenAI 会带上当地 IP，非支持地区会失败（揭晓 `AI 不可用 · 地区限制` / `region_unsupported`）。
+- **`mode: smart`**（游戏服务 `human-ai` 已启用）需持续多地域流量分析，**不能** 保证首包就从美国 egress；Decisions Worker 使用 **Placement Hint（targeted hostname）** 作为确定修复。
+- Smart / Placement Hints 在 **Workers Paid** 可用；本账号已是 Paid。Dashboard：**Workers & Pages → human-ai-decisions → Settings → Placement** 可查看状态（部署 wrangler 配置后应与 `targeted` / hostname 一致）。
+- 响应头 **`cf-placement`**（beta）可区分是否被转发到远端 PoP（如 `remote-…` vs `local-…`），便于验收。
+- 参考：[Cloudflare Workers Placement](https://developers.cloudflare.com/workers/configuration/smart-placement/)
 
 ### 3.2 密钥存放
 
@@ -145,7 +154,8 @@ set -a && . ~/.config/human-ai-game/cf.env && set +a
    - Decisions Worker：`npx wrangler secret put OPENAI_API_KEY --config workers/decisions/wrangler.jsonc`（预览加 `--env preview`）、`npx wrangler secret put DECISIONS_WORKER_SHARED_SECRET --config workers/decisions/wrangler.jsonc`
 3. **确认 wrangler 变量**：根目录 `DECISIONS_WORKER_URL`、`PUBLIC_BASE_URL`；`workers/decisions/wrangler.jsonc` 中 `PUBLIC_BASE_URL`、`GAME`/`DB` binding（见 3.1 节）。
 4. **先部署游戏服务**（含 `GET /api/internal/levels/:level/image`）：`npm run cf:deploy`
-5. **再部署 Decisions Worker**（经 `GAME` binding 拉图）：`npm run worker:deploy:preview` 或 `npm run worker:deploy`
+5. **再部署 Decisions Worker**（`GAME` binding 拉图 + **Placement → api.openai.com**）：`npm run worker:deploy:preview` 或 `npm run worker:deploy`
+6. **（可选）部署游戏服务**（若本版本含揭晓文案/UI 变更）：`npm run cf:deploy`
 
 本地/E2E 仍用 `DECISIONS_MODE=fake`，不依赖 Worker 公网可达。
 

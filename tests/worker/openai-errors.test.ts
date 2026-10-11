@@ -26,6 +26,27 @@ test.each([
   expect(logs.some((entry) => entry.kind === "openai_http_error")).toBe(true);
 });
 
+test("maps OpenAI region block to region_unsupported", async () => {
+  const body = {
+    error: {
+      code: "unsupported_country_region_territory",
+      message: "Country, region, or territory not supported",
+    },
+  };
+  const logs: Record<string, string | number | null>[] = [];
+  const fetchImpl = vi.fn().mockResolvedValue(new Response(JSON.stringify(body), { status: 403 }));
+  const outcome = await requestOddCell(
+    { imageDataUrl: IMAGE, choices: nine },
+    config,
+    { fetchImpl: fetchImpl as unknown as typeof fetch, now: () => Date.now(), log: (entry) => logs.push(entry) },
+  );
+  expect(outcome.ok).toBe(false);
+  if (outcome.ok) return;
+  expect(outcome.errorCode).toBe("region_unsupported");
+  expect(outcome.detail).toMatch(/HTTP 403/);
+  expect(logs.some((entry) => entry.kind === "openai_region_blocked")).toBe(true);
+});
+
 test("maps malformed JSON body to invalid_response with preview", async () => {
   const fetchImpl = vi.fn().mockResolvedValue(new Response("<html>bad</html>", { status: 200 }));
   const outcome = await requestOddCell({ imageDataUrl: IMAGE, choices: nine }, config, { fetchImpl: fetchImpl as unknown as typeof fetch, now: () => Date.now() });

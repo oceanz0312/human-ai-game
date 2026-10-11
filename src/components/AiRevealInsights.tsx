@@ -1,5 +1,6 @@
 "use client";
 
+import { aiErrorRevealHint, aiErrorRevealTitle } from "@/game/ai-error-copy";
 import {
   buildTimingTimeline,
   describeTopCandidatesFriendly,
@@ -42,11 +43,13 @@ export function AiRevealInsights({ round }: AiRevealInsightsProps) {
   if (ai.status === "error") {
     const code = round.ai.errorCode ?? "unknown";
     const detail = round.ai.errorDetail;
+    const hint = aiErrorRevealHint(code);
     return (
       <section className="ai-insights">
         <h2 className="insights-title">AI 决策过程</h2>
         <p className="insights-muted">
-          AI 掉线 · <span className="num">{code}</span>
+          {aiErrorRevealTitle(code)}
+          {hint ? <> — {hint}</> : null}
           {detail ? <> — {detail}</> : null}
           ，未能记录本次概率分布。
         </p>

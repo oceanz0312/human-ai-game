@@ -1,3 +1,4 @@
+import { aiErrorRevealHint, aiErrorRevealTitle, aiErrorStatusTag } from "./ai-error-copy";
 import type { RoundReveal } from "./contracts";
 
 export interface RevealCopy {
@@ -24,14 +25,16 @@ export function describeReveal(round: RoundReveal): RevealCopy {
     round.ai.status === "complete"
       ? { tag: round.ai.correct ? null : "答错", time: round.ai.elapsedMs !== null ? secs(round.ai.elapsedMs) : null }
       : round.ai.status === "error"
-        ? { tag: round.ai.refused ? "放弃" : "掉线", time: null }
+        ? { tag: aiErrorStatusTag(round.ai.errorCode, round.ai.refused), time: null }
         : { tag: "判断中", time: null };
 
   if (round.ai.status === "error" && !round.ai.refused) {
     const code = round.ai.errorCode ?? "unknown";
+    const hint = aiErrorRevealHint(code);
     const extra = round.ai.errorDetail ? ` · ${round.ai.errorDetail}` : "";
     const baseDetail = humanCorrect ? "你答对了 · 本关照常结算" : `${humanMissed}${lifeNote}`;
-    return { symbol: "—", title: `AI 掉线 · ${code}`, detail: `${baseDetail}${extra}`, humanValue, aiValue };
+    const detail = hint ? `${baseDetail} · ${hint}${extra}` : `${baseDetail}${extra}`;
+    return { symbol: "—", title: aiErrorRevealTitle(code), detail, humanValue, aiValue };
   }
   if (round.winner === "pending") {
     return { symbol: humanCorrect ? "✓" : "×", title: "AI 仍在判断", detail: humanCorrect ? "你答对了 · 稍后补齐 AI 结果" : `${humanMissed}${lifeNote}`, humanValue, aiValue };
