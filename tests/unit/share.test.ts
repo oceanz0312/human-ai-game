@@ -19,23 +19,33 @@ const base: RoundReveal = {
   level: 6,
   gridSize: 9,
   human: { status: "correct", choice: "r5c7", elapsedMs: 2480 },
-  ai: { status: "complete", correct: true, elapsedMs: 2910 },
+  ai: { status: "complete", correct: true, elapsedMs: 2910, refused: false },
   winner: "human",
   fasterThanAi: true,
 };
 
 test("reveal copy covers every outcome with the allowed titles", () => {
   expect(describeReveal(base)).toMatchObject({ title: "你赢了", detail: "双方正确 · 你快了 0.43 秒", symbol: "✓" });
-  expect(describeReveal({ ...base, ai: { status: "complete", correct: true, elapsedMs: 1900 }, winner: "ai", fasterThanAi: false })).toMatchObject({
+  expect(describeReveal({ ...base, ai: { status: "complete", correct: true, elapsedMs: 1900, refused: false }, winner: "ai", fasterThanAi: false })).toMatchObject({
     title: "AI 赢了",
     detail: "双方正确 · AI 快了 0.58 秒",
   });
   expect(describeReveal({ ...base, human: { status: "timeout", choice: null, elapsedMs: 7000 }, winner: "ai" })).toMatchObject({ title: "AI 赢了", detail: "你超时了 · 失去 1 条命" });
-  expect(describeReveal({ ...base, ai: { status: "error", correct: null, elapsedMs: null }, winner: "human" })).toMatchObject({ title: "AI 掉线", symbol: "—" });
-  expect(describeReveal({ ...base, ai: { status: "running", correct: null, elapsedMs: null }, winner: "pending" }).title).toBe("AI 仍在判断");
+  expect(describeReveal({ ...base, ai: { status: "error", correct: null, elapsedMs: null, refused: false }, winner: "human" })).toMatchObject({ title: "AI 掉线", symbol: "—" });
+  expect(describeReveal({ ...base, ai: { status: "running", correct: null, elapsedMs: null, refused: false }, winner: "pending" }).title).toBe("AI 仍在判断");
   expect(
-    describeReveal({ ...base, human: { status: "incorrect", choice: "r1c1", elapsedMs: 1000 }, ai: { status: "complete", correct: false, elapsedMs: 900 }, winner: "none" }).title,
+    describeReveal({ ...base, human: { status: "incorrect", choice: "r1c1", elapsedMs: 1000 }, ai: { status: "complete", correct: false, elapsedMs: 900, refused: false }, winner: "none" }).title,
   ).toBe("无人获胜");
+});
+
+test("a Decisions refusal is a real AI loss, not an offline AI", () => {
+  const refused = { status: "error", correct: null, elapsedMs: null, refused: true } as const;
+  expect(describeReveal({ ...base, ai: refused, winner: "human", fasterThanAi: false })).toMatchObject({
+    title: "你赢了",
+    detail: "AI 放弃作答",
+    aiValue: { tag: "放弃", time: null },
+  });
+  expect(describeReveal({ ...base, human: { status: "timeout", choice: null, elapsedMs: 7000 }, ai: refused, winner: "none", fasterThanAi: false }).title).toBe("无人获胜");
 });
 
 test("countdown never shows negative values", () => {

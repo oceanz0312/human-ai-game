@@ -30,7 +30,7 @@ test("no grid is rendered before the image is ready", () => {
 test("the reveal shows both elapsed times and the faster count", () => {
   render(
     <LevelReveal
-      round={{ id: "r", level: 6, gridSize: 9, human: { status: "correct", choice: "r5c7", elapsedMs: 2480 }, ai: { status: "complete", correct: true, elapsedMs: 2910 }, winner: "human", fasterThanAi: true }}
+      round={{ id: "r", level: 6, gridSize: 9, human: { status: "correct", choice: "r5c7", elapsedMs: 2480 }, ai: { status: "complete", correct: true, elapsedMs: 2910, refused: false }, winner: "human", fasterThanAi: true }}
       fasterThanAiCount={3}
       ended={false}
       secondsLeft={1}

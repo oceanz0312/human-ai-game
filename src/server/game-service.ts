@@ -100,8 +100,13 @@ export function createGameService(deps: GameServiceDeps) {
       human,
       // The AI outcome stays hidden until the player has locked in an answer.
       ai: human
-        ? { status: round.aiStatus, correct: round.aiStatus === "complete" ? round.aiCorrect : null, elapsedMs: round.aiStatus === "complete" ? round.aiElapsedMs : null }
-        : { status: round.aiStatus === "pending" ? "pending" : "running", correct: null, elapsedMs: null },
+        ? {
+            status: round.aiStatus,
+            correct: round.aiStatus === "complete" ? round.aiCorrect : null,
+            elapsedMs: round.aiStatus === "complete" ? round.aiElapsedMs : null,
+            refused: round.aiStatus === "error" && round.aiErrorCode === "refused",
+          }
+        : { status: round.aiStatus === "pending" ? "pending" : "running", correct: null, elapsedMs: null, refused: false },
       winner: human ? winner : "pending",
       fasterThanAi: round.fasterThanAi,
     };

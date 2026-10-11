@@ -34,7 +34,8 @@ export interface RoundReveal {
   level: number;
   gridSize: GridSize;
   human: { status: HumanStatus; choice: string | null; elapsedMs: number } | null;
-  ai: { status: AiStatus; correct: boolean | null; elapsedMs: number | null };
+  /** `refused` marks a real Decisions refusal: the AI answered but could not pick a tile, unlike an offline error. */
+  ai: { status: AiStatus; correct: boolean | null; elapsedMs: number | null; refused: boolean };
   winner: Winner;
   fasterThanAi: boolean | null;
 }

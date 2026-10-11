@@ -24,10 +24,10 @@ export function describeReveal(round: RoundReveal): RevealCopy {
     round.ai.status === "complete"
       ? { tag: round.ai.correct ? null : "答错", time: round.ai.elapsedMs !== null ? secs(round.ai.elapsedMs) : null }
       : round.ai.status === "error"
-        ? { tag: "掉线", time: null }
+        ? { tag: round.ai.refused ? "放弃" : "掉线", time: null }
         : { tag: "判断中", time: null };
 
-  if (round.ai.status === "error") {
+  if (round.ai.status === "error" && !round.ai.refused) {
     return { symbol: "—", title: "AI 掉线", detail: humanCorrect ? "你答对了 · 本关照常结算" : `${humanMissed}${lifeNote}`, humanValue, aiValue };
   }
   if (round.winner === "pending") {
@@ -36,7 +36,11 @@ export function describeReveal(round: RoundReveal): RevealCopy {
   if (round.winner === "human") {
     const aiElapsed = round.ai.elapsedMs;
     const detail =
-      round.ai.correct && human && aiElapsed !== null ? `双方正确 · 你快了 ${((aiElapsed - human.elapsedMs) / 1000).toFixed(2)} 秒` : "AI 答错了";
+      round.ai.correct && human && aiElapsed !== null
+        ? `双方正确 · 你快了 ${((aiElapsed - human.elapsedMs) / 1000).toFixed(2)} 秒`
+        : round.ai.refused
+          ? "AI 放弃作答"
+          : "AI 答错了";
     return { symbol: "✓", title: "你赢了", detail, humanValue, aiValue };
   }
   if (round.winner === "ai") {

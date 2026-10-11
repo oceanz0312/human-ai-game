@@ -111,9 +111,21 @@ test("an AI error does not modify lives and is never a speed win", async () => {
   const playerId = await ctx.player();
   const session = await ctx.service.createSession({ playerId });
   const result = await ctx.playRound(session.id, playerId, "correct");
-  expect(result.round.ai.status).toBe("error");
+  expect(result.round.ai).toMatchObject({ status: "error", refused: false });
   expect(result.round.winner).toBe("human");
   expect(result.session).toMatchObject({ lives: 3, fasterThanAiCount: 0 });
+});
+
+test("a Decisions refusal is revealed as a refusal and counts as an AI loss", async () => {
+  ctx = await setup({ ai: () => ({ errorCode: "refused" }) });
+  const playerId = await ctx.player();
+  const session = await ctx.service.createSession({ playerId });
+  const won = await ctx.playRound(session.id, playerId, "correct");
+  expect(won.round.ai).toMatchObject({ status: "error", refused: true });
+  expect(won.round.winner).toBe("human");
+  const lost = await ctx.playRound(session.id, playerId, "wrong");
+  expect(lost.round.winner).toBe("none");
+  expect(lost.session).toMatchObject({ lives: 2, fasterThanAiCount: 0 });
 });
 
 test("a late AI answer updates fasterThanAiCount exactly once and never touches lives", async () => {
@@ -126,7 +138,7 @@ test("a late AI answer updates fasterThanAiCount exactly once and never touches 
   await Promise.all([ctx.service.runAiForRound(result.roundId), ctx.service.runAiForRound(result.roundId)]);
   await ctx.service.runAiForRound(result.roundId);
   const after = await ctx.service.getRound(result.roundId, playerId);
-  expect(after.round.ai).toEqual({ status: "complete", correct: true, elapsedMs: 60 });
+  expect(after.round.ai).toEqual({ status: "complete", correct: true, elapsedMs: 60, refused: false });
   expect(after.round.winner).toBe("human");
   expect(after.round.fasterThanAi).toBe(true);
   expect(after.session).toMatchObject({ fasterThanAiCount: 1, lives: 3, level: 2 });
