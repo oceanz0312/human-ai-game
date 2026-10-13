@@ -33,6 +33,37 @@ export async function next(page: Page) {
   if (await button.isVisible().catch(() => false)) await button.click().catch(() => undefined);
 }
 
+export async function assertOneScreen(page: Page) {
+  const metrics = await page.evaluate(() => ({
+    scrollHeight: document.documentElement.scrollHeight,
+    scrollWidth: document.documentElement.scrollWidth,
+    innerHeight: window.innerHeight,
+    innerWidth: window.innerWidth,
+    scrollY: window.scrollY,
+  }));
+  expect(metrics.scrollY, "page starts at top").toBe(0);
+  expect(metrics.scrollHeight, "no vertical scroll").toBeLessThanOrEqual(metrics.innerHeight + 1);
+  expect(metrics.scrollWidth, "no horizontal scroll").toBeLessThanOrEqual(metrics.innerWidth + 1);
+}
+
+export async function assertRevealPrimaryAboveHeatmap(page: Page) {
+  const layout = await page.evaluate(() => {
+    const button = document.querySelector(".reveal-top-actions .primary-action");
+    const board = document.querySelector('[data-testid="reveal-board"]');
+    if (!button || !board) return null;
+    const b = button.getBoundingClientRect();
+    const h = board.getBoundingClientRect();
+    return {
+      buttonBottom: b.bottom,
+      boardTop: h.top,
+      buttonInView: b.top >= 0 && b.bottom <= window.innerHeight,
+    };
+  });
+  expect(layout, "reveal layout present").not.toBeNull();
+  expect(layout!.buttonInView, "reveal primary in viewport").toBe(true);
+  expect(layout!.buttonBottom, "primary above heatmap board").toBeLessThanOrEqual(layout!.boardTop + 1);
+}
+
 /** Visual acceptance rules from docs/design/visual-style.md §11. */
 export async function assertMobileLayout(page: Page) {
   const report = await page.evaluate(() => {
@@ -88,7 +119,15 @@ export async function assertMobileLayout(page: Page) {
       if (report.cellCount === 81) expect(report.firstCell.width, "9×9 touch target").toBeGreaterThanOrEqual(35);
     }
   }
-  if (report.primary && !onReveal) expect(report.primary.bottom, "primary action reachable").toBeLessThanOrEqual(report.viewport.height);
+  if (report.primary) {
+    if (onReveal) {
+      expect(report.primary.top, "reveal primary visible").toBeGreaterThanOrEqual(0);
+      expect(report.primary.bottom, "reveal primary in viewport").toBeLessThanOrEqual(report.viewport.height);
+    } else {
+      expect(report.primary.bottom, "primary action reachable").toBeLessThanOrEqual(report.viewport.height);
+    }
+  }
+  await assertOneScreen(page);
 }
 
 export async function screenshot(page: Page, testInfo: TestInfo, name: string) {

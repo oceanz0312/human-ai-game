@@ -62,6 +62,8 @@ test("the reveal shows both elapsed times and the faster count", () => {
   expect(screen.getAllByText("2.91s").length).toBeGreaterThanOrEqual(1);
   expect(screen.getByText("本局已有 3 关比 AI 更快")).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "下一关" })).toBeInTheDocument();
+  expect(screen.getByRole("button", { name: "AI 详情" })).toBeInTheDocument();
+  fireEvent.click(screen.getByRole("button", { name: "AI 详情" }));
   expect(screen.getByText("AI 决策过程")).toBeInTheDocument();
 });
 

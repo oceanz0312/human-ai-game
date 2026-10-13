@@ -1,0 +1,71 @@
+"use client";
+
+import { useEffect, useState, useSyncExternalStore } from "react";
+import type { DanmakuMessage } from "@/game/danmaku-messages";
+
+interface AiDanmakuLaneProps {
+  messages: DanmakuMessage[];
+  replay?: boolean;
+  paused?: boolean;
+}
+
+function subscribeReducedMotion(onChange: () => void) {
+  const media = window.matchMedia("(prefers-reduced-motion: reduce)");
+  media.addEventListener("change", onChange);
+  return () => media.removeEventListener("change", onChange);
+}
+
+function getReducedMotion() {
+  return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+}
+
+export function AiDanmakuLane({ messages, replay = false, paused = false }: AiDanmakuLaneProps) {
+  const reducedMotion = useSyncExternalStore(subscribeReducedMotion, getReducedMotion, () => false);
+  const [visible, setVisible] = useState<DanmakuMessage[]>([]);
+  const [cursor, setCursor] = useState(0);
+
+  useEffect(() => {
+    if (paused) return;
+    if (reducedMotion || !replay) {
+      setVisible(messages.slice(-3));
+      setCursor(messages.length);
+      return;
+    }
+    setVisible([]);
+    setCursor(0);
+  }, [messages, paused, reducedMotion, replay]);
+
+  useEffect(() => {
+    if (paused || reducedMotion || !replay || cursor >= messages.length) return;
+    const delay = cursor === 0 ? 200 : 600;
+    const timer = window.setTimeout(() => {
+      const next = messages[cursor];
+      setVisible((prev) => [...prev, next].slice(-3));
+      setCursor((c) => c + 1);
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [cursor, messages, paused, reducedMotion, replay]);
+
+  if (messages.length === 0) return null;
+
+  return (
+    <div
+      className={reducedMotion ? "ai-danmaku ai-danmaku-static" : "ai-danmaku ai-danmaku-motion"}
+      aria-live="polite"
+      aria-relevant="additions"
+      data-testid="ai-danmaku"
+    >
+      {visible.map((message, index) => (
+        <p
+          key={`${message.id}-${index}`}
+          className="ai-danmaku-item"
+          role="status"
+          data-lane={index % 3}
+          style={reducedMotion ? undefined : { animationDelay: `${index * 0.15}s` }}
+        >
+          {message.text}
+        </p>
+      ))}
+    </div>
+  );
+}

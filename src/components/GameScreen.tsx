@@ -7,6 +7,9 @@ import { PUBLIC_LEVELS_V1 } from "@/levels/public-catalog.generated";
 import { snapshotAiActivity, type AiActivitySnapshot } from "@/game/ai-activity";
 import { dispatchRoundAi, type AiNetworkProgress } from "@/lib/ai-dispatch";
 import { AiActivityPanel } from "./AiActivityPanel";
+import { AiDanmakuLane } from "./AiDanmakuLane";
+import { DetailsSheet } from "./DetailsSheet";
+import { danmakuFromActivitySteps } from "@/game/danmaku-messages";
 import { api, ApiError, haptic, track, withRetry } from "@/lib/api-client";
 import { countdown } from "@/lib/format";
 import { GameBoard } from "./GameBoard";
@@ -64,6 +67,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
   const [locked, setLocked] = useState(false);
   const [loadEpoch, setLoadEpoch] = useState(0);
   const [slowEpoch, setSlowEpoch] = useState(-1);
+  const [aiDetailsOpen, setAiDetailsOpen] = useState(false);
 
   const roundIdRef = useRef<string | null>(null);
   const startedAtRef = useRef<number | null>(null);
@@ -364,7 +368,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
 
   if (phase.kind === "countdown") {
     return (
-      <main className="mobile-shell game">
+      <main className="mobile-shell game one-screen">
         <GameHeader level={1} lives={session?.lives ?? 3} />
         <div className="countdown-overlay" aria-live="assertive">
           <span key={phase.value}>{phase.value}</span>
@@ -375,7 +379,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
 
   if (phase.kind === "error") {
     return (
-      <main className="mobile-shell game">
+      <main className="mobile-shell game one-screen">
         <GameHeader level={level?.level ?? session?.level ?? 1} lives={session?.lives ?? 3} />
         <div className="reveal-body">
           <p className="inline-error">{phase.message}</p>
@@ -405,26 +409,49 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
   const interactive = phase.kind === "playing" && painted && !locked;
   const slowLoading = phase.kind === "loading" && slowEpoch === loadEpoch;
 
+  const activitySteps = aiActivitySnapshot?.steps ?? [];
+  const danmakuMessages = danmakuFromActivitySteps(activitySteps, true);
+
   return (
-    <main className="mobile-shell game">
-      <GameHeader level={displayLevel} lives={session?.lives ?? 3} />
-      <div className={remaining < 1000 ? "timer urgent" : "timer"} aria-live="off">
+    <main className="mobile-shell game one-screen">
+      <div className="play-top">
+        <GameHeader level={displayLevel} lives={session?.lives ?? 3} />
+        <div className="ai-status ai-status-inline">
+          <span className="ai">
+            <span className="ai-dot" aria-hidden />
+            AI 进行中
+          </span>
+          <span className="hint">点击不同项</span>
+        </div>
+      </div>
+      <div className={remaining < 1000 ? "timer timer-compact urgent" : "timer timer-compact"} aria-live="off">
         <div className="value" data-testid="timer">
           {countdown(remaining)}
         </div>
         <div className="unit">秒</div>
       </div>
-      <GameBoard
-        gridSize={level?.gridSize ?? PUBLIC_LEVELS_V1[displayLevel - 1]?.gridSize ?? 3}
-        imageUrl={imageReady && level ? level.imageUrl : null}
-        disabled={!interactive}
-        selected={selected}
-        loadingLabel={slowLoading ? "正在加载关卡" : null}
-        onChoose={lockAnswer}
-        onImagePainted={onImagePainted}
-      />
-      <div className="game-spacer" />
-      <AiActivityPanel progress={aiProgress} submitting={phase.kind === "submitting"} compact />
+      <div className="play-stage">
+        <div className="board-stage">
+          <AiDanmakuLane messages={danmakuMessages} paused={aiDetailsOpen} />
+          <GameBoard
+            gridSize={level?.gridSize ?? PUBLIC_LEVELS_V1[displayLevel - 1]?.gridSize ?? 3}
+            imageUrl={imageReady && level ? level.imageUrl : null}
+            disabled={!interactive}
+            selected={selected}
+            loadingLabel={slowLoading ? "正在加载关卡" : null}
+            onChoose={lockAnswer}
+            onImagePainted={onImagePainted}
+          />
+        </div>
+      </div>
+      <div className="play-foot">
+        <button type="button" className="text-action details-link" onClick={() => setAiDetailsOpen(true)}>
+          AI 详情
+        </button>
+      </div>
+      <DetailsSheet open={aiDetailsOpen} title="AI 活动" onClose={() => setAiDetailsOpen(false)}>
+        <AiActivityPanel progress={aiProgress} submitting={phase.kind === "submitting"} snapshot={aiActivitySnapshot} />
+      </DetailsSheet>
     </main>
   );
 }

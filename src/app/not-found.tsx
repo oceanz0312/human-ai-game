@@ -2,7 +2,7 @@ import Link from "next/link";
 
 export default function NotFound() {
   return (
-    <main className="mobile-shell">
+    <main className="mobile-shell one-screen">
       <div className="brand">HUMAN / AI</div>
       <div className="reveal-body">
         <h1 className="page-title">找不到这个页面</h1>

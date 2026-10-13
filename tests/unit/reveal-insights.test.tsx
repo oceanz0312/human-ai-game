@@ -1,4 +1,4 @@
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import { LevelReveal } from "@/components/LevelReveal";
 import type { RoundReveal } from "@/game/contracts";
 
@@ -25,10 +25,11 @@ const completeRound: RoundReveal = {
   fasterThanAi: true,
 };
 
-test("the reveal page surfaces probability, confidence, and measured timing", () => {
+test("the reveal page surfaces probability, confidence, and measured timing", async () => {
   render(<LevelReveal round={completeRound} fasterThanAiCount={1} ended={false} onNext={() => undefined} />);
   expect(screen.getByTestId("reveal-board")).toBeInTheDocument();
-  expect(screen.getByText(/AI 最看好/)).toHaveTextContent("第 2 行第 2 列 71%");
+  expect(await screen.findByText(/AI 最看好/)).toHaveTextContent("第 2 行第 2 列 71%");
+  fireEvent.click(screen.getByRole("button", { name: "AI 详情" }));
   expect(screen.getByText("82%")).toBeInTheDocument();
   expect(screen.getByText(/模型/)).toHaveTextContent("1.60s");
   expect(screen.getByText(/其余/)).toHaveTextContent("0.50s");
@@ -58,5 +59,6 @@ test("a refusal shows the dedicated copy without faking progress", () => {
       onNext={() => undefined}
     />,
   );
+  fireEvent.click(screen.getByRole("button", { name: "AI 详情" }));
   expect(screen.getByText("AI 放弃作答：模型未选出任何格子。")).toBeInTheDocument();
 });
