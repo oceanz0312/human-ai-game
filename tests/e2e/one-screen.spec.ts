@@ -41,14 +41,10 @@ test.describe("@layout one-screen zero scroll", () => {
 
   test("poster dialog fits one viewport", async ({ page }) => {
     await startGame(page);
-    await answer(page, 1, "wrong");
-    await page.getByRole("button", { name: "下一关" }).click();
-    await answer(page, 2, "wrong");
-    await page.getByRole("button", { name: "下一关" }).click();
-    await answer(page, 3, "wrong");
-    await page.getByRole("button", { name: "下一关" }).click();
-    await answer(page, 4, "wrong");
-    await page.getByRole("button", { name: /^查看结果/ }).click();
+    for (let n = 1; n <= 3; n += 1) {
+      await answer(page, n, "wrong");
+      await page.getByRole("button", { name: /^(下一关|查看结果)/ }).click();
+    }
     await page.waitForURL(/\/result\//);
     await page.getByRole("button", { name: "生成战绩海报" }).click();
     await expect(page.locator(".poster-shell")).toBeVisible();

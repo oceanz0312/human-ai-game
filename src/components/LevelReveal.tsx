@@ -44,7 +44,7 @@ export function LevelReveal({ round, fasterThanAiCount, ended, onNext, browserAi
       </div>
 
       <div className="reveal-top-actions">
-        <button type="button" className="primary-action num" onClick={onNext}>
+        <button type="button" className="primary-action num" data-testid="reveal-next" onClick={onNext}>
           {nextLabel}
         </button>
       </div>

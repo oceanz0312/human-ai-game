@@ -58,8 +58,10 @@ test("nicknames can be set from the result page leaderboard", async ({ page }) =
     await next(page);
   }
   await page.waitForURL(/\/result\//);
+  await page.getByRole("button", { name: "完整排行与昵称" }).click();
   await page.getByPlaceholder("昵称（可选）").fill("测试玩家");
   await page.getByRole("button", { name: "保存" }).click();
   await expect(page.getByText("昵称已更新")).toBeVisible();
-  await expect(page.locator(".board-rows .me")).toContainText("测试玩家");
+  await page.getByRole("button", { name: "关闭" }).click();
+  await expect(page.locator(".section-compact .board-rows .me")).toContainText("测试玩家");
 });

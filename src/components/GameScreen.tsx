@@ -196,8 +196,10 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
       if (next) void preloadImage(next.imageUrl).catch(() => undefined);
       setImageReady(true);
       setPhase({ kind: "playing" });
+      advancingRef.current = false;
     } catch (error) {
       if (!mountedRef.current) return;
+      advancingRef.current = false;
       if (error instanceof ApiError && error.code === "session_ended") {
         goToResult(await api.getSession(sessionId));
         return;
@@ -321,8 +323,14 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
   const advance = useCallback(() => {
     if (!session || advancingRef.current) return;
     advancingRef.current = true;
-    if (session.status === "ended") goToResult(session);
-    else void loadNextRound();
+    setReveal(null);
+    setPhase({ kind: "loading" });
+    if (session.status === "ended") {
+      advancingRef.current = false;
+      goToResult(session);
+      return;
+    }
+    void loadNextRound();
   }, [session, goToResult, loadNextRound]);
 
   // A late AI answer is filled in without touching lives or level.
@@ -367,9 +375,10 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
   }
 
   if (phase.kind === "countdown") {
+    const countdownLevel = level?.level ?? session?.level ?? 1;
     return (
       <main className="mobile-shell game one-screen">
-        <GameHeader level={1} lives={session?.lives ?? 3} />
+        <GameHeader level={countdownLevel} lives={session?.lives ?? 3} />
         <div className="countdown-overlay" aria-live="assertive">
           <span key={phase.value}>{phase.value}</span>
         </div>
