@@ -1,4 +1,6 @@
 // @vitest-environment node
+import { readdirSync, statSync } from "node:fs";
+import { join } from "node:path";
 import { createCloudflareDecisionClient } from "@/server/decisions/client";
 import { createWorkerHandler } from "../../workers/decisions/src/index";
 import { createGameBindingMock } from "../worker/game-binding-mock";
@@ -48,10 +50,28 @@ test("an unreachable Worker or malformed response becomes an AI error", async ()
   expect((await outside.decide({ imageDataUrl: IMAGE, choices }, new AbortController().signal)).errorCode).toBe("invalid_choice");
 });
 
+function collectSourceFiles(root: string, suffix: string): string[] {
+  const out: string[] = [];
+  const stack = [root];
+  while (stack.length > 0) {
+    const dir = stack.pop()!;
+    for (const entry of readdirSync(dir)) {
+      const path = join(dir, entry);
+      if (statSync(path).isDirectory()) stack.push(path);
+      else if (path.endsWith(suffix)) out.push(path);
+    }
+  }
+  return out;
+}
+
 test("the browser bundle never embeds OpenAI keys or server decision secrets", async () => {
   const { readFile } = await import("node:fs/promises");
-  const { globSync } = await import("node:fs");
-  const clientFiles = [...globSync("src/components/**/*.tsx"), ...globSync("src/lib/**/*.ts"), ...globSync("src/levels/**/*.ts"), "src/app/page.tsx"];
+  const clientFiles = [
+    ...collectSourceFiles("src/components", ".tsx"),
+    ...collectSourceFiles("src/lib", ".ts"),
+    ...collectSourceFiles("src/levels", ".ts"),
+    "src/app/page.tsx",
+  ];
   for (const file of clientFiles) {
     const source = await readFile(file, "utf8");
     expect(source, file).not.toMatch(/OPENAI_API_KEY|api\.openai\.com|DECISIONS_WORKER_SHARED_SECRET|server\/decisions/);

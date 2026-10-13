@@ -19,34 +19,14 @@ function getReducedMotion() {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
 
-export function AiDanmakuLane({ messages, replay = false, paused = false }: AiDanmakuLaneProps) {
-  const reducedMotion = useSyncExternalStore(subscribeReducedMotion, getReducedMotion, () => false);
-  const [visible, setVisible] = useState<DanmakuMessage[]>([]);
-  const [cursor, setCursor] = useState(0);
-
-  useEffect(() => {
-    if (paused) return;
-    if (reducedMotion || !replay) {
-      setVisible(messages.slice(-3));
-      setCursor(messages.length);
-      return;
-    }
-    setVisible([]);
-    setCursor(0);
-  }, [messages, paused, reducedMotion, replay]);
-
-  useEffect(() => {
-    if (paused || reducedMotion || !replay || cursor >= messages.length) return;
-    const delay = cursor === 0 ? 200 : 600;
-    const timer = window.setTimeout(() => {
-      const next = messages[cursor];
-      setVisible((prev) => [...prev, next].slice(-3));
-      setCursor((c) => c + 1);
-    }, delay);
-    return () => window.clearTimeout(timer);
-  }, [cursor, messages, paused, reducedMotion, replay]);
-
-  if (messages.length === 0) return null;
+function DanmakuDisplay({
+  visible,
+  reducedMotion,
+}: {
+  visible: DanmakuMessage[];
+  reducedMotion: boolean;
+}) {
+  if (visible.length === 0) return null;
 
   return (
     <div
@@ -68,4 +48,36 @@ export function AiDanmakuLane({ messages, replay = false, paused = false }: AiDa
       ))}
     </div>
   );
+}
+
+function DanmakuReplay({ messages, paused }: { messages: DanmakuMessage[]; paused: boolean }) {
+  const [visible, setVisible] = useState<DanmakuMessage[]>([]);
+  const [cursor, setCursor] = useState(0);
+
+  useEffect(() => {
+    if (paused || cursor >= messages.length) return;
+    const delay = cursor === 0 ? 200 : 600;
+    const timer = window.setTimeout(() => {
+      const next = messages[cursor];
+      setVisible((prev) => [...prev, next].slice(-3));
+      setCursor((c) => c + 1);
+    }, delay);
+    return () => window.clearTimeout(timer);
+  }, [cursor, messages, paused]);
+
+  return <DanmakuDisplay visible={visible} reducedMotion={false} />;
+}
+
+export function AiDanmakuLane({ messages, replay = false, paused = false }: AiDanmakuLaneProps) {
+  const reducedMotion = useSyncExternalStore(subscribeReducedMotion, getReducedMotion, () => false);
+
+  if (messages.length === 0) return null;
+
+  if (paused || reducedMotion || !replay) {
+    return <DanmakuDisplay visible={messages.slice(-3)} reducedMotion={reducedMotion} />;
+  }
+
+  const replayKey = messages.map((message) => message.id).join("\0");
+
+  return <DanmakuReplay key={replayKey} messages={messages} paused={paused} />;
 }

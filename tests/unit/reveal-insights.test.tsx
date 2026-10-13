@@ -1,4 +1,4 @@
-import { fireEvent, render, screen } from "@testing-library/react";
+import { fireEvent, render, screen, within } from "@testing-library/react";
 import { LevelReveal } from "@/components/LevelReveal";
 import type { RoundReveal } from "@/game/contracts";
 
@@ -30,9 +30,10 @@ test("the reveal page surfaces probability, confidence, and measured timing", as
   expect(screen.getByTestId("reveal-board")).toBeInTheDocument();
   expect(await screen.findByText(/AI 最看好/)).toHaveTextContent("第 2 行第 2 列 71%");
   fireEvent.click(screen.getByRole("button", { name: "AI 详情" }));
-  expect(screen.getByText("82%")).toBeInTheDocument();
-  expect(screen.getByText(/模型/)).toHaveTextContent("1.60s");
-  expect(screen.getByText(/其余/)).toHaveTextContent("0.50s");
+  const dialog = screen.getByRole("dialog");
+  expect(within(dialog).getByText("82%")).toBeInTheDocument();
+  expect(within(dialog).getByText(/模型/)).toHaveTextContent("1.60s");
+  expect(within(dialog).getByText(/其余/)).toHaveTextContent("0.50s");
 });
 
 test("a refusal shows the dedicated copy without faking progress", () => {
@@ -60,5 +61,5 @@ test("a refusal shows the dedicated copy without faking progress", () => {
     />,
   );
   fireEvent.click(screen.getByRole("button", { name: "AI 详情" }));
-  expect(screen.getByText("AI 放弃作答：模型未选出任何格子。")).toBeInTheDocument();
+  expect(within(screen.getByRole("dialog")).getByText("AI 放弃作答：模型未选出任何格子。")).toBeInTheDocument();
 });

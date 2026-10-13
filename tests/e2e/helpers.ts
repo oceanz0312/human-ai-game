@@ -16,7 +16,8 @@ export async function startGame(page: Page) {
 }
 
 export async function waitForPlayable(page: Page, n: number) {
-  await expect(page.locator(".game-header .level")).toHaveText(`${pad2(n)} / 20`, { timeout: 20_000 });
+  await expect(page.locator(".mobile-shell.reveal")).toHaveCount(0, { timeout: 20_000 });
+  await expect(page.locator(".game-header .level")).toHaveText(`${pad2(n)} / 20`, { timeout: 30_000 });
   await expect(page.getByRole("button", { name: "第 1 行第 1 列" })).toBeEnabled({ timeout: 20_000 });
 }
 
@@ -29,8 +30,15 @@ export async function answer(page: Page, n: number, kind: "correct" | "wrong") {
 }
 
 export async function next(page: Page) {
-  const button = page.getByRole("button", { name: /^(下一关|查看结果)/ });
-  if (await button.isVisible().catch(() => false)) await button.click().catch(() => undefined);
+  const revealNext = page.getByTestId("reveal-next");
+  const button = (await revealNext.count()) > 0 ? revealNext : page.getByRole("button", { name: /^(下一关|查看结果)/ });
+  await expect(button).toBeVisible({ timeout: 10_000 });
+  await button.click();
+  await page.waitForFunction(
+    () => document.querySelector(".game-header .level") != null || location.pathname.startsWith("/result/"),
+    undefined,
+    { timeout: 20_000 },
+  );
 }
 
 export async function assertOneScreen(page: Page) {
