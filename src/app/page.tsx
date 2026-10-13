@@ -2,7 +2,7 @@ import { StartButton } from "@/components/StartButton";
 
 export default function HomePage() {
   return (
-    <main className="mobile-shell landing">
+    <main className="mobile-shell landing one-screen">
       <div className="brand">HUMAN / AI</div>
       <section className="hero">
         <h1>

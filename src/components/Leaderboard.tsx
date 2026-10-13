@@ -1,8 +1,9 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { LeaderboardRow } from "@/game/contracts";
 import { api, ApiError } from "@/lib/api-client";
+import { DetailsSheet } from "./DetailsSheet";
 
 function Row({ row }: { row: LeaderboardRow }) {
   return (
@@ -17,12 +18,31 @@ function Row({ row }: { row: LeaderboardRow }) {
   );
 }
 
-export function Leaderboard({ editable, initialNickname }: { editable: boolean; initialNickname: string | null }) {
+function LeaderboardList({ rows }: { rows: LeaderboardRow[] }) {
+  return (
+    <ol className="board-rows">
+      {rows.map((row, index) => (
+        <Row key={`${row.rank}-${row.nickname}-${index}`} row={row} />
+      ))}
+    </ol>
+  );
+}
+
+export function Leaderboard({
+  editable,
+  initialNickname,
+  compact = false,
+}: {
+  editable: boolean;
+  initialNickname: string | null;
+  compact?: boolean;
+}) {
   const [data, setData] = useState<{ top: LeaderboardRow[]; around: LeaderboardRow[] } | null>(null);
   const [failed, setFailed] = useState(false);
   const [nickname, setNickname] = useState(initialNickname ?? "");
   const [saving, setSaving] = useState(false);
   const [note, setNote] = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen] = useState(false);
 
   const load = useCallback(async () => {
     try {
@@ -48,6 +68,15 @@ export function Leaderboard({ editable, initialNickname }: { editable: boolean; 
     };
   }, []);
 
+  const compactRows = useMemo(() => {
+    if (!data) return [];
+    const top = data.top.slice(0, 3);
+    const meInTop = top.some((row) => row.isMe);
+    if (meInTop) return top;
+    const me = data.around.find((row) => row.isMe) ?? data.top.find((row) => row.isMe);
+    return me ? [...top, me] : top;
+  }, [data]);
+
   async function save(event: React.FormEvent) {
     event.preventDefault();
     const value = nickname.trim();
@@ -65,28 +94,37 @@ export function Leaderboard({ editable, initialNickname }: { editable: boolean; 
   }
 
   return (
-    <section className="section" aria-labelledby="leaderboard-title">
+    <section className={compact ? "section section-compact" : "section"} aria-labelledby="leaderboard-title">
       <h2 className="section-title" id="leaderboard-title">
         全服排行
       </h2>
       {failed ? <p className="muted">排行榜暂时无法加载。</p> : null}
       {data ? (
-        <ol className="board-rows">
-          {data.top.map((row, index) => (
-            <Row key={`top-${index}`} row={row} />
-          ))}
-          {data.around.length > 0 ? (
-            <li aria-hidden className="gap-row">
-              <span className="gap">···</span>
-            </li>
-          ) : null}
-          {data.around.map((row, index) => (
-            <Row key={`around-${index}`} row={row} />
-          ))}
-        </ol>
+        compact ? (
+          <>
+            <LeaderboardList rows={compactRows.filter((row) => row.nickname !== "···")} />
+            <button type="button" className="text-action details-link" onClick={() => setSheetOpen(true)}>
+              完整排行与昵称
+            </button>
+          </>
+        ) : (
+          <>
+            <LeaderboardList rows={data.top} />
+            {data.around.length > 0 ? (
+              <ol className="board-rows">
+                <li aria-hidden className="gap-row">
+                  <span className="gap">···</span>
+                </li>
+                {data.around.map((row, index) => (
+                  <Row key={`around-${index}`} row={row} />
+                ))}
+              </ol>
+            ) : null}
+          </>
+        )
       ) : null}
-      <p className="muted note">只按最高到达关卡排名，同关并列。</p>
-      {editable ? (
+      {!compact ? <p className="muted note">只按最高到达关卡排名，同关并列。</p> : null}
+      {!compact && editable ? (
         <form className="nickname-form" onSubmit={save}>
           <label className="visually-hidden" htmlFor="nickname">
             昵称
@@ -97,10 +135,39 @@ export function Leaderboard({ editable, initialNickname }: { editable: boolean; 
           </button>
         </form>
       ) : null}
-      {note ? (
+      {!compact && note ? (
         <p className="muted note" role="status">
           {note}
         </p>
+      ) : null}
+
+      {compact ? (
+        <DetailsSheet open={sheetOpen} title="全服排行" onClose={() => setSheetOpen(false)}>
+          {data ? <LeaderboardList rows={[...data.top, ...data.around]} /> : null}
+          <p className="muted note">只按最高到达关卡排名，同关并列。</p>
+          {editable ? (
+            <form className="nickname-form" onSubmit={save}>
+              <label className="visually-hidden" htmlFor="nickname-sheet">
+                昵称
+              </label>
+              <input
+                id="nickname-sheet"
+                maxLength={24}
+                placeholder="昵称（可选）"
+                value={nickname}
+                onChange={(event) => setNickname(event.target.value)}
+              />
+              <button type="submit" className="secondary-action" disabled={saving || !nickname.trim()}>
+                保存
+              </button>
+            </form>
+          ) : null}
+          {note ? (
+            <p className="muted note" role="status">
+              {note}
+            </p>
+          ) : null}
+        </DetailsSheet>
       ) : null}
     </section>
   );

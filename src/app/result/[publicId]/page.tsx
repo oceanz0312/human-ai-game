@@ -21,7 +21,7 @@ export default async function ResultPage({ params }: { params: Promise<{ publicI
   const shareUrl = `${await publicBaseUrl()}/share/${publicId}`;
 
   return (
-    <main className="mobile-shell result">
+    <main className="mobile-shell result one-screen">
       <div className="topline">
         <span className="eyebrow">{result.cleared ? "挑战完成" : "挑战结束"}</span>
         <span className="brand">HUMAN / AI</span>
@@ -31,7 +31,7 @@ export default async function ResultPage({ params }: { params: Promise<{ publicI
         <ShareActions result={result} shareUrl={shareUrl} />
         <StartButton label="再玩一次" replay />
       </div>
-      <Leaderboard editable initialNickname={result.nickname} />
+      <Leaderboard editable initialNickname={result.nickname} compact />
     </main>
   );
 }

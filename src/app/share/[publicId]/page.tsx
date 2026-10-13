@@ -31,7 +31,7 @@ export default async function ShareLandingPage({ params }: { params: Promise<{ p
   const who = result.nickname ?? "TA";
 
   return (
-    <main className="mobile-shell share-landing">
+    <main className="mobile-shell share-landing one-screen">
       <div className="topline">
         <span className="brand">HUMAN / AI</span>
         <span className="eyebrow">20 关挑战</span>

@@ -18,7 +18,7 @@ export default defineConfig({
   reporter: [["list"]],
   use: { baseURL: `http://127.0.0.1:${PORT}`, browserName: "chromium", trace: "retain-on-failure" },
   projects: [
-    { name: "375x812", use: mobile(375, 812) },
+    { name: "375x667", use: mobile(375, 667) },
     { name: "390x844", use: mobile(390, 844), grep: /@layout/ },
     { name: "430x932", use: mobile(430, 932), grep: /@layout/ },
   ],
