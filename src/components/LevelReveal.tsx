@@ -27,7 +27,7 @@ export function LevelReveal({ round, fasterThanAiCount, ended, onNext, browserAi
   const showHeatmap = round.correctChoice !== null;
   const [detailsOpen, setDetailsOpen] = useState(false);
 
-  const humanMs = round.human.elapsedMs;
+  const humanMs = round.human?.elapsedMs ?? null;
   const aiMs = round.ai.elapsedMs;
 
   const danmakuMessages = useMemo(() => {
