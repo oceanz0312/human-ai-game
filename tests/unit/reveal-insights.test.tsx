@@ -28,12 +28,17 @@ const completeRound: RoundReveal = {
 test("the reveal page surfaces probability, confidence, and measured timing", async () => {
   render(<LevelReveal round={completeRound} fasterThanAiCount={1} ended={false} onNext={() => undefined} />);
   expect(screen.getByTestId("reveal-board")).toBeInTheDocument();
-  expect(await screen.findByText(/AI 最看好/)).toHaveTextContent("第 2 行第 2 列 71%");
+  expect(screen.queryByText(/AI 最看好/)).toBeNull();
   fireEvent.click(screen.getByRole("button", { name: "AI 详情" }));
   const dialog = screen.getByRole("dialog");
+  const chips = within(dialog).getAllByTestId("candidate-chip");
+  expect(chips.length).toBeGreaterThan(0);
+  expect(chips.length).toBeLessThanOrEqual(3);
+  expect(chips[0]).toHaveTextContent("2 行 2 列");
+  expect(chips[0]).toHaveTextContent("71%");
   expect(within(dialog).getByText("82%")).toBeInTheDocument();
-  expect(within(dialog).getByText(/模型/)).toHaveTextContent("1.60s");
-  expect(within(dialog).getByText(/其余/)).toHaveTextContent("0.50s");
+  expect(within(dialog).getByText(/模型推理/)).toHaveTextContent("1.60s");
+  expect(within(dialog).getByText(/转发与等待/)).toHaveTextContent("0.50s");
 });
 
 test("a refusal shows the dedicated copy without faking progress", () => {
@@ -62,4 +67,11 @@ test("a refusal shows the dedicated copy without faking progress", () => {
   );
   fireEvent.click(screen.getByRole("button", { name: "AI 详情" }));
   expect(within(screen.getByRole("dialog")).getByText("AI 放弃作答：模型未选出任何格子。")).toBeInTheDocument();
+});
+
+test("the next button sits below the board", () => {
+  render(<LevelReveal round={completeRound} fasterThanAiCount={0} ended={false} onNext={() => undefined} />);
+  const board = screen.getByTestId("reveal-board");
+  const next = screen.getByTestId("reveal-next");
+  expect(board.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
 });

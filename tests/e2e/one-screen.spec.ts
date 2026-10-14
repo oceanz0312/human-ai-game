@@ -1,10 +1,14 @@
 import { expect, test } from "@playwright/test";
-import { answer, assertOneScreen, assertRevealPrimaryAboveHeatmap, startGame, waitForPlayable } from "./helpers";
+import { answer, assertDanmakuOffBoard, assertOneScreen, assertRevealNextBelowBoard, boardSize, startGame, waitForPlayable } from "./helpers";
 
 test.describe("@layout one-screen zero scroll", () => {
-  test("home fits one viewport", async ({ page }) => {
+  test("home fits one viewport with the race animation", async ({ page }) => {
     await page.goto("/");
     await assertOneScreen(page);
+    await expect(page.getByTestId("home-race")).toBeVisible();
+    const start = await page.getByRole("button", { name: "开始挑战" }).boundingBox();
+    expect(start!.y + start!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+    await expect(page.locator("body")).not.toContainText(/命|20 关/);
   });
 
   test("countdown and play fit one viewport", async ({ page }) => {
@@ -15,15 +19,25 @@ test.describe("@layout one-screen zero scroll", () => {
     await expect(page.getByTestId("ai-danmaku")).toBeVisible();
     await expect(page.locator(".heatmap-cell")).toHaveCount(0);
     await expect(page.getByText(/AI 最看好|置信度/)).toHaveCount(0);
+    await assertDanmakuOffBoard(page);
   });
 
-  test("reveal primary is above heatmap without scrolling", async ({ page }) => {
+  test("reveal keeps the play board size and puts next below it", async ({ page }) => {
     await startGame(page);
     await waitForPlayable(page, 1);
+    const play = await boardSize(page);
     await answer(page, 1, "correct");
     await assertOneScreen(page);
-    await assertRevealPrimaryAboveHeatmap(page);
-    await expect(page.locator(".reveal-top-actions .primary-action")).toBeVisible();
+    const reveal = await boardSize(page);
+    expect(Math.abs(play!.width - reveal!.width), "board width stable").toBeLessThanOrEqual(2);
+    expect(Math.abs(play!.height - reveal!.height), "board height stable").toBeLessThanOrEqual(2);
+    await assertRevealNextBelowBoard(page);
+    for (let i = 0; i < 4; i += 1) {
+      await assertDanmakuOffBoard(page);
+      await page.waitForTimeout(500);
+    }
+    await page.getByRole("button", { name: "AI 详情" }).click();
+    await expect(page.getByRole("dialog")).toBeVisible();
   });
 
   test("result and share landing fit after a short run", async ({ page }) => {

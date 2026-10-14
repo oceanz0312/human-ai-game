@@ -3,10 +3,16 @@
 import { aiErrorRevealHint, aiErrorRevealTitle } from "@/game/ai-error-copy";
 import {
   buildTimingTimeline,
-  describeTopCandidatesFriendly,
+  formatPercent,
   hesitationFromProbabilities,
+  rankCandidates,
 } from "@/game/ai-insights";
 import type { RoundReveal } from "@/game/contracts";
+
+function shortCell(id: string) {
+  const match = /^r(\d+)c(\d+)$/.exec(id);
+  return match ? `${match[1]} 行 ${match[2]} 列` : id;
+}
 
 interface AiRevealInsightsProps {
   round: RoundReveal;
@@ -17,7 +23,7 @@ export function AiRevealInsights({ round }: AiRevealInsightsProps) {
   const waiting = ai.status === "pending" || ai.status === "running";
   const refused = ai.refused;
   const hasProbabilities = Boolean(ai.probabilities && Object.keys(ai.probabilities).length);
-  const topLine = describeTopCandidatesFriendly(ai.probabilities, 3);
+  const ranked = rankCandidates(ai.probabilities, 3);
   const hesitation = hesitationFromProbabilities(ai.probabilities);
   const timeline = buildTimingTimeline(ai.elapsedMs, ai.modelElapsedMs);
   const confidencePercent = ai.confidence != null ? Math.round(ai.confidence * 100) : null;
@@ -58,13 +64,25 @@ export function AiRevealInsights({ round }: AiRevealInsightsProps) {
   }
 
   return (
-    <section className="ai-insights">
+    <section className="ai-insights" data-testid="ai-insights">
       <h2 className="insights-title">AI 决策过程</h2>
 
-      {hasProbabilities && topLine ? (
-        <p className="insights-lead">
-          AI 最看好：<span className="num">{topLine}</span>
-        </p>
+      {hasProbabilities && ranked.length ? (
+        <div className="insights-top">
+          <p className="insights-label">AI 最看好</p>
+          <ol className="candidate-chips" data-testid="candidate-chips">
+            {ranked.map((item) => {
+              const marks = [item.id === ai.choice ? "is-ai" : "", item.id === round.correctChoice ? "is-correct" : ""].filter(Boolean).join(" ");
+              return (
+                <li key={item.id} className={`candidate-chip ${marks}`.trim()} data-testid="candidate-chip">
+                  <span className="candidate-cell">{shortCell(item.id)}</span>
+                  <strong className="num">{formatPercent(item.probability)}</strong>
+                  {item.id === round.correctChoice ? <span className="candidate-tag">答案</span> : null}
+                </li>
+              );
+            })}
+          </ol>
+        </div>
       ) : (
         <p className="insights-muted">本关未保存概率分布（可能是较早的对局记录）。</p>
       )}
@@ -108,10 +126,10 @@ export function AiRevealInsights({ round }: AiRevealInsightsProps) {
           </div>
           <div className="timing-legend">
             <span>
-              模型 <span className="num">{((timeline.modelMs ?? 0) / 1000).toFixed(2)}s</span>
+              模型推理 <span className="num">{((timeline.modelMs ?? 0) / 1000).toFixed(2)}s</span>
             </span>
             <span>
-              其余 <span className="num">{((timeline.overheadMs ?? 0) / 1000).toFixed(2)}s</span>
+              转发与等待 <span className="num">{((timeline.overheadMs ?? 0) / 1000).toFixed(2)}s</span>
             </span>
           </div>
           <p className="insights-speed">Decisions API 一次返回最终答案，System 1 级速度。</p>
