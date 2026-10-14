@@ -8,9 +8,10 @@ interface AiActivityPanelProps {
   submitting?: boolean;
   snapshot?: AiActivitySnapshot | null;
   compact?: boolean;
+  title?: string;
 }
 
-export function AiActivityPanel({ progress, submitting = false, snapshot, compact = false }: AiActivityPanelProps) {
+export function AiActivityPanel({ progress, submitting = false, snapshot, compact = false, title = "AI 活动" }: AiActivityPanelProps) {
   const steps = snapshot?.steps ?? buildAiActivitySteps(progress, submitting);
 
   return (
@@ -21,7 +22,7 @@ export function AiActivityPanel({ progress, submitting = false, snapshot, compac
     >
       <div className="ai-activity-head">
         <span className="ai-dot" aria-hidden />
-        <span className="ai-activity-title">AI 活动</span>
+        <span className="ai-activity-title">{title}</span>
       </div>
       <ol className="ai-activity-steps">
         {steps.map((step) => (

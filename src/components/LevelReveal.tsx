@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import type { AiActivitySnapshot } from "@/game/ai-activity";
 import type { RoundReveal } from "@/game/contracts";
-import { danmakuFromActivitySteps, danmakuInsightFacts } from "@/game/danmaku-messages";
+import { danmakuFromActivitySteps } from "@/game/danmaku-messages";
 import { describeReveal } from "@/game/reveal-copy";
 import { pad2 } from "@/lib/format";
 import { AiActivityPanel } from "./AiActivityPanel";
@@ -31,22 +31,16 @@ export function LevelReveal({ round, fasterThanAiCount, ended, onNext, browserAi
   const aiMs = round.ai.elapsedMs;
 
   const danmakuMessages = useMemo(() => {
+    // Reveal danmaku replays real activity only; insight facts live in the details sheet.
     const fromActivity = browserAiActivity?.steps ? danmakuFromActivitySteps(browserAiActivity.steps, false) : [];
-    const facts = danmakuInsightFacts(round);
-    return [...fromActivity, ...facts].slice(-8);
-  }, [browserAiActivity, round]);
+    return fromActivity.slice(-8);
+  }, [browserAiActivity]);
 
   return (
     <main className="mobile-shell reveal one-screen" aria-live="polite">
       <div className="topline">
         <span className="eyebrow num">第 {pad2(round.level)} 关</span>
         <span className="eyebrow">答案揭晓</span>
-      </div>
-
-      <div className="reveal-top-actions">
-        <button type="button" className="primary-action num" data-testid="reveal-next" onClick={onNext}>
-          {nextLabel}
-        </button>
       </div>
 
       <section className="reveal-stage">
@@ -84,6 +78,12 @@ export function LevelReveal({ round, fasterThanAiCount, ended, onNext, browserAi
           <AiDanmakuLane messages={danmakuMessages} replay={!detailsOpen} paused={detailsOpen} />
         )}
 
+        <div className="reveal-next-actions">
+          <button type="button" className="primary-action num" data-testid="reveal-next" onClick={onNext}>
+            {nextLabel}
+          </button>
+        </div>
+
         <button type="button" className="text-action details-link" onClick={() => setDetailsOpen(true)}>
           AI 详情
         </button>
@@ -91,7 +91,7 @@ export function LevelReveal({ round, fasterThanAiCount, ended, onNext, browserAi
 
       <DetailsSheet open={detailsOpen} title="AI 详情" onClose={() => setDetailsOpen(false)}>
         {showHeatmap ? <AiRevealInsights round={round} /> : null}
-        {browserAiActivity ? <AiActivityPanel progress={null} snapshot={browserAiActivity} /> : null}
+        {browserAiActivity ? <AiActivityPanel progress={null} snapshot={browserAiActivity} title="决策时间线" /> : null}
       </DetailsSheet>
     </main>
   );

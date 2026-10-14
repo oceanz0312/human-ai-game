@@ -20,6 +20,7 @@ export default defineConfig({
   projects: [
     { name: "375x667", use: mobile(375, 667) },
     { name: "390x844", use: mobile(390, 844), grep: /@layout/ },
+    { name: "402x874", use: mobile(402, 874), grep: /@layout/ },
     { name: "430x932", use: mobile(430, 932), grep: /@layout/ },
   ],
   webServer: {

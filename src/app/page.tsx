@@ -1,3 +1,4 @@
+import { HomeRaceAnimation } from "@/components/HomeRaceAnimation";
 import { StartButton } from "@/components/StartButton";
 
 export default function HomePage() {
@@ -11,15 +12,16 @@ export default function HomePage() {
           更快吗？
         </h1>
         <p>
-          找出唯一不同。
+          大家来找茬：找出唯一不同。
           <br />
-          20 关，3 条命。
+          和真实 AI 同场比快。
         </p>
+        <HomeRaceAnimation />
       </section>
       <div className="actions">
         <StartButton />
         <p className="footnote">
-          <span>固定 20 关</span>
+          <span>找出唯一不同</span>
           <span className="visually-hidden"> · </span>
           <span>全服同题</span>
         </p>

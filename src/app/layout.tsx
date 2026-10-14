@@ -3,7 +3,7 @@ import "./globals.css";
 
 export const metadata: Metadata = {
   title: "HUMAN / AI · 你比 AI 更快吗？",
-  description: "找出唯一不同。20 关，3 条命。和真实 AI 比一比谁更快。",
+  description: "大家来找茬：找出唯一不同，和真实 AI 同场比快。",
 };
 
 export const viewport: Viewport = {

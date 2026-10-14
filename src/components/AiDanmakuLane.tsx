@@ -3,6 +3,9 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { DanmakuMessage } from "@/game/danmaku-messages";
 
+/** Danmaku lives in a thin lane above the board; at most two pills at once. */
+export const MAX_VISIBLE = 2;
+
 interface AiDanmakuLaneProps {
   messages: DanmakuMessage[];
   replay?: boolean;
@@ -40,8 +43,8 @@ function DanmakuDisplay({
           key={`${message.id}-${index}`}
           className="ai-danmaku-item"
           role="status"
-          data-lane={index % 3}
-          style={reducedMotion ? undefined : { animationDelay: `${index * 0.15}s` }}
+          data-lane={index % MAX_VISIBLE}
+          style={reducedMotion ? undefined : { animationDelay: `${index * 0.4}s` }}
         >
           {message.text}
         </p>
@@ -59,7 +62,7 @@ function DanmakuReplay({ messages, paused }: { messages: DanmakuMessage[]; pause
     const delay = cursor === 0 ? 200 : 600;
     const timer = window.setTimeout(() => {
       const next = messages[cursor];
-      setVisible((prev) => [...prev, next].slice(-3));
+      setVisible((prev) => [...prev, next].slice(-MAX_VISIBLE));
       setCursor((c) => c + 1);
     }, delay);
     return () => window.clearTimeout(timer);
@@ -74,7 +77,7 @@ export function AiDanmakuLane({ messages, replay = false, paused = false }: AiDa
   if (messages.length === 0) return null;
 
   if (paused || reducedMotion || !replay) {
-    return <DanmakuDisplay visible={messages.slice(-3)} reducedMotion={reducedMotion} />;
+    return <DanmakuDisplay visible={messages.slice(-MAX_VISIBLE)} reducedMotion={reducedMotion} />;
   }
 
   const replayKey = messages.map((message) => message.id).join("\0");

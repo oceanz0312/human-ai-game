@@ -54,22 +54,52 @@ export async function assertOneScreen(page: Page) {
   expect(metrics.scrollWidth, "no horizontal scroll").toBeLessThanOrEqual(metrics.innerWidth + 1);
 }
 
-export async function assertRevealPrimaryAboveHeatmap(page: Page) {
+export async function assertRevealNextBelowBoard(page: Page) {
   const layout = await page.evaluate(() => {
-    const button = document.querySelector(".reveal-top-actions .primary-action");
+    const button = document.querySelector('[data-testid="reveal-next"]');
     const board = document.querySelector('[data-testid="reveal-board"]');
+    const legend = document.querySelector(".heatmap-legend");
     if (!button || !board) return null;
     const b = button.getBoundingClientRect();
     const h = board.getBoundingClientRect();
+    const l = legend?.getBoundingClientRect();
     return {
-      buttonBottom: b.bottom,
-      boardTop: h.top,
+      buttonTop: b.top,
+      boardBottom: h.bottom,
+      legendBottom: l ? l.bottom : h.bottom,
       buttonInView: b.top >= 0 && b.bottom <= window.innerHeight,
     };
   });
   expect(layout, "reveal layout present").not.toBeNull();
-  expect(layout!.buttonInView, "reveal primary in viewport").toBe(true);
-  expect(layout!.buttonBottom, "primary above heatmap board").toBeLessThanOrEqual(layout!.boardTop + 1);
+  expect(layout!.buttonInView, "reveal next in viewport").toBe(true);
+  expect(layout!.buttonTop, "next below board").toBeGreaterThanOrEqual(layout!.boardBottom - 1);
+  expect(layout!.buttonTop, "next below legend").toBeGreaterThanOrEqual(layout!.legendBottom - 1);
+}
+
+export async function boardSize(page: Page) {
+  return page.evaluate(() => {
+    const board = document.querySelector(".board-stage .board");
+    if (!board) return null;
+    const r = board.getBoundingClientRect();
+    return { width: r.width, height: r.height };
+  });
+}
+
+/** Every visible danmaku pill must sit outside the board rectangle. */
+export async function assertDanmakuOffBoard(page: Page) {
+  const overlap = await page.evaluate(() => {
+    const board = document.querySelector(".board-stage .board");
+    if (!board) return null;
+    const b = board.getBoundingClientRect();
+    const items = Array.from(document.querySelectorAll(".ai-danmaku-item")).map((el) => el.getBoundingClientRect());
+    return {
+      count: items.length,
+      overlapping: items.filter((r) => r.bottom > b.top + 2 && r.top < b.bottom && r.right > b.left && r.left < b.right).length,
+    };
+  });
+  expect(overlap, "board present").not.toBeNull();
+  expect(overlap!.count, "at most two danmaku").toBeLessThanOrEqual(2);
+  expect(overlap!.overlapping, "danmaku never covers board").toBe(0);
 }
 
 /** Visual acceptance rules from docs/design/visual-style.md §11. */
@@ -93,7 +123,10 @@ export async function assertMobileLayout(page: Page) {
     }
     const cells = Array.from(document.querySelectorAll(".board .cell")).map((cell) => cell.getBoundingClientRect());
     const clipped = Array.from(document.querySelectorAll("h1, p, span, button, .value")).filter(
-      (element) => !element.classList.contains("visually-hidden") && element.scrollWidth > element.clientWidth + 1 && getComputedStyle(element).overflow === "hidden",
+      (element) =>
+        !element.classList.contains("visually-hidden") &&
+        // danmaku pills ellipsize by design
+        !element.classList.contains("ai-danmaku-item") && element.scrollWidth > element.clientWidth + 1 && getComputedStyle(element).overflow === "hidden",
     );
     return {
       viewport,

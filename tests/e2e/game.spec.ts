@@ -31,9 +31,7 @@ test("@layout a full clear run follows the approved mobile layout on every view"
       await expect(page.getByRole("heading", { name: /你赢了|AI 赢了|AI 仍在判断/ })).toBeVisible();
       await expect(page.getByRole("button", { name: "AI 详情" })).toBeVisible();
       await expect(page.getByTestId("ai-danmaku")).toBeVisible();
-      await expect(page.getByTestId("ai-danmaku")).toContainText("决策凭证已签发");
-      await expect(page.getByTestId("ai-danmaku")).toContainText(/Worker 已响应|等待 Worker/);
-      await expect(page.locator(".reveal-top-actions .primary-action")).toBeVisible();
+      await expect(page.getByTestId("reveal-next")).toBeVisible();
       await expect(page.getByTestId("reveal-board")).toBeVisible();
       await assertMobileLayout(page);
       await screenshot(page, testInfo, "3-reveal");
