@@ -16,7 +16,7 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   reporter: [["list"]],
-  use: { baseURL: `http://127.0.0.1:${PORT}`, browserName: "chromium", trace: "retain-on-failure" },
+  use: { baseURL: `http://127.0.0.1:${PORT}`, browserName: "chromium", channel: process.env.PW_CHANNEL || undefined, trace: "retain-on-failure" },
   projects: [
     { name: "375x667", use: mobile(375, 667) },
     { name: "390x844", use: mobile(390, 844), grep: /@layout/ },

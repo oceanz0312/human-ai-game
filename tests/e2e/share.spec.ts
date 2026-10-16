@@ -39,7 +39,10 @@ test("a finished run generates a poster and a shareable landing page", async ({ 
   await friendPage.waitForURL(/\/play\//);
   await friend.close();
 
-  const og = await page.request.get(`/share/${publicId}/opengraph-image`);
+  const shareHtml = await (await page.request.get(`/share/${publicId}`)).text();
+  const ogUrl = /<meta property="og:image" content="([^"]+)"/.exec(shareHtml)?.[1];
+  expect(ogUrl, "share page advertises an og:image").toBeTruthy();
+  const og = await page.request.get(new URL(ogUrl!).pathname);
   expect(og.status()).toBe(200);
   expect(og.headers()["content-type"]).toContain("image/png");
 });

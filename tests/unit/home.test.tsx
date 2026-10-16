@@ -1,10 +1,10 @@
 import { render, screen } from "@testing-library/react";
-import HomePage from "@/app/page";
+import HomePage from "@/app/[locale]/page";
 
 vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
-test("shows the approved one-action landing page", () => {
-  render(<HomePage />);
+test("shows the approved one-action landing page", async () => {
+  render(await HomePage({ params: Promise.resolve({ locale: "zh" }) }));
   expect(screen.getByText("HUMAN / AI")).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: /你比 AI\s*更快吗/ })).toBeInTheDocument();
   expect(screen.getAllByRole("button")).toHaveLength(1);

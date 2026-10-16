@@ -3,7 +3,7 @@ import { answer, assertMobileLayout, next, recordForeignRequests, screenshot, st
 
 test("@layout a full clear run follows the approved mobile layout on every view", async ({ page }, testInfo) => {
   const foreign = recordForeignRequests(page);
-  await page.goto("/");
+  await page.goto("/zh");
   await expect(page.getByText("HUMAN / AI")).toBeVisible();
   await expect(page.getByRole("heading", { name: /你比 AI\s*更快吗/ })).toBeVisible();
   await expect(page.getByRole("button")).toHaveCount(1);
