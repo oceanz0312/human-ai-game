@@ -70,7 +70,8 @@ test("the browser bundle never embeds OpenAI keys or server decision secrets", a
     ...collectSourceFiles("src/components", ".tsx"),
     ...collectSourceFiles("src/lib", ".ts"),
     ...collectSourceFiles("src/levels", ".ts"),
-    "src/app/page.tsx",
+    ...collectSourceFiles("src/app/[locale]", ".tsx"),
+    ...collectSourceFiles("src/i18n", ".ts"),
   ];
   for (const file of clientFiles) {
     const source = await readFile(file, "utf8");

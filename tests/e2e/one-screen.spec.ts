@@ -3,7 +3,7 @@ import { answer, assertDanmakuOffBoard, assertOneScreen, assertRevealNextBelowBo
 
 test.describe("@layout one-screen zero scroll", () => {
   test("home fits one viewport with the race animation", async ({ page }) => {
-    await page.goto("/");
+    await page.goto("/zh");
     await assertOneScreen(page);
     await expect(page.getByTestId("home-race")).toBeVisible();
     const start = await page.getByRole("button", { name: "开始挑战" }).boundingBox();
