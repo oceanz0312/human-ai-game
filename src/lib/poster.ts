@@ -1,5 +1,8 @@
 import QRCode from "qrcode";
 import { pad2 } from "./format";
+import { FALLBACK_MESSAGE_LOCALE, translator } from "@/i18n/messages";
+import type { Locale } from "@/i18n/config";
+
 
 export const POSTER_WIDTH = 1080;
 export const POSTER_HEIGHT = 1920;
@@ -8,7 +11,12 @@ const FONT = 'Inter, -apple-system, BlinkMacSystemFont, "SF Pro Display", "PingF
 
 type Segment = { text: string; underline?: boolean };
 
-export function posterHeadline(result: { reachedLevel: number; fasterThanAiCount: number; cleared: boolean }): Segment[][] {
+export function posterHeadline(result: { reachedLevel: number; fasterThanAiCount: number; cleared: boolean }, locale: Locale = FALLBACK_MESSAGE_LOCALE): Segment[][] {
+  if (locale === "en") {
+    if (result.cleared) return [[{ text: "I cleared" }], [{ text: "HUMAN / AI" }]];
+    if (result.fasterThanAiCount > 0) return [[{ text: "I beat the AI" }], [{ text: String(result.fasterThanAiCount), underline: true }, { text: result.fasterThanAiCount === 1 ? " time" : " times" }]];
+    return [[{ text: "I reached" }], [{ text: "level " }, { text: String(result.reachedLevel), underline: true }]];
+  }
   if (result.cleared) return [[{ text: "我通关了" }], [{ text: "HUMAN / AI" }]];
   if (result.fasterThanAiCount > 0) {
     return [[{ text: "我有 " }, { text: String(result.fasterThanAiCount), underline: true }, { text: " 关" }], [{ text: "比 AI 更快" }]];
@@ -34,7 +42,9 @@ function drawQr(ctx: CanvasRenderingContext2D, url: string, x: number, y: number
 }
 
 /** Draws the approved 9:16 poster: brand, headline, reached level, challenge copy, short link and QR. */
-export async function renderPoster(input: { reachedLevel: number; fasterThanAiCount: number; cleared: boolean; url: string; shortUrl: string }) {
+export async function renderPoster(input: { reachedLevel: number; fasterThanAiCount: number; cleared: boolean; url: string; shortUrl: string; locale?: Locale }) {
+  const locale = input.locale ?? FALLBACK_MESSAGE_LOCALE;
+  const t = translator(locale);
   if (typeof document !== "undefined" && document.fonts) await document.fonts.ready.catch(() => undefined);
   const canvas = document.createElement("canvas");
   canvas.width = POSTER_WIDTH;
@@ -55,10 +65,10 @@ export async function renderPoster(input: { reachedLevel: number; fasterThanAiCo
   ctx.fillStyle = "#777777";
   ctx.font = `600 34px ${FONT}`;
   ctx.textAlign = "right";
-  ctx.fillText("20 关挑战", POSTER_WIDTH - pad, pad + 34);
+  ctx.fillText(t("20 关挑战"), POSTER_WIDTH - pad, pad + 34);
   ctx.textAlign = "left";
 
-  const lines = posterHeadline(input);
+  const lines = posterHeadline(input, locale);
   const headlineSize = 150;
   const lineHeight = headlineSize * 1.08;
   let y = 760;
@@ -77,7 +87,7 @@ export async function renderPoster(input: { reachedLevel: number; fasterThanAiCo
 
   ctx.fillStyle = "#777777";
   ctx.font = `600 46px ${FONT}`;
-  ctx.fillText(`最终到达第 ${pad2(input.reachedLevel)} 关`, pad, y + 40);
+  ctx.fillText(t("最终到达第 {n} 关", { n: pad2(input.reachedLevel) }), pad, y + 40);
 
   ctx.fillStyle = "#EEEEEA";
   ctx.fillRect(pad, 1440, POSTER_WIDTH - pad * 2, 2);
@@ -89,8 +99,8 @@ export async function renderPoster(input: { reachedLevel: number; fasterThanAiCo
 
   ctx.fillStyle = "#111111";
   ctx.font = `800 52px ${FONT}`;
-  ctx.fillText("同样的 20 关，", pad, 1560);
-  ctx.fillText("你能走到哪里？", pad, 1630);
+  ctx.fillText(t("同样的 20 关，"), pad, 1560);
+  ctx.fillText(t("你能走到哪里？"), pad, 1630);
   ctx.fillStyle = "#777777";
   ctx.font = `500 34px ${FONT}`;
   ctx.fillText(input.shortUrl, pad, POSTER_HEIGHT - pad, POSTER_WIDTH - pad * 2);

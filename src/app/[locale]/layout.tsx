@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import "../globals.css";
 import { htmlLang, isLocale, locales } from "@/i18n/config";
+import { I18nProvider } from "@/i18n/client";
 
 export const generateStaticParams = () => locales.map((locale) => ({ locale }));
 
@@ -19,7 +20,9 @@ export default async function LocaleLayout({ children, params }: { children: Rea
   if (!isLocale(locale)) notFound();
   return (
     <html lang={htmlLang[locale]} className="one-screen-app">
-      <body className="one-screen-app">{children}</body>
+      <body className="one-screen-app">
+        <I18nProvider locale={locale}>{children}</I18nProvider>
+      </body>
     </html>
   );
 }

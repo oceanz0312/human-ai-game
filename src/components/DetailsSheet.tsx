@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useRef } from "react";
+import { useT } from "@/i18n/client";
 
 interface DetailsSheetProps {
   open: boolean;
@@ -10,6 +11,7 @@ interface DetailsSheetProps {
 }
 
 export function DetailsSheet({ open, title, onClose, children }: DetailsSheetProps) {
+  const t = useT();
   const titleId = useId();
   const closeRef = useRef<HTMLButtonElement>(null);
 
@@ -44,7 +46,7 @@ export function DetailsSheet({ open, title, onClose, children }: DetailsSheetPro
             {title}
           </h2>
           <button ref={closeRef} type="button" className="close-action" onClick={onClose}>
-            关闭
+            {t("关闭")}
           </button>
         </div>
         <div className="details-sheet-body">{children}</div>

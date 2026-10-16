@@ -32,3 +32,16 @@ test("the chosen locale carries over to the session pages", async ({ page }) => 
   await page.waitForURL(/\/play\//);
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
 });
+
+test("the English game flow is fully localized", async ({ page }) => {
+  await page.goto("/");
+  await page.getByRole("button", { name: "Start" }).click();
+  await page.waitForURL(/\/play\//);
+  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.getByRole("button", { name: "Row 1, column 1" })).toBeEnabled({ timeout: 30_000 });
+  await expect(page.getByText("Tap the odd one")).toBeVisible();
+  await page.getByRole("button", { name: "Row 1, column 1" }).tap();
+  await expect(page.getByTestId("reveal-next")).toHaveText(/Next level|See results/);
+  const text = await page.locator("main").innerText();
+  expect(text).not.toMatch(/\p{Script=Han}/u);
+});

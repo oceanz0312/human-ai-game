@@ -32,10 +32,10 @@ test("a finished run generates a poster and a shareable landing page", async ({ 
   const friendPage = await friend.newPage();
   await friendPage.goto(`/share/${publicId}`);
   await expect(friendPage.getByTestId("reached-level")).toHaveText("03");
-  await expect(friendPage.getByText("同样的 20 关，你能走到哪里？")).toBeVisible();
+  await expect(friendPage.getByText("Same 20 levels — how far can you get?")).toBeVisible();
   await friendPage.goto(`/result/${publicId}`);
   await friendPage.waitForURL(/\/share\//);
-  await friendPage.getByRole("button", { name: "开始挑战" }).click();
+  await friendPage.getByRole("button", { name: "Start" }).click();
   await friendPage.waitForURL(/\/play\//);
   await friend.close();
 

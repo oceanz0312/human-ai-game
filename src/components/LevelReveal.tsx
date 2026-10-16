@@ -12,6 +12,7 @@ import { AiRevealInsights } from "./AiRevealInsights";
 import { DetailsSheet } from "./DetailsSheet";
 import { RevealHeatmapBoard } from "./RevealHeatmapBoard";
 import { VsRaceBar } from "./VsRaceBar";
+import { useLocale, useT } from "@/i18n/client";
 
 interface LevelRevealProps {
   round: RoundReveal;
@@ -22,8 +23,10 @@ interface LevelRevealProps {
 }
 
 export function LevelReveal({ round, fasterThanAiCount, ended, onNext, browserAiActivity }: LevelRevealProps) {
-  const copy = describeReveal(round);
-  const nextLabel = ended ? "查看结果" : "下一关";
+  const t = useT();
+  const locale = useLocale();
+  const copy = describeReveal(round, locale);
+  const nextLabel = ended ? t("查看结果") : t("下一关");
   const showHeatmap = round.correctChoice !== null;
   const [detailsOpen, setDetailsOpen] = useState(false);
 
@@ -32,15 +35,15 @@ export function LevelReveal({ round, fasterThanAiCount, ended, onNext, browserAi
 
   const danmakuMessages = useMemo(() => {
     // Reveal danmaku replays real activity only; insight facts live in the details sheet.
-    const fromActivity = browserAiActivity?.steps ? danmakuFromActivitySteps(browserAiActivity.steps, false) : [];
+    const fromActivity = browserAiActivity?.steps ? danmakuFromActivitySteps(browserAiActivity.steps, false, locale) : [];
     return fromActivity.slice(-8);
-  }, [browserAiActivity]);
+  }, [browserAiActivity, locale]);
 
   return (
     <main className="mobile-shell reveal one-screen" aria-live="polite">
       <div className="topline">
-        <span className="eyebrow num">第 {pad2(round.level)} 关</span>
-        <span className="eyebrow">答案揭晓</span>
+        <span className="eyebrow num">{t("第 {n} 关", { n: pad2(round.level) })}</span>
+        <span className="eyebrow">{t("答案揭晓")}</span>
       </div>
 
       <section className="reveal-stage">
@@ -56,7 +59,7 @@ export function LevelReveal({ round, fasterThanAiCount, ended, onNext, browserAi
 
         <VsRaceBar humanMs={humanMs} aiMs={aiMs} />
 
-        {fasterThanAiCount > 0 ? <p className="faster-note faster-note-compact">本局已有 {fasterThanAiCount} 关比 AI 更快</p> : null}
+        {fasterThanAiCount > 0 ? <p className="faster-note faster-note-compact">{t("本局已有 {n} 关比 AI 更快", { n: fasterThanAiCount })}</p> : null}
 
         {showHeatmap ? (
           <div className="reveal-visual-compact">
@@ -71,7 +74,7 @@ export function LevelReveal({ round, fasterThanAiCount, ended, onNext, browserAi
               />
             </div>
             <p className="heatmap-legend heatmap-legend-compact">
-              <span className="legend-ai">实线</span>=AI · <span className="legend-correct">虚线</span>=答案
+              <span className="legend-ai">{t("实线")}</span>=AI · <span className="legend-correct">{t("虚线")}</span>={t("答案")}
             </p>
           </div>
         ) : (
@@ -85,13 +88,13 @@ export function LevelReveal({ round, fasterThanAiCount, ended, onNext, browserAi
         </div>
 
         <button type="button" className="text-action details-link" onClick={() => setDetailsOpen(true)}>
-          AI 详情
+          {t("AI 详情")}
         </button>
       </section>
 
-      <DetailsSheet open={detailsOpen} title="AI 详情" onClose={() => setDetailsOpen(false)}>
+      <DetailsSheet open={detailsOpen} title={t("AI 详情")} onClose={() => setDetailsOpen(false)}>
         {showHeatmap ? <AiRevealInsights round={round} /> : null}
-        {browserAiActivity ? <AiActivityPanel progress={null} snapshot={browserAiActivity} title="决策时间线" /> : null}
+        {browserAiActivity ? <AiActivityPanel progress={null} snapshot={browserAiActivity} title={t("决策时间线")} /> : null}
       </DetailsSheet>
     </main>
   );
