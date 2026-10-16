@@ -8,6 +8,8 @@ import { SiteTop } from "@/components/site/SiteTop";
 import { localePath } from "@/i18n/config";
 import { getPages } from "@/i18n/pages";
 import { pageMetadata } from "@/lib/page-meta";
+import { getGame } from "@/games/registry";
+import { gameLd, JsonLd, organizationLd, websiteLd } from "@/seo/jsonld";
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -34,6 +36,7 @@ export default async function HomePage({ params }: Props) {
   ];
   return (
     <main className="mobile-shell landing one-screen">
+      <JsonLd data={[websiteLd(locale), organizationLd(), gameLd(getGame("spot-the-difference")!, locale, t.title, t.description)]} />
       <SiteTop locale={locale} path="/" />
       <section className="hero">
         <h1>

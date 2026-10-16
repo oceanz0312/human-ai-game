@@ -184,3 +184,20 @@ export function recordForeignRequests(page: Page) {
   });
   return foreign;
 }
+
+/** Locale-neutral content routes (one-screen + SEO checks). */
+export const CONTENT_PATHS = [
+  "/",
+  "/spot-the-difference",
+  "/find-the-difference",
+  "/human-vs-ai",
+  "/games",
+  "/how-to-play",
+  "/faq",
+  "/about",
+  "/privacy",
+  "/terms",
+  "/ai-opponents",
+  "/ai-opponents/luna",
+  "/games/spot-the-difference/play",
+];

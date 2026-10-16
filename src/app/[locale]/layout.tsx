@@ -2,11 +2,12 @@ import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import "../globals.css";
 import { htmlLang, isLocale, locales } from "@/i18n/config";
+import { SITE_NAME, SITE_URL } from "@/config/site";
 import { I18nProvider } from "@/i18n/client";
 
 export const generateStaticParams = () => locales.map((locale) => ({ locale }));
 
-export const metadata: Metadata = { title: "HUMAN / AI" };
+export const metadata: Metadata = { metadataBase: new URL(SITE_URL), title: SITE_NAME, applicationName: SITE_NAME };
 
 export const viewport: Viewport = {
   width: "device-width",

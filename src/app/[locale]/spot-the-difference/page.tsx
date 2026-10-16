@@ -4,6 +4,8 @@ import { StartButton } from "@/components/StartButton";
 import { resolveLocaleParam } from "@/i18n/config";
 import { getPages } from "@/i18n/pages";
 import { pageMetadata } from "@/lib/page-meta";
+import { getGame } from "@/games/registry";
+import { gameLd } from "@/seo/jsonld";
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -25,6 +27,7 @@ export default async function Page({ params }: Props) {
       eyebrow={copy.eyebrow}
       h1={copy.h1}
       intro={copy.intro}
+      ld={[gameLd(getGame("spot-the-difference")!, locale, copy.h1, copy.description)]}
       action={<StartButton label={nav.play} locale={locale} />}
       links={[{ href: "/how-to-play", label: nav.howToPlay }, { href: "/find-the-difference", label: nav.find }, { href: "/human-vs-ai", label: nav.humanVsAi }, { href: "/faq", label: nav.faq }, { href: "/ai-opponents/luna", label: nav.opponents }, { href: "/games", label: nav.games }]}
     >
