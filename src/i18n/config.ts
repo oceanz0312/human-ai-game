@@ -38,3 +38,9 @@ export function stripLocale(pathname: string) {
 }
 
 export const localeLabel: Record<Locale, string> = { en: "English", zh: "中文" };
+
+/** Resolve a [locale] route param (unknown values fall back to the default). */
+export async function resolveLocaleParam(params: Promise<{ locale: string }>): Promise<Locale> {
+  const { locale } = await params;
+  return isLocale(locale) ? locale : defaultLocale;
+}

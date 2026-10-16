@@ -12,6 +12,9 @@ const nextConfig: NextConfig = {
     return [
       { source: "/en", destination: "/", permanent: true },
       { source: "/en/:path*", destination: "/:path*", permanent: true },
+      // A game's structured base path never competes with its keyword landing page.
+      { source: "/games/spot-the-difference", destination: "/spot-the-difference", permanent: true },
+      { source: "/zh/games/spot-the-difference", destination: "/zh/spot-the-difference", permanent: true },
     ];
   },
   async rewrites() {

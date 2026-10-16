@@ -3,6 +3,11 @@ import { HomeRaceAnimation } from "@/components/HomeRaceAnimation";
 import { StartButton } from "@/components/StartButton";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
+import Link from "next/link";
+import { SiteTop } from "@/components/site/SiteTop";
+import { localePath } from "@/i18n/config";
+import { getPages } from "@/i18n/pages";
+import { pageMetadata } from "@/lib/page-meta";
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -12,16 +17,24 @@ const resolve = async (params: Props["params"]): Promise<Locale> => {
 };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  const t = getDictionary(await resolve(params)).home;
-  return { title: t.title, description: t.description };
+  const locale = await resolve(params);
+  const t = getDictionary(locale).home;
+  return pageMetadata(locale, "/", t);
 }
 
 export default async function HomePage({ params }: Props) {
   const locale = await resolve(params);
   const t = getDictionary(locale).home;
+  const { nav } = getPages(locale);
+  const links = [
+    { href: "/spot-the-difference", label: nav.spot },
+    { href: "/how-to-play", label: nav.howToPlay },
+    { href: "/human-vs-ai", label: nav.humanVsAi },
+    { href: "/faq", label: nav.faq },
+  ];
   return (
     <main className="mobile-shell landing one-screen">
-      <div className="brand">HUMAN / AI</div>
+      <SiteTop locale={locale} path="/" />
       <section className="hero">
         <h1>
           {t.h1[0]}
@@ -42,6 +55,13 @@ export default async function HomePage({ params }: Props) {
           <span className="visually-hidden"> · </span>
           <span>{t.footnote[1]}</span>
         </p>
+        <nav className="home-links" aria-label={nav.games}>
+          {links.map((link) => (
+            <Link key={link.href} href={localePath(locale, link.href)}>
+              {link.label}
+            </Link>
+          ))}
+        </nav>
       </div>
     </main>
   );
