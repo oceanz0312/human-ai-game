@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { localePath, type Locale } from "@/i18n/config";
 import { SiteTop } from "./SiteTop";
+import { getPages } from "@/i18n/pages";
+import { breadcrumbLd, JsonLd } from "@/seo/jsonld";
 
 export interface InfoLink {
   href: string;
@@ -21,6 +23,7 @@ export function InfoPage({
   action,
   links = [],
   className,
+  ld = [],
 }: {
   locale: Locale;
   path: string;
@@ -31,9 +34,21 @@ export function InfoPage({
   action?: React.ReactNode;
   links?: InfoLink[];
   className?: string;
+  /** Extra JSON-LD blocks (BreadcrumbList is always added). */
+  ld?: Record<string, unknown>[];
 }) {
+  const { nav } = getPages(locale);
+  const parents: Record<string, string> = { "/games": nav.games, "/ai-opponents": nav.opponents, "/spot-the-difference": nav.spot };
+  const crumbs = [{ name: nav.home, path: "/" }];
+  const segments = path.split("/").filter(Boolean);
+  for (let i = 1; i < segments.length; i += 1) {
+    const parent = `/${segments.slice(0, i).join("/")}`;
+    if (parents[parent]) crumbs.push({ name: parents[parent], path: parent });
+  }
+  if (path !== "/") crumbs.push({ name: h1, path });
   return (
     <main className={`mobile-shell info-page one-screen${className ? ` ${className}` : ""}`}>
+      <JsonLd data={[breadcrumbLd(locale, crumbs), ...ld]} />
       <SiteTop locale={locale} path={path} />
       <section className="info-head">
         <p className="eyebrow">{eyebrow}</p>

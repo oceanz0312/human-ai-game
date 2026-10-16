@@ -4,6 +4,7 @@ import { StartButton } from "@/components/StartButton";
 import { resolveLocaleParam } from "@/i18n/config";
 import { getPages } from "@/i18n/pages";
 import { pageMetadata } from "@/lib/page-meta";
+import { faqLd } from "@/seo/jsonld";
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -25,6 +26,7 @@ export default async function Page({ params }: Props) {
       eyebrow={copy.eyebrow}
       h1={copy.h1}
       intro={copy.intro}
+      ld={[faqLd(copy.items)]}
       action={<StartButton label={nav.play} locale={locale} />}
       links={[{ href: "/how-to-play", label: nav.howToPlay }, { href: "/ai-opponents/luna", label: nav.opponents }, { href: "/about", label: nav.about }, { href: "/privacy", label: nav.privacy }]}
     >

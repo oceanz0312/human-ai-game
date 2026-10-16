@@ -1,21 +1,6 @@
 import { expect, test } from "@playwright/test";
-import { assertOneScreen } from "./helpers";
+import { assertOneScreen, CONTENT_PATHS } from "./helpers";
 
-export const CONTENT_PATHS = [
-  "/",
-  "/spot-the-difference",
-  "/find-the-difference",
-  "/human-vs-ai",
-  "/games",
-  "/how-to-play",
-  "/faq",
-  "/about",
-  "/privacy",
-  "/terms",
-  "/ai-opponents",
-  "/ai-opponents/luna",
-  "/games/spot-the-difference/play",
-];
 
 test.describe("@layout content pages fit one screen", () => {
   for (const path of CONTENT_PATHS) {

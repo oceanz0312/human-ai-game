@@ -23,6 +23,7 @@ export async function generateMetadata({ params }: { params: Promise<{ publicId:
   const title = `${shareHeadline(result, locale)} · HUMAN / AI`;
   return {
     metadataBase: new URL(await publicBaseUrl()),
+    robots: { index: false, follow: true },
     title,
     description: t("同样的 20 关，你能走到哪里？"),
     openGraph: { title, description: t("同样的 20 关，你能走到哪里？") },
