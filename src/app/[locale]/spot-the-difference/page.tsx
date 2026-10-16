@@ -29,7 +29,7 @@ export default async function Page({ params }: Props) {
       intro={copy.intro}
       ld={[gameLd(getGame("spot-the-difference")!, locale, copy.h1, copy.description)]}
       action={<StartButton label={nav.play} locale={locale} />}
-      links={[{ href: "/how-to-play", label: nav.howToPlay }, { href: "/find-the-difference", label: nav.find }, { href: "/human-vs-ai", label: nav.humanVsAi }, { href: "/faq", label: nav.faq }, { href: "/ai-opponents/luna", label: nav.opponents }, { href: "/games", label: nav.games }]}
+      links={[{ href: "/how-to-play", label: nav.howToPlay }, { href: "/games/spot-the-difference/levels/1", label: nav.levels }, { href: "/games/spot-the-difference/leaderboard", label: nav.leaderboard }, { href: "/find-the-difference", label: nav.find }, { href: "/human-vs-ai", label: nav.humanVsAi }, { href: "/ai-opponents/luna", label: nav.opponents }]}
     >
       <div className="info-figure">
         {/* eslint-disable-next-line @next/next/no-img-element */}

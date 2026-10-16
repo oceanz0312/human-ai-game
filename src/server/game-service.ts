@@ -396,6 +396,10 @@ export function createGameService(deps: GameServiceDeps) {
       return row?.result.playerId ?? null;
     },
 
+    async getLevelStats() {
+      return deps.leaderboard.levelStats();
+    },
+
     async getLeaderboard(input: { viewerPlayerId: string | null; limit: number }) {
       const top = await deps.leaderboard.list({ limit: input.limit });
       const toRow = (row: { playerId: string; nickname: string | null; reachedLevel: number; rank: number }): LeaderboardRow => ({

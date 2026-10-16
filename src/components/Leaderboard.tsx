@@ -4,15 +4,17 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import type { LeaderboardRow } from "@/game/contracts";
 import { api, ApiError } from "@/lib/api-client";
 import { DetailsSheet } from "./DetailsSheet";
-import { useT } from "@/i18n/client";
+import { useLocale, useT } from "@/i18n/client";
 
 function Row({ row }: { row: LeaderboardRow }) {
   const t = useT();
+  const locale = useLocale();
+  const nickname = locale === "zh" ? row.nickname : row.nickname.replace(/^玩家 /, "Player ");
   return (
     <li className={row.isMe ? "me" : undefined}>
       <span className="rank">{row.rank}</span>
       <span className="name">
-        {row.nickname}
+        {nickname}
         {row.isMe ? t("（你）") : ""}
       </span>
       <span className="lvl">{t("第 {n} 关", { n: row.reachedLevel })}</span>
