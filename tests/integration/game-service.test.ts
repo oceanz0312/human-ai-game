@@ -310,3 +310,16 @@ test("the leaderboard ranks only by best level with ties sharing a rank", async 
   for (let level = 1; level <= 3; level += 1) await ctx.playRound(replay.id, ids[3], "wrong");
   expect(await ctx.leaderboard.getRankForPlayer(ids[3])).toEqual({ rank: 4, reachedLevel: 8 });
 });
+
+test("level stats aggregate settled rounds without exposing answers", async () => {
+  ctx = await setup();
+  const playerId = await ctx.player();
+  const session = await ctx.service.createSession({ playerId });
+  await ctx.playRound(session.id, playerId, "correct", { elapsedMs: 900 });
+  await ctx.playRound(session.id, playerId, "wrong");
+  const stats = await ctx.service.getLevelStats();
+  const one = stats.find((row) => row.level === 1)!;
+  expect(one).toMatchObject({ level: 1, samples: 1, humanCorrect: 1, aiAnswered: 1, aiCorrect: 1, fastestHumanMs: 900 });
+  expect(stats.find((row) => row.level === 2)).toMatchObject({ samples: 1, humanCorrect: 0, fastestHumanMs: null });
+  expect(JSON.stringify(stats)).not.toMatch(/r\dc\d/);
+});

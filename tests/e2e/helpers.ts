@@ -199,5 +199,6 @@ export const CONTENT_PATHS = [
   "/terms",
   "/ai-opponents",
   "/ai-opponents/luna",
+  "/games/spot-the-difference/leaderboard",
   "/games/spot-the-difference/play",
 ];

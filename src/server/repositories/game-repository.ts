@@ -302,8 +302,48 @@ export function createGameRepository(db: Database) {
   };
 }
 
+export interface LevelStatsRow {
+  level: number;
+  samples: number;
+  humanWins: number;
+  humanCorrect: number;
+  aiAnswered: number;
+  aiCorrect: number;
+  aiAvgMs: number | null;
+  fastestHumanMs: number | null;
+}
+
 export function createLeaderboardRepository(db: Database) {
   return {
+    /** Aggregate public per-level stats from settled rounds (no answers, no player ids). */
+    async levelStats(version = LEVEL_SET_VERSION): Promise<LevelStatsRow[]> {
+      const rows = await db
+        .select({
+          level: rounds.level,
+          samples: sql<number>`count(*)`,
+          humanWins: sql<number>`sum(case when ${rounds.winner} = 'human' then 1 else 0 end)`,
+          humanCorrect: sql<number>`sum(case when ${rounds.humanStatus} = 'correct' then 1 else 0 end)`,
+          aiAnswered: sql<number>`sum(case when ${rounds.aiStatus} = 'complete' then 1 else 0 end)`,
+          aiCorrect: sql<number>`sum(case when ${rounds.aiCorrect} = 1 then 1 else 0 end)`,
+          aiAvgMs: sql<number | null>`avg(case when ${rounds.aiStatus} = 'complete' then ${rounds.aiElapsedMs} end)`,
+          fastestHumanMs: sql<number | null>`min(case when ${rounds.humanStatus} = 'correct' then ${rounds.humanElapsedMs} end)`,
+        })
+        .from(rounds)
+        .innerJoin(sessions, eq(sessions.id, rounds.sessionId))
+        .where(and(eq(sessions.levelSetVersion, version), sql`${rounds.humanStatus} is not null`))
+        .groupBy(rounds.level);
+      return rows.map((row) => ({
+        level: Number(row.level),
+        samples: Number(row.samples),
+        humanWins: Number(row.humanWins ?? 0),
+        humanCorrect: Number(row.humanCorrect ?? 0),
+        aiAnswered: Number(row.aiAnswered ?? 0),
+        aiCorrect: Number(row.aiCorrect ?? 0),
+        aiAvgMs: row.aiAvgMs == null ? null : Math.round(Number(row.aiAvgMs)),
+        fastestHumanMs: row.fastestHumanMs == null ? null : Number(row.fastestHumanMs),
+      }));
+    },
+
     async getBest(playerId: string, version = LEVEL_SET_VERSION) {
       const [row] = await db
         .select()

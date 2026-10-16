@@ -1802,3 +1802,35 @@ p {
     min-height: 36px;
   }
 }
+
+.level-split {
+  display: flex;
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.level-thumb {
+  width: min(40vw, 150px);
+  height: auto;
+  aspect-ratio: 1;
+  border-radius: 10px;
+  flex: none;
+}
+
+.level-stats {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+.level-stats .stat-row dt {
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.level-nav-hint a {
+  color: var(--color-text-secondary);
+}
+
+.seo-board {
+  font-size: 14px;
+}
