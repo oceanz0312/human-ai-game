@@ -4,6 +4,8 @@ import "../globals.css";
 import { htmlLang, isLocale, locales } from "@/i18n/config";
 import { SITE_NAME, SITE_URL } from "@/config/site";
 import { I18nProvider } from "@/i18n/client";
+import { Analytics } from "@/components/site/Analytics";
+import { LocaleBanner } from "@/components/site/LocaleBanner";
 
 export const generateStaticParams = () => locales.map((locale) => ({ locale }));
 
@@ -23,6 +25,8 @@ export default async function LocaleLayout({ children, params }: { children: Rea
     <html lang={htmlLang[locale]} className="one-screen-app">
       <body className="one-screen-app">
         <I18nProvider locale={locale}>{children}</I18nProvider>
+        <LocaleBanner />
+        <Analytics />
       </body>
     </html>
   );

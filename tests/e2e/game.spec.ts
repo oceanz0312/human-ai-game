@@ -3,6 +3,8 @@ import { answer, assertMobileLayout, next, recordForeignRequests, screenshot, st
 
 test("@layout a full clear run follows the approved mobile layout on every view", async ({ page }, testInfo) => {
   const foreign = recordForeignRequests(page);
+  // The language-suggestion banner is covered by locale-banner.spec.ts; dismiss it here.
+  await page.context().addCookies([{ name: "hv_locale_banner", value: "1", url: "http://127.0.0.1:3100" }]);
   await page.goto("/zh");
   await expect(page.getByText("HUMAN / AI")).toBeVisible();
   await expect(page.getByRole("heading", { name: /你比 AI\s*更快吗/ })).toBeVisible();

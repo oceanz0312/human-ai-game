@@ -1834,3 +1834,34 @@ p {
 .seo-board {
   font-size: 14px;
 }
+
+.locale-banner {
+  position: fixed;
+  left: 50%;
+  bottom: max(8px, env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  max-width: calc(100vw - 24px);
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--color-text);
+  color: #fff;
+  font-size: 12px;
+  white-space: nowrap;
+  box-shadow: 0 6px 20px rgba(17, 17, 17, 0.18);
+}
+
+.locale-banner a {
+  color: #fff;
+  font-weight: 700;
+}
+
+.locale-banner button {
+  border: 0;
+  background: transparent;
+  color: rgba(255, 255, 255, 0.7);
+  font: inherit;
+}
