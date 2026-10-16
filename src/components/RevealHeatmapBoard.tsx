@@ -3,6 +3,7 @@
 import { BOARD_INSET_PERCENT } from "@/game/board";
 import { heatmapAlpha } from "@/game/ai-insights";
 import type { GridSize } from "@/game/contracts";
+import { useT } from "@/i18n/client";
 
 interface RevealHeatmapBoardProps {
   gridSize: GridSize;
@@ -13,6 +14,7 @@ interface RevealHeatmapBoardProps {
 }
 
 export function RevealHeatmapBoard({ gridSize, imageUrl, probabilities, aiChoice, correctChoice }: RevealHeatmapBoardProps) {
+  const t = useT();
   const cells = Array.from({ length: gridSize * gridSize }, (_, index) => {
     const row = Math.floor(index / gridSize) + 1;
     const column = (index % gridSize) + 1;
@@ -27,7 +29,7 @@ export function RevealHeatmapBoard({ gridSize, imageUrl, probabilities, aiChoice
       <div
         className="grid reveal-grid"
         role="img"
-        aria-label="AI 各格子的判断概率热力图"
+        aria-label={t("AI 各格子的判断概率热力图")}
         style={{
           inset: `${BOARD_INSET_PERCENT}%`,
           gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
@@ -45,7 +47,7 @@ export function RevealHeatmapBoard({ gridSize, imageUrl, probabilities, aiChoice
               key={cell.id}
               className={markers.length ? `heatmap-cell ${markers.join(" ")}` : "heatmap-cell"}
               style={{ backgroundColor: alpha > 0 ? `rgba(17, 17, 17, ${alpha.toFixed(3)})` : undefined }}
-              aria-label={`第 ${cell.row} 行第 ${cell.column} 列${probability > 0 ? `，概率 ${Math.round(probability * 100)}%` : ""}`}
+              aria-label={`${t("第 {row} 行第 {col} 列", { row: cell.row, col: cell.column })}${probability > 0 ? t("，概率 {p}%", { p: Math.round(probability * 100) }) : ""}`}
             />
           );
         })}

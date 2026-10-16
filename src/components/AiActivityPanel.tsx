@@ -2,6 +2,7 @@
 
 import { buildAiActivitySteps, formatActivityClock, type AiActivitySnapshot } from "@/game/ai-activity";
 import type { AiNetworkProgress } from "@/lib/ai-dispatch";
+import { useLocale, useT } from "@/i18n/client";
 
 interface AiActivityPanelProps {
   progress: AiNetworkProgress | null;
@@ -11,8 +12,10 @@ interface AiActivityPanelProps {
   title?: string;
 }
 
-export function AiActivityPanel({ progress, submitting = false, snapshot, compact = false, title = "AI 活动" }: AiActivityPanelProps) {
-  const steps = snapshot?.steps ?? buildAiActivitySteps(progress, submitting);
+export function AiActivityPanel({ progress, submitting = false, snapshot, compact = false, title }: AiActivityPanelProps) {
+  const t = useT();
+  const locale = useLocale();
+  const steps = snapshot?.steps ?? buildAiActivitySteps(progress, submitting, locale);
 
   return (
     <section
@@ -22,7 +25,7 @@ export function AiActivityPanel({ progress, submitting = false, snapshot, compac
     >
       <div className="ai-activity-head">
         <span className="ai-dot" aria-hidden />
-        <span className="ai-activity-title">{title}</span>
+        <span className="ai-activity-title">{title ?? t("AI 活动")}</span>
       </div>
       <ol className="ai-activity-steps">
         {steps.map((step) => (

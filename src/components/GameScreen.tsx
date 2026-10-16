@@ -15,6 +15,8 @@ import { countdown } from "@/lib/format";
 import { GameBoard } from "./GameBoard";
 import { GameHeader } from "./GameHeader";
 import { LevelReveal } from "./LevelReveal";
+import { useLocale, useT } from "@/i18n/client";
+import { localePath } from "@/i18n/config";
 
 const SLOW_LOADING_MS = 800;
 const AI_POLL_MS = 500;
@@ -54,6 +56,8 @@ const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
 export function GameScreen({ sessionId }: { sessionId: string }) {
   const router = useRouter();
+  const t = useT();
+  const locale = useLocale();
   const [phase, setPhase] = useState<Phase>({ kind: "loading" });
   const [session, setSession] = useState<SessionSnapshot | null>(null);
   const [level, setLevel] = useState<PublicLevel | null>(null);
@@ -84,8 +88,8 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
   const syncAiActivity = useCallback((progress: AiNetworkProgress | null, submitting = false) => {
     aiProgressRef.current = progress;
     setAiProgress(progress);
-    setAiActivitySnapshot(snapshotAiActivity(progress, submitting));
-  }, []);
+    setAiActivitySnapshot(snapshotAiActivity(progress, submitting, locale));
+  }, [locale]);
 
   useEffect(() => {
     mountedRef.current = true;
@@ -101,9 +105,9 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
   const goToResult = useCallback(
     (snapshot: SessionSnapshot) => {
       if (snapshot.publicId) router.push(`/result/${snapshot.publicId}`);
-      else router.push("/");
+      else router.push(localePath(locale, "/"));
     },
-    [router],
+    [router, locale],
   );
 
   const showReveal = useCallback(
@@ -140,9 +144,9 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
         showReveal(response.round, response.session, livesRef.current);
       });
     } catch {
-      if (mountedRef.current) setPhase({ kind: "error", message: "网络不稳定，答案已锁定，请重试提交。", action: "resubmit" });
+      if (mountedRef.current) setPhase({ kind: "error", message: t("网络不稳定，答案已锁定，请重试提交。"), action: "resubmit" });
     }
-  }, [sessionId, showReveal, syncAiActivity]);
+  }, [sessionId, showReveal, syncAiActivity, t]);
 
   const lockAnswer = useCallback(
     (choice: string | null) => {
@@ -208,9 +212,9 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
         void bootRef.current();
         return;
       }
-      setPhase({ kind: "error", message: error instanceof ApiError && error.status === 404 ? "找不到这局挑战。" : "关卡加载失败，生命不会减少。", action: "reload" });
+      setPhase({ kind: "error", message: error instanceof ApiError && error.status === 404 ? t("找不到这局挑战。") : t("关卡加载失败，生命不会减少。"), action: "reload" });
     }
-  }, [sessionId, goToResult]);
+  }, [sessionId, goToResult, t]);
 
   const boot = useCallback(async () => {
     try {
@@ -234,9 +238,9 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
       await loadNextRound();
     } catch (error) {
       if (!mountedRef.current) return;
-      setPhase({ kind: "error", message: error instanceof ApiError && error.status === 404 ? "找不到这局挑战。" : "网络不稳定，请重试。", action: "reload" });
+      setPhase({ kind: "error", message: error instanceof ApiError && error.status === 404 ? t("找不到这局挑战。") : t("网络不稳定，请重试。"), action: "reload" });
     }
-  }, [sessionId, goToResult, loadNextRound, sendSubmission]);
+  }, [sessionId, goToResult, loadNextRound, sendSubmission, t]);
 
   useEffect(() => {
     bootRef.current = boot;
@@ -402,10 +406,10 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
               else void boot();
             }}
           >
-            {phase.action === "resubmit" ? "重试提交" : "重新加载关卡"}
+            {phase.action === "resubmit" ? t("重试提交") : t("重新加载关卡")}
           </button>
-          <button type="button" className="text-action" onClick={() => router.push("/")}>
-            返回首页
+          <button type="button" className="text-action" onClick={() => router.push(localePath(locale, "/"))}>
+            {t("返回首页")}
           </button>
         </div>
       </main>
@@ -419,7 +423,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
   const slowLoading = phase.kind === "loading" && slowEpoch === loadEpoch;
 
   const activitySteps = aiActivitySnapshot?.steps ?? [];
-  const danmakuMessages = danmakuFromActivitySteps(activitySteps, true);
+  const danmakuMessages = danmakuFromActivitySteps(activitySteps, true, locale);
 
   return (
     <main className="mobile-shell game one-screen">
@@ -428,16 +432,16 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
         <div className="ai-status ai-status-inline">
           <span className="ai">
             <span className="ai-dot" aria-hidden />
-            AI 进行中
+            {t("AI 进行中")}
           </span>
-          <span className="hint">点击不同项</span>
+          <span className="hint">{t("点击不同项")}</span>
         </div>
       </div>
       <div className={remaining < 1000 ? "timer timer-compact urgent" : "timer timer-compact"} aria-live="off">
         <div className="value" data-testid="timer">
           {countdown(remaining)}
         </div>
-        <div className="unit">秒</div>
+        <div className="unit">{t("秒")}</div>
       </div>
       <div className="play-stage">
         <div className="board-stage">
@@ -447,7 +451,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
             imageUrl={imageReady && level ? level.imageUrl : null}
             disabled={!interactive}
             selected={selected}
-            loadingLabel={slowLoading ? "正在加载关卡" : null}
+            loadingLabel={slowLoading ? t("正在加载关卡") : null}
             onChoose={lockAnswer}
             onImagePainted={onImagePainted}
           />
@@ -455,10 +459,10 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
       </div>
       <div className="play-foot">
         <button type="button" className="text-action details-link" onClick={() => setAiDetailsOpen(true)}>
-          AI 详情
+          {t("AI 详情")}
         </button>
       </div>
-      <DetailsSheet open={aiDetailsOpen} title="AI 活动" onClose={() => setAiDetailsOpen(false)}>
+      <DetailsSheet open={aiDetailsOpen} title={t("AI 活动")} onClose={() => setAiDetailsOpen(false)}>
         <AiActivityPanel progress={aiProgress} submitting={phase.kind === "submitting"} snapshot={aiActivitySnapshot} />
       </DetailsSheet>
     </main>

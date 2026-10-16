@@ -1,4 +1,5 @@
 "use client";
+import { useT } from "@/i18n/client";
 
 interface VsRaceBarProps {
   humanLabel?: string;
@@ -12,7 +13,9 @@ function formatSeconds(ms: number | null) {
   return `${(ms / 1000).toFixed(2)}s`;
 }
 
-export function VsRaceBar({ humanLabel = "你", humanMs, aiLabel = "AI", aiMs }: VsRaceBarProps) {
+export function VsRaceBar({ humanLabel: humanLabelProp, humanMs, aiLabel = "AI", aiMs }: VsRaceBarProps) {
+  const t = useT();
+  const humanLabel = humanLabelProp ?? t("你");
   const human = humanMs ?? 0;
   const ai = aiMs ?? 0;
   const total = Math.max(human, ai, 1);
@@ -20,7 +23,7 @@ export function VsRaceBar({ humanLabel = "你", humanMs, aiLabel = "AI", aiMs }:
   const aiPct = aiMs != null ? (ai / total) * 100 : 0;
 
   return (
-    <div className="vs-race" role="img" aria-label={`${humanLabel} ${formatSeconds(humanMs)}，${aiLabel} ${formatSeconds(aiMs)}`}>
+    <div className="vs-race" role="img" aria-label={`${humanLabel} ${formatSeconds(humanMs)}${t("，")}${aiLabel} ${formatSeconds(aiMs)}`}>
       <div className="vs-race-labels">
         <span>
           {humanLabel} <span className="num">{formatSeconds(humanMs)}</span>

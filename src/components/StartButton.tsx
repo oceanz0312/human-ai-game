@@ -4,10 +4,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { api, ApiError, track } from "@/lib/api-client";
 import { LOCALE_COOKIE, type Locale } from "@/i18n/config";
+import { useT } from "@/i18n/client";
 
 export function StartButton({
-  label = "开始挑战",
-  busyLabel = "正在开始",
+  label,
+  busyLabel,
   replay = false,
   fromShare = false,
   locale,
@@ -20,6 +21,7 @@ export function StartButton({
   locale?: Locale;
 }) {
   const router = useRouter();
+  const t = useT();
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -34,7 +36,7 @@ export function StartButton({
       router.push(`/play/${session.id}`);
     } catch (cause) {
       setBusy(false);
-      setError(cause instanceof ApiError && cause.status === 429 ? "挑战太频繁了，请稍后再试。" : "网络不稳定，请重试。");
+      setError(cause instanceof ApiError && cause.status === 429 ? t("挑战太频繁了，请稍后再试。") : t("网络不稳定，请重试。"));
     }
   }
 
@@ -46,7 +48,7 @@ export function StartButton({
         </p>
       ) : null}
       <button type="button" className={replay ? "text-action" : "primary-action"} onClick={start} disabled={busy && !replay}>
-        {busy ? busyLabel : label}
+        {busy ? (busyLabel ?? t("正在开始")) : (label ?? t("开始挑战"))}
       </button>
     </>
   );

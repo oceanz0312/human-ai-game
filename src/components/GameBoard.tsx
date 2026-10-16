@@ -2,6 +2,7 @@
 
 import { BOARD_INSET_PERCENT } from "@/game/board";
 import type { GridSize } from "@/game/contracts";
+import { useT } from "@/i18n/client";
 
 interface GameBoardProps {
   gridSize: GridSize;
@@ -18,6 +19,7 @@ interface GameBoardProps {
  * full-cell buttons sits on top of it so every pixel of the board is tappable.
  */
 export function GameBoard({ gridSize, imageUrl, disabled, selected, loadingLabel, onChoose, onImagePainted }: GameBoardProps) {
+  const t = useT();
   const cells = Array.from({ length: gridSize * gridSize }, (_, index) => {
     const row = Math.floor(index / gridSize) + 1;
     const column = (index % gridSize) + 1;
@@ -41,7 +43,7 @@ export function GameBoard({ gridSize, imageUrl, disabled, selected, loadingLabel
         <div
           className="grid"
           role="group"
-          aria-label="点击不同项"
+          aria-label={t("点击不同项")}
           style={{
             inset: `${BOARD_INSET_PERCENT}%`,
             gridTemplateColumns: `repeat(${gridSize}, 1fr)`,
@@ -53,7 +55,7 @@ export function GameBoard({ gridSize, imageUrl, disabled, selected, loadingLabel
               key={cell.id}
               type="button"
               className={selected === cell.id ? "cell selected" : "cell"}
-              aria-label={`第 ${cell.row} 行第 ${cell.column} 列`}
+              aria-label={t("第 {row} 行第 {col} 列", { row: cell.row, col: cell.column })}
               aria-pressed={selected === cell.id}
               disabled={disabled}
               onPointerDown={(event) => {

@@ -1,11 +1,10 @@
 import Link from "next/link";
-import { cookies } from "next/headers";
-import { defaultLocale, isLocale, LOCALE_COOKIE, localePath } from "@/i18n/config";
+import { localePath } from "@/i18n/config";
+import { getCookieLocale } from "@/i18n/server";
 import { getDictionary } from "@/i18n/dictionaries";
 
 export default async function GameNotFound() {
-  const value = (await cookies()).get(LOCALE_COOKIE)?.value;
-  const locale = isLocale(value) ? value : defaultLocale;
+  const locale = await getCookieLocale();
   const t = getDictionary(locale).notFound;
   return (
     <main className="mobile-shell one-screen">

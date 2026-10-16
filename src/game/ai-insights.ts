@@ -1,3 +1,6 @@
+import { FALLBACK_MESSAGE_LOCALE, translator } from "@/i18n/messages";
+import type { Locale } from "@/i18n/config";
+
 /** Player-facing helpers for Decisions API probability and timing on the reveal page. */
 
 export interface RankedCandidate {
@@ -18,10 +21,10 @@ export interface TimingTimeline {
   hasData: boolean;
 }
 
-const cellLabel = (id: string) => {
+const cellLabel = (id: string, locale: Locale = FALLBACK_MESSAGE_LOCALE) => {
   const match = /^r(\d+)c(\d+)$/.exec(id);
   if (!match) return id;
-  return `第 ${match[1]} 行第 ${match[2]} 列`;
+  return translator(locale)("第 {row} 行第 {col} 列", { row: match[1], col: match[2] });
 };
 
 export function formatCellShort(id: string) {
@@ -49,21 +52,22 @@ export function describeTopCandidates(probabilities: Record<string, number> | nu
   return ranked.map((item) => `${formatCellShort(item.id)} ${formatPercent(item.probability)}`).join(" · ");
 }
 
-export function describeTopCandidatesFriendly(probabilities: Record<string, number> | null | undefined, limit = 2): string | null {
+export function describeTopCandidatesFriendly(probabilities: Record<string, number> | null | undefined, limit = 2, locale: Locale = FALLBACK_MESSAGE_LOCALE): string | null {
   const ranked = rankCandidates(probabilities, limit);
   if (!ranked.length) return null;
-  return ranked.map((item) => `${cellLabel(item.id)} ${formatPercent(item.probability)}`).join("，");
+  return ranked.map((item) => `${cellLabel(item.id, locale)} ${formatPercent(item.probability)}`).join(translator(locale)("，"));
 }
 
-export function hesitationFromProbabilities(probabilities: Record<string, number> | null | undefined): Hesitation {
+export function hesitationFromProbabilities(probabilities: Record<string, number> | null | undefined, locale: Locale = FALLBACK_MESSAGE_LOCALE): Hesitation {
+  const t = translator(locale);
   const ranked = rankCandidates(probabilities, 2);
   if (ranked.length < 2) {
-    return { margin: null, label: "数据不足", detail: "未能比较前两名概率" };
+    return { margin: null, label: t("数据不足"), detail: t("未能比较前两名概率") };
   }
   const margin = ranked[0].probability - ranked[1].probability;
-  if (margin >= 0.4) return { margin, label: "相当笃定", detail: `前两名相差 ${formatPercent(margin)}` };
-  if (margin >= 0.15) return { margin, label: "略有犹豫", detail: `前两名相差 ${formatPercent(margin)}` };
-  return { margin, label: "非常犹豫", detail: `前两名仅差 ${formatPercent(margin)}` };
+  if (margin >= 0.4) return { margin, label: t("相当笃定"), detail: t("前两名相差 {p}", { p: formatPercent(margin) }) };
+  if (margin >= 0.15) return { margin, label: t("略有犹豫"), detail: t("前两名相差 {p}", { p: formatPercent(margin) }) };
+  return { margin, label: t("非常犹豫"), detail: t("前两名仅差 {p}", { p: formatPercent(margin) }) };
 }
 
 export function buildTimingTimeline(totalMs: number | null | undefined, modelMs: number | null | undefined): TimingTimeline {
