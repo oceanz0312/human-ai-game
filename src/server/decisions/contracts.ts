@@ -30,15 +30,26 @@ export const DECISION_ERROR_CODES = [
 ] as const;
 export type DecisionErrorCode = (typeof DECISION_ERROR_CODES)[number];
 
-const choiceValue = z.string().regex(/^r[1-9]c[1-9]$/);
+/** Answers are opaque, game-defined ids (e.g. "r2c2"). */
+const choiceValue = z.string().regex(/^[A-Za-z0-9_-]{1,64}$/);
+
+/** Normalized AI task built by the game plugin; adapters translate it to their wire format. */
+export const decisionTaskSchema = z.object({
+  name: z.string().regex(/^[a-z][a-z0-9_]{0,40}$/),
+  instructions: z.string().min(1).max(4000),
+  choices: z.array(z.object({ value: choiceValue, description: z.string().max(200) })).min(2).max(100),
+});
+export type DecisionTask = z.infer<typeof decisionTaskSchema>;
 
 export const decisionRequestSchema = z
   .object({
     imageDataUrl: z.string().regex(/^data:image\/(png|jpeg);base64,[A-Za-z0-9+/]+=*$/),
-    choices: z.array(choiceValue),
+    choices: z.array(choiceValue).min(2).max(100),
+    /** Optional so older Decisions Worker builds (which strip it) fall back to the spot-the-difference prompt. */
+    task: decisionTaskSchema.optional(),
   })
-  .refine((value) => value.choices.length === 9 || value.choices.length === 81, { message: "choices must contain 9 or 81 cells" })
-  .refine((value) => new Set(value.choices).size === value.choices.length, { message: "choices must be unique" });
+  .refine((value) => new Set(value.choices).size === value.choices.length, { message: "choices must be unique" })
+  .refine((value) => !value.task || value.task.choices.every((choice) => value.choices.includes(choice.value)), { message: "task choices must match" });
 
 export type DecisionInput = z.infer<typeof decisionRequestSchema>;
 

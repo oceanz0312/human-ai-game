@@ -21,3 +21,6 @@ workers/decisions/.wrangler/
 .open-next/
 .wrangler/
 .dev.vars
+
+# worktree symlink
+/node_modules

@@ -1,0 +1,54 @@
+# Adding a game
+
+The platform is a **game-agnostic core** plus a **thin per-game plugin**. A new "human vs real AI"
+game should only need the five things in the plugin; everything else is reused.
+
+## What a game provides (the plugin)
+
+| # | Piece | Where | Interface |
+|---|---|---|---|
+| 1 | Level data / content (frozen set + version) | `src/games/<slug>/levels*.ts` | `GamePlugin.levels / getLevel / levelSetVersion / totalLevels` |
+| 2 | Board + input (renders a level, returns an opaque answer id) | `src/games/<slug>/client-plugin.tsx` | `ClientGamePlugin.Board` (`BoardRenderProps`) |
+| 3 | Judge answer | `src/games/<slug>/server-plugin.ts` | `GamePlugin.choices / isValidAnswer / judge / correctAnswer` |
+| 4 | Normalized decision task for the AI | `server-plugin.ts` | `GamePlugin.buildDecisionInput` → `DecisionInput { imageDataUrl, choices, task }` |
+| 5 | Game copy + SEO | `src/games/<slug>/messages/en.ts`, `src/i18n/pages/*.ts` (`pages.<game>`), `src/games/registry.ts` | message namespace + page dictionary section + `GameEntry` |
+
+Rules for plugins:
+- **Answers are opaque strings** to the core. Never put the answer in `toPublicLevel` (the browser gets it before answering).
+- **Same task for every model** (fairness): build the prompt once in `buildDecisionInput`; adapters only translate the wire format.
+- Server plugin is pure: assets come through injected loaders (ASSETS binding on Cloudflare, filesystem locally, stubs in tests).
+- Time limit (`limitMs`) is the same for the human and the AI.
+
+## What the core gives you (do not re-implement)
+
+| Module | Location | Status |
+|---|---|---|
+| Plugin contracts + registry | `src/core/game-plugin.ts`, `src/core/client-game.ts` | done |
+| Session / round lifecycle, chances, levels advance | `src/server/game-service.ts` (takes `deps.game`) | done |
+| Server-initiated AI race: AI starts at `shownAt`, hidden answer until lock-in, AI time = `completedAt − shownAt`, AI limit = level limit, late = `ai_timeout` | `game-service.ts` (`beginRoundLive`, `runServerAi`) | done |
+| NDJSON AI event stream (`image` / `sent` / `answered` / `error`, never cell or time) | `POST /api/rounds/:id/start`, `api.beginRoundStream` | done |
+| Humanized captions / terminal / danmaku from events | `src/game/ai-activity.ts`, `ai-error-copy.ts`, `danmaku-messages.ts` | done |
+| Lock-in waiting (“你已锁定 · AI 还在分析 x.xs”), next-round prefetch (AI never pre-run) | `src/components/GameScreen.tsx` (core screen, `game` prop) | done |
+| Model adapters + model registry (+ game↔model via `ModelEntry.games`) | `src/models/` | done (only `openai-decisions` live) |
+| Daily play limit (fingerprint + IP hash, N runs/day, per game or global) | `src/core/limits/` | planned (M2) |
+| Opponent select, per-model + overall leaderboards | `src/core/opponents/`, leaderboard repo | planned (M3) |
+| Feel/FX kit (sparks, shake, SFX + mute, miss blocks, 3-2-1 FIGHT, WIN / K.O. banners, streak) | `src/core/fx/` | planned (P1–P4) |
+| Reveal shell, share card + Wordle-style result grid | `src/components/LevelReveal.tsx`, share modules | partly game-specific today (reveal board) |
+| SEO templates (landing / levels / leaderboard / ai-opponents) driven by registry | `src/app/[locale]/…`, `src/seo/routes.ts` | registry-driven routes; templates still spot-specific in places |
+
+## Checklist
+
+1. **Registry entry**: add a `GameEntry` to `src/games/registry.ts` with `status: "coming-soon"` first (cards only — no routes, sitemap or JSON-LD). Add the model ids it supports to each `ModelEntry.games` in `src/models/registry.ts`.
+2. **Levels**: freeze a level set with a new `levelSetVersion` (a new set = a new leaderboard). Public projection must be answer-free.
+3. **Server plugin**: implement `GamePlugin` in `src/games/<slug>/server-plugin.ts`. Register it where the container builds the service (`src/server/container.ts`).
+4. **Client plugin**: implement `ClientGamePlugin` (`Board`, `publicLevel`, `assetUrls`, `hint`). Call `onPainted()` only when the level is truly visible: that instant starts both clocks and the server-side AI.
+5. **AI task**: return `{ imageDataUrl, choices, task: { name, instructions, choices[{ value, description }] } }`. Verify with a mocked fetch that the adapter body matches. If the Decisions Worker must forward `task`, redeploy it (older builds strip `task` and fall back to the spot-the-difference prompt).
+6. **Copy**: zh ids are the Chinese strings. Put game-only ids in `src/games/<slug>/messages/en.ts` and register the catalog in `src/games/messages.ts`; the namespace test fails on overlap with common. Page copy goes in `pages.<gameKey>` of `src/i18n/pages/{zh,en}.ts`. When CJK copy changes run `python3 scripts/subset-pixel-font.py` and `npm run share:samples`.
+7. **Tests**: copy `tests/integration/core-plugin.test.ts` (stub “odd-word” game: full run through the core, answer sealed until lock-in, AI judged by the plugin). Add e2e for the board at all 6 viewports (one screen, no scroll).
+8. **DB**: no game-specific tables; rounds/sessions are shared. Leaderboards are keyed by `levelSetVersion` (and `model_id` from M2).
+9. **Go live**: flip `status` to `live` in the registry, which turns on routes, sitemap, nav, JSON-LD and hreflang.
+
+## Proof
+
+`tests/integration/core-plugin.test.ts` registers a fake second game that plays a full cleared run through
+`createGameService` with no core changes, and checks the plugin registry and the normalized task.

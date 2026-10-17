@@ -3,7 +3,8 @@ import type { FakeDecisionPlan } from "@/server/decisions/fake";
 import { FakeDecisionClient } from "@/server/decisions/fake";
 import { GameError } from "@/server/errors";
 import { createGameService } from "@/server/game-service";
-import { getPrivateLevel, toPublicLevel } from "@/server/levels/catalog";
+import { createSpotTheDifferencePlugin } from "@/games/spot-the-difference/server-plugin";
+import { getLevelImageSha256, getPrivateLevel } from "@/server/levels/catalog";
 import { createGameRepository, createLeaderboardRepository } from "@/server/repositories/game-repository";
 import { createTestDatabase } from "../helpers/test-db";
 
@@ -25,9 +26,8 @@ async function setup(options: { ai?: (level: number) => FakeDecisionPlan; aiReve
     now: () => clock,
     randomId: () => randomUUID(),
     randomPublicId: () => randomUUID().replace(/-/g, "").slice(0, 22),
-    getLevel: getPrivateLevel,
-    toPublicLevel,
-    readLevelImage: async (level) => `level-${level}`,
+    game: createSpotTheDifferencePlugin({ loadImageDataUrl: async (level) => `level-${level.level}` }),
+    legacyLevelAssetSha256: getLevelImageSha256,
     sleep: async (ms) => {
       clock += ms;
     },
@@ -340,9 +340,8 @@ async function setupServer(latency: (level: number) => number, opts: { errorCode
     now: () => clock,
     randomId: () => randomUUID(),
     randomPublicId: () => randomUUID().replace(/-/g, "").slice(0, 22),
-    getLevel: getPrivateLevel,
-    toPublicLevel,
-    readLevelImage: async (level) => `level-${level}`,
+    game: createSpotTheDifferencePlugin({ loadImageDataUrl: async (level) => `level-${level.level}` }),
+    legacyLevelAssetSha256: getLevelImageSha256,
     sleep: async (ms) => {
       clock += ms;
     },

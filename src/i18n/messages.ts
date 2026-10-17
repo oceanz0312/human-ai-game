@@ -1,5 +1,6 @@
 import type { Locale } from "./config";
-import en from "./messages/en";
+import commonEn from "./messages/en";
+import { gameMessageCatalogs } from "../games/messages";
 
 /**
  * gettext-style UI messages for the game app. The message id is the original Chinese copy
@@ -8,6 +9,8 @@ import en from "./messages/en";
 export type Vars = Record<string, string | number>;
 export type T = (id: string, vars?: Vars) => string;
 
+/** common + every registered game's namespace (ids must not overlap; enforced by tests). */
+const en: Record<string, string> = Object.assign({}, commonEn, ...gameMessageCatalogs.map((catalog) => catalog.en ?? {}));
 const catalogs: Partial<Record<Locale, Record<string, string>>> = { en };
 
 const interpolate = (text: string, vars?: Vars) =>

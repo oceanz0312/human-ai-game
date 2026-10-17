@@ -2,7 +2,8 @@
 import { randomUUID } from "node:crypto";
 import { FakeDecisionClient } from "@/server/decisions/fake";
 import { createGameService } from "@/server/game-service";
-import { getPrivateLevel, toPublicLevel } from "@/server/levels/catalog";
+import { createSpotTheDifferencePlugin } from "@/games/spot-the-difference/server-plugin";
+import { getLevelImageSha256 } from "@/server/levels/catalog";
 import { createGameRepository, createLeaderboardRepository } from "@/server/repositories/game-repository";
 import { ServerTiming } from "@/server/server-timing";
 import { createTestDatabase } from "../helpers/test-db";
@@ -32,9 +33,8 @@ test("startNextRound does not load level images and uses at most three D1 round-
     now: () => Date.now(),
     randomId: () => randomUUID(),
     randomPublicId: () => randomUUID().replace(/-/g, "").slice(0, 22),
-    getLevel: getPrivateLevel,
-    toPublicLevel,
-    readLevelImage,
+    game: createSpotTheDifferencePlugin({ loadImageDataUrl: (level) => readLevelImage(level.level) }),
+    legacyLevelAssetSha256: getLevelImageSha256,
     decisionsDispatchMode: "worker",
     decisionsWorkerPublicUrl: "https://worker.test",
     decisionsTicketSecret: "test-ticket-secret-with-enough-entropy-1234567890",
@@ -69,9 +69,8 @@ test("beginRound signs tickets from precomputed PNG hashes without readLevelImag
     now: () => Date.now(),
     randomId: () => randomUUID(),
     randomPublicId: () => randomUUID().replace(/-/g, "").slice(0, 22),
-    getLevel: getPrivateLevel,
-    toPublicLevel,
-    readLevelImage,
+    game: createSpotTheDifferencePlugin({ loadImageDataUrl: (level) => readLevelImage(level.level) }),
+    legacyLevelAssetSha256: getLevelImageSha256,
     decisionsDispatchMode: "worker",
     decisionsWorkerPublicUrl: "https://worker.test",
     decisionsTicketSecret: "test-ticket-secret-with-enough-entropy-1234567890",

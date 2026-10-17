@@ -88,7 +88,8 @@ test.each([
   ["non-image data URL", request({ imageDataUrl: "data:text/plain;base64,aGVsbG8=", choices: nine }), 400],
   ["external image URL", request({ imageDataUrl: "https://example.com/a.png", choices: nine }), 400],
   ["duplicate choices", request({ imageDataUrl: IMAGE, choices: [...nine.slice(0, 8), "r1c1"] }), 400],
-  ["wrong choice count", request({ imageDataUrl: IMAGE, choices: nine.slice(0, 8) }), 400],
+  ["duplicate choices", request({ imageDataUrl: IMAGE, choices: [...nine.slice(0, 8), "r1c1"] }), 400],
+  ["single choice", request({ imageDataUrl: IMAGE, choices: ["r1c1"] }), 400],
   ["oversized image", request({ imageDataUrl: `data:image/png;base64,${"A".repeat(4 * 1024 * 1024 * 1.4)}`, choices: nine }), 413],
 ])("rejects %s without calling OpenAI", async (_name, req, status) => {
   const openAiFetch = openAiReturning(choiceAnswer("r1c1"));

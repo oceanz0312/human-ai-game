@@ -32,12 +32,12 @@ export async function POST(request: Request) {
     const requestId = typeof (raw as { requestId?: unknown })?.requestId === "string" ? (raw as { requestId: string }).requestId : "invalid";
     return json(failure(requestId, "invalid_request"), 400);
   }
-  const { requestId, imageDataUrl, choices } = parsed.data;
+  const { requestId, imageDataUrl, choices, task } = parsed.data;
   const config = readOpenAiConfigFromEnv();
   if (!config) return json(failure(requestId, "ai_unconfigured"), 503);
 
   const outcome = await requestOddCell(
-    { imageDataUrl, choices },
+    { imageDataUrl, choices, task },
     config,
     {
       fetchImpl: fetch,

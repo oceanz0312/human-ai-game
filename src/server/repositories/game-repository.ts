@@ -86,15 +86,15 @@ export function createGameRepository(db: Database) {
       return Number(row?.count ?? 0);
     },
 
-    async createSession(input: { id: string; playerId: string; now: number }) {
+    async createSession(input: { id: string; playerId: string; now: number; levelSetVersion?: string; startingChances?: number }) {
       const [row] = await db
         .insert(sessions)
         .values({
           id: input.id,
           playerId: input.playerId,
-          levelSetVersion: LEVEL_SET_VERSION,
+          levelSetVersion: input.levelSetVersion ?? LEVEL_SET_VERSION,
           level: 1,
-          lives: STARTING_LIVES,
+          lives: input.startingChances ?? STARTING_LIVES,
           fasterThanAiCount: 0,
           status: "active",
           reachedLevel: 1,
