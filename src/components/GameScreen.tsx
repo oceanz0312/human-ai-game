@@ -453,7 +453,7 @@ export function GameScreen({ sessionId, game = spotTheDifferenceClient as unknow
         game={game}
         streak={streak}
         browserAiActivity={aiEvents.length ? { steps: buildAiEventSteps(aiEvents, { locale, reveal }), capturedAt: 0 } : null}
-        topBar={<GameTopBar crumb={`${game.title(t)} / ${t("第 {n} 关", { n: pad2(reveal.level) })}`} />}
+        topBar={<GameTopBar crumb={`${game.title(t)} / ${t("第 {n} 关", { n: pad2(reveal.level) })}`} exitPath={game.exitPath} />}
       />
     );
   }
@@ -525,7 +525,7 @@ export function GameScreen({ sessionId, game = spotTheDifferenceClient as unknow
   return (
     <GameStage
       phase={phase.kind}
-      topBar={<GameTopBar crumb={crumb} />}
+      topBar={<GameTopBar crumb={crumb} exitPath={game.exitPath} />}
       hud={<GameHud
           level={displayLevel}
           chances={session?.lives ?? game.startingChances}

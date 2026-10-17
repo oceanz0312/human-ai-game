@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { InfoPage } from "@/components/site/InfoPage";
 import { StartButton } from "@/components/StartButton";
-import { gameLeaderboardPath, getGame } from "@/games/registry";
+import { gameLeaderboardPath } from "@/games/registry";
+import { resolveGameParam } from "@/games/route-game";
 import Link from "next/link";
 import { localePath, resolveLocaleParam } from "@/i18n/config";
 import { getModel, modelsForGame } from "@/models/registry";
@@ -13,13 +14,12 @@ import { getGameService } from "@/server/container";
 
 export const dynamic = "force-dynamic";
 
-type Props = { params: Promise<{ locale: string }>; searchParams?: Promise<{ ai?: string }> };
-const game = getGame("spot-the-difference")!;
-const PATH = gameLeaderboardPath(game);
+type Props = { params: Promise<{ locale: string; game: string }>; searchParams?: Promise<{ ai?: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const locale = await resolveLocaleParam(params);
-  return pageMetadata(locale, PATH, getPages(locale).pages.leaderboard, { image: `/og/${locale}/spot-the-difference.png` });
+  const game = await resolveGameParam(params);
+  return pageMetadata(locale, gameLeaderboardPath(game), getPages(locale).pages.leaderboard, { image: `/og/${locale}/${game.slug}.png` });
 }
 
 /** Overall board (all opponents) or one opponent's board (`?ai=<slug>`, live models only). */
@@ -34,6 +34,8 @@ async function loadTop(modelId: string | null) {
 
 export default async function LeaderboardPage({ params, searchParams }: Props) {
   const locale = await resolveLocaleParam(params);
+  const game = await resolveGameParam(params);
+  const PATH = gameLeaderboardPath(game);
   const { nav, pages, gameCopy } = getPages(locale);
   const copy = pages.leaderboard;
   const t = translator(locale);

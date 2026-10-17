@@ -43,6 +43,8 @@ export interface ClientGamePlugin<PL extends CorePublicLevel = CorePublicLevel> 
   Board: ComponentType<BoardRenderProps<PL>>;
   /** Reveal board: same size and position as the play board. Must mark answer elements with `data-answer`. */
   RevealBoard: ComponentType<{ round: RevealRound }>;
+  /** Where 退出 leads (the game's landing page). */
+  exitPath: string;
   /** Game name for the breadcrumb (translated). */
   title(t: (id: string, vars?: Record<string, string | number>) => string): string;
   /** Board thumbnail for the single-level share card. */

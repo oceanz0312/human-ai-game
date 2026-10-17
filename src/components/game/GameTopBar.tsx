@@ -10,7 +10,7 @@ import { Button, Kbd } from "@/components/ui/8bit";
 import { MuteToggle } from "@/core/fx/MuteToggle";
 
 /** Slim game bar: logo, breadcrumb, exit. `Esc` asks before leaving (the level would settle as a timeout). */
-export function GameTopBar({ crumb, exitPath = "/spot-the-difference", confirmExit = true }: { crumb: string; exitPath?: string; confirmExit?: boolean }) {
+export function GameTopBar({ crumb, exitPath = "/", confirmExit = true }: { crumb: string; exitPath?: string; confirmExit?: boolean }) {
   const t = useT();
   const locale = useLocale();
   const router = useRouter();

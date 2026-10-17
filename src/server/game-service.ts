@@ -1,5 +1,4 @@
 import type { AiDispatch, AiEvent, BeginRoundResponse, LeaderboardRow, ResultView, RoundReveal, RoundStartResponse, SessionSnapshot, SubmitResponse } from "../game/contracts";
-import { LEVEL_SET_VERSION } from "../game/contracts";
 import { parseStoredProbabilities } from "../game/ai-insights";
 import { advanceSession, reconcileElapsed, resolveHumanAnswer, resolveRace } from "../game/rules";
 import type { DecisionClient, DecisionResult, WorkerDecisionResponse } from "./decisions/contracts";
@@ -584,17 +583,21 @@ export function createGameService(deps: GameServiceDeps) {
       };
     },
 
+    /** The plugin's level-set version (leaderboards are per version). */
+    levelSetVersion: deps.game.levelSetVersion,
+
     async getResultOwner(publicId: string) {
       const row = await deps.games.getResultByPublicId(publicId);
       return row?.result.playerId ?? null;
     },
 
     async getLevelStats() {
-      return deps.leaderboard.levelStats();
+      return deps.leaderboard.levelStats(deps.game.levelSetVersion);
     },
 
     async getLeaderboard(input: { viewerPlayerId: string | null; limit: number }) {
-      const top = await deps.leaderboard.list({ limit: input.limit });
+      const version = deps.game.levelSetVersion;
+      const top = await deps.leaderboard.list({ limit: input.limit, version });
       const toRow = (row: { playerId: string; nickname: string | null; reachedLevel: number; rank: number }): LeaderboardRow => ({
         rank: row.rank,
         nickname: row.nickname ?? `玩家 ${row.playerId.slice(0, 4).toUpperCase()}`,
@@ -603,10 +606,10 @@ export function createGameService(deps: GameServiceDeps) {
       });
       let around: LeaderboardRow[] = [];
       if (input.viewerPlayerId && !top.some((row) => row.playerId === input.viewerPlayerId)) {
-        const index = await deps.leaderboard.getDisplayIndex(input.viewerPlayerId);
-        if (index !== null) around = (await deps.leaderboard.list({ limit: 3, offset: Math.max(0, index - 1) })).map(toRow);
+        const index = await deps.leaderboard.getDisplayIndex(input.viewerPlayerId, version);
+        if (index !== null) around = (await deps.leaderboard.list({ limit: 3, offset: Math.max(0, index - 1), version })).map(toRow);
       }
-      return { version: LEVEL_SET_VERSION, top: top.map(toRow), around };
+      return { version, top: top.map(toRow), around };
     },
 
     async recordClientEvent(event: { name: string; playerId: string; sessionId?: string | null; level?: number | null; clientTs: number; metadata?: Record<string, unknown> }) {

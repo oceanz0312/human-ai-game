@@ -6,17 +6,23 @@ import { resolveLocaleParam } from "@/i18n/config";
 import { getPages } from "@/i18n/pages";
 import { pageMetadata } from "@/lib/page-meta";
 
-type Props = { params: Promise<{ locale: string }> };
+import { gamePlayPath } from "@/games/registry";
+import { liveGameParams, resolveGameParam } from "@/games/route-game";
 
-const PATH = "/games/spot-the-difference/play";
+type Props = { params: Promise<{ locale: string; game: string }> };
+
+export const generateStaticParams = liveGameParams;
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const locale = await resolveLocaleParam(params);
+  const PATH = gamePlayPath(await resolveGameParam(params));
   return pageMetadata(locale, PATH, getPages(locale).pages.play, { index: false });
 }
 
 export default async function Page({ params }: Props) {
   const locale = await resolveLocaleParam(params);
+  const game = await resolveGameParam(params);
+  const PATH = gamePlayPath(game);
   const { nav, pages } = getPages(locale);
   const copy = pages.play;
   return (
@@ -28,10 +34,10 @@ export default async function Page({ params }: Props) {
       intro={copy.intro}
       action={
         <Suspense fallback={null}>
-          <OpponentSelect game="spot-the-difference" locale={locale} />
+          <OpponentSelect game={game.slug} locale={locale} />
         </Suspense>
       }
-      links={[{ href: "/how-to-play", label: nav.howToPlay }, { href: "/spot-the-difference", label: nav.spot }]}
+      links={[{ href: "/how-to-play", label: nav.howToPlay }, { href: game.landingPath, label: nav.spot }]}
     ></InfoPage>
   );
 }
