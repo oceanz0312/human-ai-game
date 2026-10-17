@@ -82,7 +82,7 @@ export function LevelReveal({ round, fasterThanAiCount, ended, onNext, browserAi
           </div>
         </div>
       }
-      lane={<AiDanmakuLane messages={danmakuMessages} replay={!detailsOpen} paused={detailsOpen} />}
+      lane={<AiDanmakuLane messages={danmakuMessages} paused={detailsOpen} />}
       board={
         <RevealHeatmapBoard
           gridSize={round.gridSize}

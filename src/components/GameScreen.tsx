@@ -131,7 +131,6 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
     const submission = pendingSubmitRef.current;
     if (!roundId || !submission) return;
     setPhase({ kind: "submitting" });
-    syncAiActivity(aiProgressRef.current, true);
     try {
       await withRetry(async () => {
         if (beginRef.current) await beginRef.current.catch(() => undefined);
@@ -151,7 +150,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
     } catch {
       if (mountedRef.current) setPhase({ kind: "error", message: t("网络不稳定，答案已锁定，请重试提交。"), action: "resubmit" });
     }
-  }, [sessionId, showReveal, syncAiActivity, t]);
+  }, [sessionId, showReveal, t]);
 
   const lockAnswer = useCallback(
     (choice: string | null) => {
@@ -263,8 +262,10 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
     startedAtRef.current = performance.now();
     setPainted(true);
     const roundId = roundIdRef.current;
-    beginRef.current = withRetry(async () => {
-      const begun = await api.beginRound(roundId);
+    const begin = withRetry(() => api.beginRound(roundId), 3);
+    // The submission only needs the round to be marked shown; it never waits for the AI.
+    beginRef.current = begin;
+    void begin.then(async (begun) => {
       if (begun.ai) {
         const ticketIssuedAt = begun.ai.mode === "worker" ? begun.ai.issuedAt : Date.now();
         syncAiActivity({
@@ -291,8 +292,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
           track("ai_dispatch_failed", { sessionId, level: level?.level ?? null });
         }
       }
-      return begun;
-    }, 3);
+    }).catch(() => undefined);
   }, [sessionId, level, syncAiActivity]);
 
   // Absolute-deadline countdown; backgrounding the page does not pause it.

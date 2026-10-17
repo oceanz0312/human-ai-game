@@ -31,19 +31,8 @@ export function formatActivityClock(ms: number) {
 /** Compact step list from real browser-side dispatch timestamps (never includes the AI's chosen cell). */
 export function buildAiActivitySteps(progress: AiNetworkProgress | null, submitting = false, locale: Locale = FALLBACK_MESSAGE_LOCALE): AiActivityStep[] {
   const t = translator(locale);
-  if (submitting && progress?.ticketIssuedAt) {
-    const prior = buildAiActivitySteps(progress, false, locale);
-    return [
-      ...prior.map((step) => (step.state === "active" ? { ...step, state: "done" as const } : step)),
-      {
-        id: "locked",
-        label: t("答案已锁定"),
-        timestamp: Date.now(),
-        detail: t("正在结算"),
-        state: "done",
-      },
-    ];
-  }
+  // Locking the human answer never changes the AI's own steps: an in-flight step stays in flight.
+  if (submitting && progress?.ticketIssuedAt) return buildAiActivitySteps(progress, false, locale);
 
   if (submitting) {
     return [
