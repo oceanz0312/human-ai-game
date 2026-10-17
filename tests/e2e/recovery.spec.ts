@@ -36,7 +36,7 @@ test("a dropped submission is retried with the original locked answer", async ({
   });
   await answer(page, 1, "correct");
   expect(failures).toBe(1);
-  await expect(page.getByRole("heading", { name: /你赢了|AI 赢了|AI 仍在判断/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /你赢了|AI 赢了|AI 还在分析/ })).toBeVisible();
   await expect(page.getByText("用掉 1 次机会")).toHaveCount(0);
 });
 

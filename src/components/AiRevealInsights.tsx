@@ -36,7 +36,7 @@ export function AiRevealInsights({ round }: AiRevealInsightsProps) {
     return (
       <section className="ai-insights" aria-live="polite">
         <h2 className="insights-title">{t("AI 决策过程")}</h2>
-        <p className="insights-waiting">{t("等待 AI 返回最终答案（非模拟进度）")}</p>
+        <p className="insights-waiting">{t("AI 还在分析")}</p>
       </section>
     );
   }
@@ -58,10 +58,10 @@ export function AiRevealInsights({ round }: AiRevealInsightsProps) {
       <section className="ai-insights">
         <h2 className="insights-title">{t("AI 决策过程")}</h2>
         <p className="insights-muted">
-          {aiErrorRevealTitle(code, locale)}
-          {hint ? <> — {hint}</> : null}
-          {detail ? <> — {detail}</> : null}
-          {t("，未能记录本次概率分布。")}
+          {aiErrorRevealTitle(code, locale)} · {hint}
+        </p>
+        <p className="insights-code num" title={detail ?? undefined}>
+          {t("错误码 {code}", { code })}
         </p>
       </section>
     );
@@ -125,7 +125,7 @@ export function AiRevealInsights({ round }: AiRevealInsightsProps) {
             <div
               className="timing-segment overhead"
               style={{ flex: timeline.overheadMs ?? 0 }}
-              title={`${t("转发与等待")} ${((timeline.overheadMs ?? 0) / 1000).toFixed(2)}s`}
+              title={`${t("网络与排队")} ${((timeline.overheadMs ?? 0) / 1000).toFixed(2)}s`}
             />
           </div>
           <div className="timing-legend">
@@ -133,10 +133,10 @@ export function AiRevealInsights({ round }: AiRevealInsightsProps) {
               {t("模型推理")} <span className="num">{((timeline.modelMs ?? 0) / 1000).toFixed(2)}s</span>
             </span>
             <span>
-              {t("转发与等待")} <span className="num">{((timeline.overheadMs ?? 0) / 1000).toFixed(2)}s</span>
+              {t("网络与排队")} <span className="num">{((timeline.overheadMs ?? 0) / 1000).toFixed(2)}s</span>
             </span>
           </div>
-          <p className="insights-speed">{t("Decisions API 一次返回最终答案，System 1 级速度。")}</p>
+          <p className="insights-speed">{t("AI 一次给出最终答案，没有边想边改。")}</p>
         </div>
       ) : ai.elapsedMs != null ? (
         <p className="insights-muted">

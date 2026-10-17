@@ -1,4 +1,4 @@
-import type { BeginRoundResponse, ResultView, RoundStartResponse, SessionSnapshot, SubmitResponse, LeaderboardRow } from "@/game/contracts";
+import type { AiEvent, BeginRoundResponse, RoundStartLine, ResultView, RoundStartResponse, SessionSnapshot, SubmitResponse, LeaderboardRow } from "@/game/contracts";
 import type { AnalyticsEventName } from "@/game/schemas";
 
 export class ApiError extends Error {
@@ -28,12 +28,70 @@ export const api = {
   getSession: (sessionId: string) => jsonRequest<SessionSnapshot>(`/api/sessions/${sessionId}`),
   startNextRound: (sessionId: string) => post<RoundStartResponse>(`/api/sessions/${sessionId}/rounds`),
   beginRound: (roundId: string) => post<BeginRoundResponse>(`/api/rounds/${roundId}/start`),
+  beginRoundStream,
   submitRound: (roundId: string, body: { choice: string | null; elapsedMs: number }) => post<SubmitResponse>(`/api/rounds/${roundId}/submit`, body),
   getRound: (roundId: string) => jsonRequest<SubmitResponse>(`/api/rounds/${roundId}`),
   getResult: (publicId: string) => jsonRequest<ResultView>(`/api/results/${publicId}`),
   getLeaderboard: () => jsonRequest<{ version: string; top: LeaderboardRow[]; around: LeaderboardRow[] }>("/api/leaderboard?version=v1&limit=10"),
   setNickname: (nickname: string) => post<{ nickname: string }>("/api/players/me", { nickname }),
 };
+
+/**
+ * POST /start. In server mode the response is an NDJSON stream: resolves with the begin line as soon as the round is
+ * shown, then keeps calling `onAi` for each real AI event. Falls back to plain JSON (legacy browser dispatch).
+ */
+export async function beginRoundStream(roundId: string, onAi: (event: AiEvent) => void): Promise<BeginRoundResponse> {
+  const response = await fetch(`/api/rounds/${roundId}/start`, {
+    method: "POST",
+    credentials: "same-origin",
+    headers: { "Content-Type": "application/json" },
+    body: "{}",
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new ApiError((body as { error?: string }).error ?? `http_${response.status}`, response.status);
+  }
+  if (!(response.headers.get("Content-Type") ?? "").includes("ndjson") || !response.body) {
+    return (await response.json()) as BeginRoundResponse;
+  }
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+  let resolveBegin: (value: BeginRoundResponse) => void = () => {};
+  let rejectBegin: (reason: unknown) => void = () => {};
+  const begin = new Promise<BeginRoundResponse>((resolve, reject) => {
+    resolveBegin = resolve;
+    rejectBegin = reject;
+  });
+  let begun = false;
+  void (async () => {
+    try {
+      for (;;) {
+        const { value, done } = await reader.read();
+        if (value) buffer += decoder.decode(value, { stream: true });
+        let newline = buffer.indexOf("\n");
+        while (newline >= 0) {
+          const raw = buffer.slice(0, newline).trim();
+          buffer = buffer.slice(newline + 1);
+          newline = buffer.indexOf("\n");
+          if (!raw) continue;
+          const line = JSON.parse(raw) as RoundStartLine;
+          if (line.type === "begin") {
+            begun = true;
+            resolveBegin(line.begin);
+          } else if (line.type === "ai") {
+            onAi(line.ai);
+          }
+        }
+        if (done) break;
+      }
+      if (!begun) rejectBegin(new ApiError("stream_closed", 502));
+    } catch (error) {
+      if (!begun) rejectBegin(error);
+    }
+  })();
+  return begin;
+}
 
 /** Retries an idempotent call with a short backoff; used for submissions after lock-in. */
 export async function withRetry<T>(work: () => Promise<T>, attempts = 4): Promise<T> {

@@ -323,3 +323,86 @@ test("level stats aggregate settled rounds without exposing answers", async () =
   expect(stats.find((row) => row.level === 2)).toMatchObject({ samples: 1, humanCorrect: 0, fastestHumanMs: null });
   expect(JSON.stringify(stats)).not.toMatch(/r\dc\d/);
 });
+
+async function setupServer(latency: (level: number) => number, opts: { errorCode?: "rate_limited" } = {}) {
+  const { db, cleanup } = await createTestDatabase();
+  let clock = 1_000_000;
+  const decisions = new FakeDecisionClient(async (input) => {
+    const level = Number(/level-(\d+)/.exec(input.imageDataUrl)?.[1]);
+    const ms = latency(level);
+    clock += ms;
+    return opts.errorCode ? { errorCode: opts.errorCode } : { choice: getPrivateLevel(level).correctChoice };
+  });
+  const service = createGameService({
+    games: createGameRepository(db),
+    leaderboard: createLeaderboardRepository(db),
+    decisions,
+    now: () => clock,
+    randomId: () => randomUUID(),
+    randomPublicId: () => randomUUID().replace(/-/g, "").slice(0, 22),
+    getLevel: getPrivateLevel,
+    toPublicLevel,
+    readLevelImage: async (level) => `level-${level}`,
+    sleep: async (ms) => {
+      clock += ms;
+    },
+  });
+  const playerId = (await service.ensurePlayer(null)).id;
+  const session = await service.createSession({ playerId });
+  return { service, playerId, session, cleanup, advance: (ms: number) => (clock += ms) };
+}
+
+test("server mode: the AI starts at shownAt, streams real events and its time is measured from shownAt", async () => {
+  const s = await setupServer(() => 900);
+  try {
+    const started = await s.service.startNextRound(s.session.id, s.playerId);
+    const { begun, run } = await s.service.beginRoundLive(started.round.id, s.playerId);
+    expect(begun.ai).toBeNull();
+    const seen: string[] = [];
+    run!.subscribe((event) => seen.push(event.event));
+    await run!.done;
+    expect(seen).toEqual(["image", "sent", "answered"]);
+    expect(JSON.stringify(run!.events)).not.toMatch(/r\dc\d|choice|elapsed/);
+    // Before the player locks in, the round still hides the AI.
+    const hidden = await s.service.getRound(started.round.id, s.playerId);
+    expect(hidden.round.ai.status).toBe("running");
+    expect(hidden.round.ai.choice).toBeNull();
+    expect(hidden.round.correctChoice).toBeNull();
+    s.advance(500);
+    const level = getPrivateLevel(1);
+    const submitted = await s.service.submitRound(started.round.id, s.playerId, { choice: level.correctChoice, elapsedMs: 1400 });
+    expect(submitted.round.ai).toMatchObject({ status: "complete", correct: true, elapsedMs: 900 });
+  } finally {
+    s.cleanup();
+  }
+});
+
+test("server mode: an AI slower than the level limit is a timeout, and the player still wins", async () => {
+  const s = await setupServer((level) => getPrivateLevel(level).limitMs + 100);
+  try {
+    const started = await s.service.startNextRound(s.session.id, s.playerId);
+    const { run } = await s.service.beginRoundLive(started.round.id, s.playerId);
+    await run!.done;
+    expect(run!.events.at(-1)).toMatchObject({ event: "error", code: "ai_timeout" });
+    const submitted = await s.service.submitRound(started.round.id, s.playerId, { choice: getPrivateLevel(1).correctChoice, elapsedMs: 1000 });
+    expect(submitted.round.ai).toMatchObject({ status: "error", errorCode: "ai_timeout" });
+    expect(submitted.round.winner).toBe("human");
+  } finally {
+    s.cleanup();
+  }
+});
+
+test("server mode: a repeated /start does not run the AI twice and reports the final state", async () => {
+  const s = await setupServer(() => 300);
+  try {
+    const started = await s.service.startNextRound(s.session.id, s.playerId);
+    const first = await s.service.beginRoundLive(started.round.id, s.playerId);
+    await first.run!.done;
+    const second = await s.service.beginRoundLive(started.round.id, s.playerId);
+    await second.run!.done;
+    expect(second.begun.started).toBe(false);
+    expect(second.run!.events.map((e) => e.event)).toEqual(["answered"]);
+  } finally {
+    s.cleanup();
+  }
+});

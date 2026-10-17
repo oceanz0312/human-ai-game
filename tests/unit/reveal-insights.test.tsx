@@ -39,7 +39,7 @@ test("the reveal page surfaces probability, confidence, and measured timing", as
   expect(chips[0]).toHaveTextContent("71%");
   expect(within(dialog).getByText("82%")).toBeInTheDocument();
   expect(within(dialog).getByText(/模型推理/)).toHaveTextContent("1.60s");
-  expect(within(dialog).getByText(/转发与等待/)).toHaveTextContent("0.50s");
+  expect(within(dialog).getByText(/网络与排队/)).toHaveTextContent("0.50s");
 });
 
 test("a refusal shows the dedicated copy without faking progress", () => {

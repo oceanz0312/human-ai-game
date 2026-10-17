@@ -11,31 +11,15 @@ export interface DanmakuMessage {
   text: string;
 }
 
-const PLAY_STEP_IDS = new Set(["prepare", "ticket", "send", "image", "wait", "response", "locked"]);
-
-export function danmakuFromActivitySteps(steps: AiActivityStep[], playMode: boolean, locale: Locale = FALLBACK_MESSAGE_LOCALE): DanmakuMessage[] {
-  const filtered = playMode ? steps.filter((step) => PLAY_STEP_IDS.has(step.id)) : steps;
-  return filtered.map((step) => ({
-    id: step.id + (step.timestamp ?? ""),
-    text: formatStepDanmaku(step, playMode, locale),
-  }));
-}
-
-function formatStepDanmaku(step: AiActivityStep, playMode: boolean, locale: Locale): string {
-  const time =
-    step.timestamp != null ? formatActivityClock(step.timestamp) : step.state === "active" ? "…" : "";
-  const timeSuffix = time ? ` · ${time}` : "";
-  let label = step.label;
-  if (playMode && step.id === "response" && step.detail) {
-    const safeDetail = step.detail.replace(/r\d+c\d/gi, "").replace(/概率|probability|%/gi, "");
-    label = `${step.label}${safeDetail ? ` · ${safeDetail}` : ""}`;
-  } else if (!playMode && step.detail) {
-    label = `${step.label} · ${step.detail}`;
-  } else {
-    label = step.label;
-  }
-  if (playMode && step.id === "wait") label = `${step.label} · ${translator(locale)("非模拟思考")}`;
-  return `${label}${timeSuffix}`;
+/** Danmaku mirrors the humanized timeline: one quiet line per real AI event, with its clock time. */
+export function danmakuFromActivitySteps(steps: AiActivityStep[], _playMode = true, _locale: Locale = FALLBACK_MESSAGE_LOCALE): DanmakuMessage[] {
+  void _playMode;
+  void _locale;
+  return steps.map((step) => {
+    const time = step.timestamp != null ? ` · ${formatActivityClock(step.timestamp)}` : "";
+    const detail = step.detail ? ` · ${step.detail}` : "";
+    return { id: step.id + (step.timestamp ?? ""), text: `${step.label}${detail}${time}` };
+  });
 }
 
 export function danmakuInsightFacts(round: RoundReveal, locale: Locale = FALLBACK_MESSAGE_LOCALE): DanmakuMessage[] {

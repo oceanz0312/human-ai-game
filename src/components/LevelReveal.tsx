@@ -57,10 +57,10 @@ export function LevelReveal({ round, fasterThanAiCount, ended, onNext, browserAi
 
   const aiSummary =
     round.ai.status === "complete"
-      ? `${t("AI 用时")} ${aiMs != null ? seconds(aiMs) : "—"} · ${round.ai.correct ? t("正确") : t("答错")}`
+      ? `${t("AI 用时")} ${aiMs != null ? seconds(aiMs) : "—"} · ${round.ai.correct ? t("答对") : t("看错了")}`
       : round.ai.status === "error"
         ? copy.aiValue.tag ?? t("AI 未作答")
-        : t("AI 仍在判断");
+        : t("AI 还在分析");
 
   return (
     <GameStage

@@ -1,4 +1,4 @@
-import type { AiDispatch, BeginRoundResponse, LeaderboardRow, ResultView, RoundReveal, RoundStartResponse, SessionSnapshot, SubmitResponse } from "../game/contracts";
+import type { AiDispatch, AiEvent, BeginRoundResponse, LeaderboardRow, ResultView, RoundReveal, RoundStartResponse, SessionSnapshot, SubmitResponse } from "../game/contracts";
 import { LEVEL_SET_VERSION } from "../game/contracts";
 import { parseStoredProbabilities } from "../game/ai-insights";
 import { advanceSession, reconcileElapsed, resolveHumanAnswer, resolveRace } from "../game/rules";
@@ -29,8 +29,41 @@ export interface GameServiceDeps {
   decisionsWorkerPublicUrl?: string | null;
   /** HMAC secret shared with the Decisions Worker for tickets and internal callbacks. */
   decisionsTicketSecret?: string | null;
-  /** worker: browser → Decisions Worker; fake: same-origin dev stand-in; off: AI stays offline. */
-  decisionsDispatchMode?: "worker" | "fake" | "off";
+  /**
+   * server (default): the game service calls the AI itself the moment the round is shown and streams real progress.
+   * worker / fake: legacy browser-initiated dispatch (rollback switch). off: AI stays offline.
+   */
+  decisionsDispatchMode?: "server" | "worker" | "fake" | "off";
+}
+
+/** A live AI run for one round: real events in order, replayed to late subscribers. */
+export interface AiRun {
+  events: AiEvent[];
+  subscribe(listener: (event: AiEvent) => void): () => void;
+  done: Promise<void>;
+}
+
+const isFinalEvent = (event: AiEvent) => event.event === "answered" || event.event === "error";
+
+function createAiRun(work: (emit: (event: AiEvent) => void) => Promise<void>): AiRun {
+  const events: AiEvent[] = [];
+  const listeners = new Set<(event: AiEvent) => void>();
+  const emit = (event: AiEvent) => {
+    events.push(event);
+    for (const listener of [...listeners]) listener(event);
+  };
+  const done = work(emit).catch(() => {
+    if (!events.some(isFinalEvent)) emit({ event: "error", at: Date.now(), code: "network_error" });
+  });
+  return {
+    events,
+    subscribe(listener) {
+      for (const event of [...events]) listener(event);
+      listeners.add(listener);
+      return () => listeners.delete(listener);
+    },
+    done,
+  };
 }
 
 export function createGameService(deps: GameServiceDeps) {
@@ -214,7 +247,86 @@ export function createGameService(deps: GameServiceDeps) {
     return { mode: "worker", url: new URL("/v1/decide-ticket", deps.decisionsWorkerPublicUrl).toString(), ticket, issuedAt: now };
   }
 
+  /** Runs the AI for a freshly shown round. The AI clock starts at the same server instant as the human's (shownAt). */
+  async function runServerAi(round: RoundRow, level: PrivateLevel, emit: (event: AiEvent) => void) {
+    const shownAt = round.shownAt ?? deps.now();
+    let answer: DecisionResult;
+    try {
+      const imageDataUrl = await deps.readLevelImage(round.level);
+      emit({ event: "image", at: deps.now() });
+      const budgetMs = Math.max(1, level.limitMs - (deps.now() - shownAt));
+      emit({ event: "sent", at: deps.now() });
+      answer = await deps.decisions.decide({ imageDataUrl, choices: level.choices }, AbortSignal.timeout(Math.min(budgetMs, aiTimeoutMs)));
+    } catch {
+      answer = { status: "error", choice: null, confidence: null, probabilities: {}, modelElapsedMs: 0, errorCode: "network_error", requestId: "none", elapsedMs: 0 };
+    }
+    const completedAt = deps.now();
+    const elapsedMs = Math.max(0, completedAt - shownAt);
+    // The AI has the same time limit as the player; a late answer is a timeout, never a win.
+    if (elapsedMs > level.limitMs || (answer.status === "error" && answer.errorCode === "upstream_timeout")) {
+      answer = { ...answer, status: "error", choice: null, confidence: null, probabilities: {}, errorCode: "ai_timeout", elapsedMs };
+    }
+    await persistAiAnswer(round, answer, elapsedMs);
+    const complete = answer.status === "complete" && answer.choice !== null && level.choices.includes(answer.choice);
+    emit(complete ? { event: "answered", at: completedAt } : { event: "error", at: completedAt, code: answer.errorCode ?? "invalid_choice" });
+  }
+
+  /** A second /start for a round whose AI already runs elsewhere: report only the final outcome, from D1. */
+  async function watchAi(roundId: string, level: PrivateLevel, emit: (event: AiEvent) => void) {
+    const giveUpAt = deps.now() + level.limitMs + 5_000;
+    for (;;) {
+      let round = await deps.games.getRound(roundId);
+      if (!round) return;
+      round = await expireIfStale(round);
+      if (round.aiStatus === "complete") return emit({ event: "answered", at: round.aiCompletedAt ?? deps.now() });
+      if (round.aiStatus === "error") return emit({ event: "error", at: round.aiCompletedAt ?? deps.now(), code: round.aiErrorCode });
+      if (deps.now() > giveUpAt) return emit({ event: "error", at: deps.now(), code: "ai_timeout" });
+      await sleep(250);
+    }
+  }
+
+  async function beginRoundCore(roundId: string, playerId: string): Promise<{ begun: BeginRoundResponse; run: AiRun | null }> {
+    const { round } = await loadOwnedRound(roundId, playerId);
+    if (round.humanStatus) return { begun: { roundId: round.id, deadlineAt: round.deadlineAt, started: false, ai: null }, run: null };
+    const level = deps.getLevel(round.level);
+    const firstPaint = round.shownAt === null;
+    const marked = await deps.games.markShown(round.id, deps.now(), level.limitMs);
+    const mode = deps.decisionsDispatchMode ?? "server";
+    if (mode === "server") {
+      const begun = { roundId: marked.id, deadlineAt: marked.deadlineAt, started: firstPaint, ai: null };
+      // The AI starts before any bookkeeping so its clock and the player's begin at the same shownAt.
+      const run =
+        firstPaint && (await deps.games.claimAiRun(roundId, deps.now()))
+          ? createAiRun((emit) => runServerAi(marked, level, emit))
+          : createAiRun((emit) => watchAi(roundId, level, emit));
+      await track("level_shown", { playerId, sessionId: round.sessionId, level: round.level });
+      return { begun, run };
+    }
+    await track("level_shown", { playerId, sessionId: round.sessionId, level: round.level });
+    let ai: AiDispatch | null = null;
+    if (firstPaint) {
+      ai = await buildAiDispatch(marked, level);
+      if (ai?.mode === "worker") {
+        await deps.games.claimAiRun(roundId, deps.now());
+      } else if (!ai && (await deps.games.claimAiRun(roundId, deps.now()))) {
+        await persistAiAnswer(marked, {
+          status: "error",
+          choice: null,
+          confidence: null,
+          probabilities: {},
+          modelElapsedMs: 0,
+          errorCode: "ai_unconfigured",
+          requestId: "none",
+        });
+      }
+    }
+    return { begun: { roundId: marked.id, deadlineAt: marked.deadlineAt, started: firstPaint, ai }, run: null };
+  }
+
   return {
+    /** Marks the round shown and, in server mode, starts the AI at that same instant; returns a live event run. */
+    beginRoundLive: beginRoundCore,
+
     async ensurePlayer(playerId: string | null) {
       const id = playerId ?? deps.randomId();
       const existing = playerId ? await deps.games.getPlayer(playerId) : null;
@@ -263,32 +375,11 @@ export function createGameService(deps: GameServiceDeps) {
       return response;
     },
 
-    /** Called when the image has been painted; starts the server clock and returns a browser AI dispatch ticket when configured. */
+    /** Called when the image has been painted; JSON-only variant (tests, legacy browser dispatch). */
     async beginRound(roundId: string, playerId: string): Promise<BeginRoundResponse> {
-      const { round } = await loadOwnedRound(roundId, playerId);
-      if (round.humanStatus) return { roundId: round.id, deadlineAt: round.deadlineAt, started: false, ai: null };
-      const level = deps.getLevel(round.level);
-      const firstPaint = round.shownAt === null;
-      const marked = await deps.games.markShown(round.id, deps.now(), level.limitMs);
-      await track("level_shown", { playerId, sessionId: round.sessionId, level: round.level });
-      let ai: AiDispatch | null = null;
-      if (firstPaint) {
-        ai = await buildAiDispatch(marked, level);
-        if (ai?.mode === "worker") {
-          await deps.games.claimAiRun(roundId, deps.now());
-        } else if (!ai && (await deps.games.claimAiRun(roundId, deps.now()))) {
-          await persistAiAnswer(marked, {
-            status: "error",
-            choice: null,
-            confidence: null,
-            probabilities: {},
-            modelElapsedMs: 0,
-            errorCode: "ai_unconfigured",
-            requestId: "none",
-          });
-        }
-      }
-      return { roundId: marked.id, deadlineAt: marked.deadlineAt, started: firstPaint, ai };
+      const { begun, run } = await beginRoundCore(roundId, playerId);
+      if (run) await run.done;
+      return begun;
     },
 
     /** Local fake AI path invoked by the browser in DECISIONS_MODE=fake (same-origin, no OpenAI). */
