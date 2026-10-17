@@ -4,12 +4,12 @@ import { answer, next, startGame, waitForPlayable } from "./helpers";
 test("an image that fails to load never starts the countdown or costs a life", async ({ page }) => {
   await page.route("**/levels/v1/01.png", (route) => route.abort());
   await startGame(page);
-  await expect(page.getByText("关卡加载失败，生命不会减少。")).toBeVisible({ timeout: 15_000 });
-  await expect(page.locator(".life.lost")).toHaveCount(0);
+  await expect(page.getByText("关卡加载失败，不会扣除机会。")).toBeVisible({ timeout: 15_000 });
+  await expect(page.locator(".chance.used")).toHaveCount(0);
   await page.unroute("**/levels/v1/01.png");
   await page.getByRole("button", { name: "重新加载关卡" }).click();
   await waitForPlayable(page, 1);
-  await expect(page.locator(".life.lost")).toHaveCount(0);
+  await expect(page.locator(".chance.used")).toHaveCount(0);
 });
 
 test("refreshing during a shown level settles it as a timeout", async ({ page }) => {
@@ -20,7 +20,7 @@ test("refreshing during a shown level settles it as a timeout", async ({ page })
   await expect(page.getByText("你超时了 · 用掉 1 次机会")).toBeVisible();
   await next(page);
   await waitForPlayable(page, 2);
-  await expect(page.locator(".life.lost")).toHaveCount(1);
+  await expect(page.locator(".chance.used")).toHaveCount(1);
 });
 
 test("a dropped submission is retried with the original locked answer", async ({ page }) => {
@@ -45,11 +45,11 @@ test("the AI being offline does not cost the player a life", async ({ page }) =>
   await answer(page, 1, "correct");
   await next(page);
   await answer(page, 2, "wrong");
-  await expect(page.getByRole("heading", { name: "AI 掉线" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /AI 掉线/ })).toBeVisible();
   await expect(page.getByText("你答错了 · 用掉 1 次机会")).toBeVisible();
   await next(page);
   await waitForPlayable(page, 3);
-  await expect(page.locator(".life.lost")).toHaveCount(1);
+  await expect(page.locator(".chance.used")).toHaveCount(1);
 });
 
 test("backgrounding does not pause the absolute deadline", async ({ page }) => {

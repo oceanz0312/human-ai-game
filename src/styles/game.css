@@ -1,0 +1,1070 @@
+/*
+ * Game stage: play, countdown, error and reveal share one grid so the board keeps its size and position.
+ * Board size is pure CSS (no JS measuring): the largest square that fits the viewport next to/above the other slots.
+ */
+.game-stage {
+  --stage-pad: var(--gutter);
+  --gap: 8px;
+  --stack-extra: 150px;
+  --board: min(
+    calc(100svh - var(--nav-h) - 2 * var(--stage-pad) - var(--lane-h) - var(--foot-h) - 2 * var(--gap)),
+    calc(100vw - var(--side-w) - 2 * var(--stage-pad) - var(--s6) - 8px),
+    760px
+  );
+  height: 100svh;
+  /* clip, not hidden: a hidden box can still be scrolled by focus/scrollIntoView, which would shift the board. */
+  overflow: clip;
+  display: flex;
+  flex-direction: column;
+  background: var(--c-paper);
+  color: var(--c-text);
+}
+
+.game-topbar {
+  flex: none;
+  height: var(--nav-h);
+  display: flex;
+  align-items: center;
+  gap: var(--s5);
+  padding: 0 var(--gutter);
+  background: var(--c-surface);
+  border-bottom: var(--bw) solid var(--c-ink);
+}
+
+.game-crumb {
+  font: 500 13px/1.2 var(--f-display);
+  color: var(--c-text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+
+.game-topbar-spacer {
+  flex: 1;
+}
+
+.game-kbd-hint {
+  font-size: 12px;
+  color: var(--c-muted);
+  white-space: nowrap;
+}
+
+.game-exit:not(:where(.x)) {
+  width: auto;
+  height: 36px;
+  padding: 0 14px;
+  display: inline-flex;
+  align-items: center;
+  text-decoration: none;
+  font-size: 13px;
+}
+
+.kbd {
+  display: inline-block;
+  min-width: 22px;
+  padding: 2px 6px;
+  border: var(--bw-sm) solid currentColor;
+  border-radius: calc(var(--radius) / 3);
+  font: 600 11px/1.2 var(--f-mono);
+  text-align: center;
+  opacity: 0.85;
+}
+
+.game-grid {
+  flex: 1;
+  min-height: 0;
+  overflow: clip;
+  width: 100%;
+  max-width: var(--game-max);
+  margin: 0 auto;
+  padding: var(--stage-pad);
+  display: grid;
+  grid-template-columns: var(--board) var(--side-w);
+  justify-content: center;
+  align-content: start;
+  gap: var(--s6);
+}
+
+.game-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--gap);
+  min-width: 0;
+}
+
+.game-lane {
+  height: var(--lane-h);
+  flex: none;
+  overflow: hidden;
+  border-bottom: var(--bw-sm) dashed var(--c-line);
+}
+
+.board-stage {
+  position: relative;
+  width: var(--board);
+  height: var(--board);
+  flex: none;
+}
+
+.game-foot {
+  height: var(--foot-h);
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s3);
+}
+
+.game-hint {
+  font: 500 13px/1.3 var(--f-display);
+  color: var(--c-text-2);
+}
+
+.game-foot-actions {
+  display: flex;
+  gap: var(--s3);
+  width: 100%;
+}
+
+.game-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+  min-height: 0;
+  max-height: calc(var(--lane-h) + var(--board) + var(--foot-h) + 2 * var(--gap));
+}
+
+.game-side-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+  flex: 1;
+  min-height: 0;
+}
+
+.mobile-only:not(:where(.x)) {
+  display: none;
+}
+
+/* ---------- Board ---------- */
+.board {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: 1;
+  background: var(--c-surface);
+  border: var(--bw) solid var(--c-ink);
+  border-radius: var(--radius);
+  box-shadow: var(--sh-lg);
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.board img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  pointer-events: none;
+}
+
+.board .grid {
+  position: absolute;
+  display: grid;
+}
+
+.cell {
+  appearance: none;
+  border: 0;
+  margin: 0;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+
+.cell:disabled {
+  cursor: default;
+}
+
+.cell:focus-visible {
+  outline: 3px solid var(--c-ai);
+  outline-offset: -3px;
+}
+
+.cell.selected {
+  box-shadow: inset 0 0 0 3px var(--c-ink);
+}
+
+.board-loading,
+.board-message {
+  display: grid;
+  place-items: center;
+  text-align: center;
+  padding: var(--s5);
+  color: var(--c-text-2);
+  font-size: 14px;
+}
+
+.board-loading {
+  position: absolute;
+  inset: 0;
+}
+
+.countdown-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.countdown-overlay span {
+  font: 800 clamp(64px, 18vmin, 160px) / 1 var(--f-display-latin);
+  color: var(--c-ink);
+  animation: tick 1s steps(2, end) both;
+}
+
+@keyframes tick {
+  from {
+    transform: scale(1.15);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+/* ---------- Reveal overlay ---------- */
+.reveal-grid {
+  position: absolute;
+  display: grid;
+}
+
+.heatmap-cell {
+  position: relative;
+  background: color-mix(in srgb, var(--c-ai) calc(var(--heat, 0) * 70%), transparent);
+}
+
+.heatmap-cell.ai-pick {
+  box-shadow: inset 0 0 0 3px var(--c-ai);
+}
+
+.heatmap-cell.correct-pick {
+  outline: 3px dashed var(--c-ok);
+  outline-offset: -3px;
+}
+
+.pick-tag {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 5px;
+  font: 700 11px/1 var(--f-display);
+  border: var(--bw-sm) solid var(--c-ink);
+  white-space: nowrap;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.pick-tag-ai {
+  top: 2px;
+  background: var(--c-ai);
+  color: var(--c-ink);
+}
+
+.pick-tag-you {
+  bottom: 2px;
+  background: var(--c-human);
+  color: #fff;
+}
+
+.size-9 .pick-tag {
+  font-size: 9px;
+  padding: 1px 3px;
+}
+
+.reveal-next:not(:where(.x)) {
+  width: 100%;
+  height: calc(var(--foot-h) - 8px);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s3);
+}
+
+/* ---------- HUD ---------- */
+.hud-card {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  grid-template-areas: "level chances" "timer timer";
+  gap: var(--s3) var(--s4);
+  padding: var(--s4) var(--s5);
+  background: var(--c-surface);
+  border: var(--bw) solid var(--c-ink);
+  border-radius: var(--radius);
+  box-shadow: var(--sh);
+}
+
+.hud-level {
+  grid-area: level;
+}
+
+.hud-chances {
+  grid-area: chances;
+  text-align: right;
+}
+
+.hud-card .timer {
+  grid-area: timer;
+}
+
+.hud-label {
+  display: block;
+  font: 500 12px/1.2 var(--f-display);
+  color: var(--c-text-2);
+  margin-bottom: 6px;
+}
+
+.hud-value {
+  font: 700 28px/1 var(--f-display-latin);
+}
+
+.hud-timer {
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+}
+
+.hud-timer .value {
+  font: 800 44px/1 var(--f-display-latin);
+  font-variant-numeric: tabular-nums;
+}
+
+.hud-timer .unit {
+  font-size: 13px;
+  color: var(--c-text-2);
+}
+
+.timer.urgent .value {
+  color: var(--c-human-text);
+}
+
+.hud-segments {
+  display: flex;
+  gap: 3px;
+  margin-top: 10px;
+}
+
+.hud-segments i {
+  flex: 1;
+  height: 10px;
+  background: var(--c-line);
+}
+
+.hud-segments i.on {
+  background: var(--c-ink);
+}
+
+.timer.urgent .hud-segments i.on {
+  background: var(--c-human-text);
+}
+
+.chances {
+  display: inline-flex;
+  gap: 6px;
+}
+
+.chance {
+  width: 16px;
+  height: 16px;
+  background: var(--c-human);
+  border: var(--bw-sm) solid var(--c-ink);
+}
+
+.chance.used {
+  background: transparent;
+}
+
+/* ---------- Side cards ---------- */
+.vs-card,
+.race-card {
+  display: grid;
+  gap: 10px;
+  padding: var(--s4) var(--s5);
+  background: var(--c-surface);
+  border: var(--bw) solid var(--c-ink);
+  border-radius: var(--radius);
+  box-shadow: var(--sh);
+}
+
+.vs-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+}
+
+.vs-state {
+  color: var(--c-text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 36px;
+  height: 26px;
+  padding: 0 8px;
+  font: 700 12px/1 var(--f-display);
+  border: var(--bw-sm) solid var(--c-ink);
+  border-radius: calc(var(--radius) / 2);
+}
+
+.badge-human {
+  background: var(--c-human);
+  color: #fff;
+}
+
+.badge-ai {
+  background: var(--c-ai);
+  color: var(--c-ink);
+}
+
+.verdict-card {
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  padding: var(--s4) var(--s5);
+  background: var(--c-surface);
+  border: var(--bw) solid var(--c-ink);
+  border-radius: var(--radius);
+  box-shadow: var(--sh);
+}
+
+.verdict-card .result-symbol {
+  flex: none;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  font: 800 26px/1 var(--f-display-latin);
+  background: var(--c-paper);
+  border: var(--bw-sm) solid var(--c-ink);
+}
+
+.verdict-card[data-symbol="✓"] .result-symbol {
+  background: var(--c-ok);
+}
+
+.verdict-copy {
+  min-width: 0;
+}
+
+.verdict-eyebrow {
+  margin: 0 0 4px;
+  font-size: 12px;
+  color: var(--c-text-2);
+}
+
+.verdict-title {
+  margin: 0;
+  font: 800 28px/1.15 var(--f-display);
+}
+
+.verdict-detail {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: var(--c-text-2);
+}
+
+.faster-note {
+  margin: 0;
+  font-size: 13px;
+  color: var(--c-text-2);
+}
+
+.reveal-insights {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s3);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.reveal-legend {
+  margin: 0;
+  font-size: 13px;
+  color: var(--c-text-2);
+}
+
+.legend-ai {
+  color: var(--c-ai-text);
+  font-weight: 700;
+}
+
+.legend-correct {
+  color: #15803d;
+  font-weight: 700;
+}
+
+/* VsRaceBar */
+.vs-race {
+  display: grid;
+  gap: 6px;
+}
+
+.vs-race-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.vs-race-track {
+  position: relative;
+  height: 14px;
+  display: grid;
+  gap: 3px;
+}
+
+.vs-race-segment {
+  height: 5px;
+  min-width: 2px;
+}
+
+.vs-race-segment.human {
+  background: var(--c-human);
+}
+
+.vs-race-segment.ai {
+  background: var(--c-ai);
+}
+
+/* ---------- AI terminal ---------- */
+.ai-terminal {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--c-term-bg);
+  color: var(--c-term-fg);
+  border: var(--bw) solid var(--c-ink);
+  border-radius: var(--radius);
+  box-shadow: var(--sh);
+  font: 12.5px/1.7 var(--f-mono);
+  overflow: hidden;
+}
+
+.ai-terminal-head {
+  flex: none;
+  display: flex;
+  justify-content: space-between;
+  gap: var(--s3);
+  padding: 6px 12px;
+  border-bottom: 1px solid color-mix(in srgb, var(--c-term-fg) 22%, transparent);
+  font-size: 12px;
+}
+
+.term-live {
+  color: var(--c-ok);
+}
+
+.term-dim,
+.term-time,
+.term-detail {
+  color: var(--c-term-dim);
+}
+
+.ai-terminal-body {
+  flex: 1;
+  min-height: 0;
+  padding: 8px 12px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.term-line {
+  flex: none;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.term-line.is-done .term-mark,
+.term-summary .term-mark {
+  color: var(--c-ok);
+}
+
+.term-line.is-active .term-mark {
+  color: var(--c-hi);
+}
+
+.term-line.is-error .term-mark {
+  color: #ff77a8;
+}
+
+.term-ai {
+  color: var(--c-ai);
+}
+
+.term-cursor {
+  display: inline-block;
+  width: 0.6em;
+  height: 1.1em;
+  vertical-align: -0.2em;
+  background: var(--c-term-fg);
+  animation: term-blink 1s steps(1, end) infinite;
+}
+
+@keyframes term-blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+.ai-terminal-foot {
+  flex: none;
+  padding: 6px 12px;
+  border-top: 1px solid color-mix(in srgb, var(--c-term-fg) 22%, transparent);
+  color: var(--c-term-dim);
+  font-size: 11.5px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ---------- Danmaku: a quiet thin lane above the board ---------- */
+.ai-danmaku {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--s5);
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.ai-danmaku-item {
+  flex: 0 1 auto;
+  min-width: 0;
+  margin: 0;
+  font: 500 12px/1 var(--f-mono);
+  color: var(--c-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.ai-danmaku-item::before {
+  content: "AI ";
+  color: var(--c-ai-text);
+  font-weight: 700;
+}
+
+.ai-danmaku-motion .ai-danmaku-item:last-child {
+  animation: danmaku-in 0.4s steps(4, end) both;
+}
+
+@keyframes danmaku-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* ---------- Details sheet (mobile AI details) ---------- */
+.details-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(17, 17, 17, 0.35);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.details-sheet {
+  width: min(560px, 100%);
+  max-height: 85svh;
+  display: flex;
+  flex-direction: column;
+  background: var(--c-surface);
+  border: var(--bw) solid var(--c-ink);
+  border-bottom: 0;
+  border-radius: var(--radius) var(--radius) 0 0;
+  box-shadow: var(--sh-lg);
+}
+
+.details-sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--s4) var(--s5);
+  border-bottom: var(--bw-sm) solid var(--c-line);
+}
+
+.details-sheet-title {
+  margin: 0;
+  font: 700 16px/1.2 var(--f-display);
+}
+
+.details-sheet-body {
+  overflow-y: auto;
+  padding: var(--s4) var(--s5) max(var(--s5), env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  gap: var(--s5);
+}
+
+.close-action {
+  border: var(--bw-sm) solid var(--c-ink);
+  background: var(--c-surface);
+  padding: 6px 12px;
+  border-radius: calc(var(--radius) / 2);
+  cursor: pointer;
+}
+
+@media (min-width: 768px) {
+  .details-sheet-backdrop {
+    align-items: center;
+  }
+  .details-sheet {
+    border-bottom: var(--bw) solid var(--c-ink);
+    border-radius: var(--radius);
+  }
+}
+
+/* ---------- AI activity list + insights (sheet / side) ---------- */
+.ai-activity-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: var(--s2);
+  font-weight: 700;
+}
+
+.ai-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--c-ai);
+  display: inline-block;
+}
+
+.ai-activity-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.ai-activity-step {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 2px 12px;
+  font-size: 14px;
+}
+
+.ai-activity-step.is-active .ai-activity-label {
+  color: var(--c-ai-text);
+}
+
+.ai-activity-step.is-error .ai-activity-label {
+  color: var(--c-human-text);
+}
+
+.ai-activity-time,
+.ai-activity-detail {
+  font: 12px/1.4 var(--f-mono);
+  color: var(--c-muted);
+}
+
+.ai-activity-detail {
+  grid-column: 1 / -1;
+}
+
+.ai-insights {
+  display: grid;
+  gap: var(--s3);
+  font-size: 14px;
+}
+
+.insights-title {
+  margin: 0;
+  font: 700 15px/1.2 var(--f-display);
+}
+
+.insights-label,
+.insights-muted,
+.insights-speed,
+.insights-waiting,
+.insights-refusal,
+.insights-hesitation {
+  margin: 0;
+  color: var(--c-text-2);
+  font-size: 13px;
+}
+
+.candidate-chips {
+  list-style: none;
+  margin: 6px 0 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.candidate-chip {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 8px;
+  border: var(--bw-sm) solid var(--c-line);
+  border-radius: calc(var(--radius) / 2);
+  font-size: 13px;
+}
+
+.candidate-chip.is-ai {
+  border-color: var(--c-ai);
+}
+
+.candidate-tag {
+  font-size: 11px;
+  color: #15803d;
+  font-weight: 700;
+}
+
+.confidence-head,
+.timing-head,
+.timing-legend {
+  display: flex;
+  justify-content: space-between;
+  font-size: 13px;
+}
+
+.confidence-track,
+.timing-bar {
+  height: 8px;
+  margin-top: 6px;
+  display: flex;
+  background: var(--c-line);
+}
+
+.confidence-fill,
+.timing-segment.model {
+  background: var(--c-ai);
+}
+
+.timing-segment.overhead {
+  background: var(--c-muted);
+}
+
+/* ---------- Stacked layout: phones and portrait tablets ---------- */
+@media (max-width: 767px), (orientation: portrait) {
+  .game-stage {
+    --stage-pad: 12px;
+    --board: min(
+      calc(100vw - 2 * var(--gutter)),
+      calc(100svh - var(--nav-h) - var(--hud-h) - var(--lane-h) - var(--foot-h) - var(--stack-extra) - 4 * var(--gap) - 2 * var(--stage-pad)),
+      760px
+    );
+  }
+  .game-grid {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    /* start, never center: overflowing side content must not push the board up between play and reveal */
+    justify-content: flex-start;
+    gap: var(--gap);
+    padding: var(--stage-pad) var(--gutter);
+  }
+  .game-col,
+  .game-side,
+  .game-side-body {
+    display: contents;
+  }
+  .game-hud {
+    order: 1;
+  }
+  .game-lane {
+    order: 2;
+  }
+  .board-stage {
+    order: 3;
+  }
+  .game-foot {
+    order: 4;
+  }
+  .game-side-body > * {
+    order: 5;
+  }
+  .game-side-body > .ai-terminal,
+  .game-side-body > .reveal-insights {
+    order: 6;
+  }
+  .game-hud,
+  .game-lane,
+  .game-foot,
+  .game-side-body > * {
+    width: var(--board);
+  }
+  .game-hud {
+    height: var(--hud-h);
+    flex: none;
+  }
+  .hud-card {
+    height: 100%;
+    grid-template-columns: auto 1fr auto;
+    grid-template-areas: "level timer chances";
+    align-items: center;
+    padding: 0 12px;
+    box-shadow: var(--sh-sm);
+  }
+  .hud-card .hud-label {
+    margin-bottom: 2px;
+    font-size: 11px;
+  }
+  .hud-card .timer {
+    justify-self: center;
+    text-align: center;
+  }
+  .hud-card .timer .hud-label,
+  .hud-segments {
+    display: none;
+  }
+  .hud-value {
+    font-size: 20px;
+  }
+  .hud-timer .value {
+    font-size: 32px;
+  }
+  .verdict-card {
+    height: 100%;
+    padding: 0 12px;
+    gap: 10px;
+    box-shadow: var(--sh-sm);
+  }
+  .verdict-card .result-symbol {
+    width: 32px;
+    height: 32px;
+    font-size: 18px;
+  }
+  .verdict-copy {
+    display: grid;
+    gap: 1px;
+  }
+  .verdict-eyebrow {
+    margin: 0;
+    font-size: 10px;
+    line-height: 1.2;
+  }
+  .verdict-title {
+    font-size: 16px;
+    line-height: 1.15;
+  }
+  .verdict-detail {
+    margin: 0;
+    font-size: 11px;
+    line-height: 1.25;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .vs-card,
+  .race-card {
+    padding: 8px 12px;
+    gap: 6px;
+    box-shadow: var(--sh-sm);
+    flex: none;
+  }
+  .race-card {
+    grid-template-columns: 1fr auto;
+    align-items: center;
+  }
+  .race-card .faster-note {
+    grid-column: 1 / -1;
+  }
+  .race-card .details-link:not(:where(.x)) {
+    grid-column: 2;
+    grid-row: 1;
+    width: auto;
+  }
+  .game-foot .details-link:not(:where(.x)) {
+    width: auto;
+  }
+  .ai-terminal {
+    flex: 1 1 0;
+    min-height: 0;
+    font-size: 11.5px;
+    box-shadow: var(--sh-sm);
+  }
+  .ai-terminal-body {
+    justify-content: flex-end;
+    padding: 4px 10px;
+  }
+  .ai-terminal-foot {
+    display: none;
+  }
+  .mobile-only:not(:where(.x)) {
+    display: inline-flex;
+  }
+  .desk-only:not(:where(.x)) {
+    display: none;
+  }
+  .game-kbd-hint {
+    display: none;
+  }
+  .details-link {
+    height: 36px;
+    padding: 0 12px;
+    font-size: 13px;
+    white-space: nowrap;
+  }
+}
+
+@media (max-width: 767px) and (max-height: 720px), (orientation: portrait) and (max-height: 720px) {
+  .game-stage {
+    --stack-extra: 64px;
+  }
+  .game-side-body > .vs-card {
+    display: none;
+  }
+}
+
+@media (max-width: 1023px) and (orientation: landscape) {
+  .game-kbd-hint {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .countdown-overlay span,
+  .ai-danmaku-motion .ai-danmaku-item:last-child,
+  .term-cursor {
+    animation: none;
+  }
+}
+
+.game-exit,
+.details-link,
+.reveal-next {
+  white-space: nowrap;
+}
+
+@media (max-width: 767px) and (max-height: 720px), (orientation: portrait) and (max-height: 720px) {
+  /* The verdict, race and 下一关 matter most on short phones; the full timeline stays one tap away in AI 详情. */
+  .game-stage[data-phase="reveal"] .game-side-body > .ai-terminal {
+    display: none;
+  }
+}

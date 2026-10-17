@@ -28,7 +28,8 @@ const completeRound: RoundReveal = {
 test("the reveal page surfaces probability, confidence, and measured timing", async () => {
   render(<LevelReveal round={completeRound} fasterThanAiCount={1} ended={false} onNext={() => undefined} />);
   expect(screen.getByTestId("reveal-board")).toBeInTheDocument();
-  expect(screen.queryByText(/AI 最看好/)).toBeNull();
+  // Desktop keeps the insights in the side panel; the sheet repeats them for phones.
+  expect(screen.getAllByText(/AI 最看好/).length).toBeGreaterThanOrEqual(1);
   fireEvent.click(screen.getByRole("button", { name: "AI 详情" }));
   const dialog = screen.getByRole("dialog");
   const chips = within(dialog).getAllByTestId("candidate-chip");

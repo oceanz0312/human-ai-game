@@ -4,16 +4,20 @@ import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { PublicLevel, RoundReveal, SessionSnapshot } from "@/game/contracts";
 import { PUBLIC_LEVELS_V1 } from "@/levels/public-catalog.generated";
-import { snapshotAiActivity, type AiActivitySnapshot } from "@/game/ai-activity";
+import { buildAiActivitySteps, snapshotAiActivity, type AiActivitySnapshot } from "@/game/ai-activity";
+import { STARTING_LIVES } from "@/game/contracts";
 import { dispatchRoundAi, type AiNetworkProgress } from "@/lib/ai-dispatch";
 import { AiActivityPanel } from "./AiActivityPanel";
 import { AiDanmakuLane } from "./AiDanmakuLane";
 import { DetailsSheet } from "./DetailsSheet";
 import { danmakuFromActivitySteps } from "@/game/danmaku-messages";
 import { api, ApiError, haptic, track, withRetry } from "@/lib/api-client";
-import { countdown } from "@/lib/format";
+import { pad2 } from "@/lib/format";
 import { GameBoard } from "./GameBoard";
-import { GameHeader } from "./GameHeader";
+import { AiTerminal } from "./game/AiTerminal";
+import { GameHud } from "./game/GameHud";
+import { GameStage } from "./game/GameStage";
+import { GameTopBar } from "./game/GameTopBar";
 import { LevelReveal } from "./LevelReveal";
 import { useLocale, useT } from "@/i18n/client";
 import { localePath } from "@/i18n/config";
@@ -366,6 +370,11 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
     };
   }, [phase.kind, reveal]);
 
+  const displayLevel = level?.level ?? session?.level ?? 1;
+  const limit = level?.limitMs ?? PUBLIC_LEVELS_V1[displayLevel - 1]?.limitMs ?? 0;
+  const gridSize = level?.gridSize ?? PUBLIC_LEVELS_V1[displayLevel - 1]?.gridSize ?? 3;
+  const crumb = `${t("大家来找茬")} / ${t("第 {n} 关", { n: pad2(displayLevel) })}`;
+
   if (phase.kind === "reveal" && reveal && session) {
     return (
       <LevelReveal
@@ -374,97 +383,100 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
         ended={session.status === "ended"}
         onNext={advance}
         browserAiActivity={aiActivitySnapshot}
+        topBar={<GameTopBar crumb={`${t("大家来找茬")} / ${t("第 {n} 关", { n: pad2(reveal.level) })}`} />}
       />
     );
   }
 
-  if (phase.kind === "countdown") {
-    const countdownLevel = level?.level ?? session?.level ?? 1;
-    return (
-      <main className="mobile-shell game one-screen">
-        <GameHeader level={countdownLevel} lives={session?.lives ?? 3} />
-        <div className="countdown-overlay" aria-live="assertive">
-          <span key={phase.value}>{phase.value}</span>
-        </div>
-      </main>
-    );
-  }
-
-  if (phase.kind === "error") {
-    return (
-      <main className="mobile-shell game one-screen">
-        <GameHeader level={level?.level ?? session?.level ?? 1} lives={session?.lives ?? 3} />
-        <div className="reveal-body">
-          <p className="inline-error">{phase.message}</p>
-        </div>
-        <div className="bottom-actions">
-          <button
-            type="button"
-            className="primary-action"
-            onClick={() => {
-              if (phase.action === "resubmit") void sendSubmission();
-              else void boot();
-            }}
-          >
-            {phase.action === "resubmit" ? t("重试提交") : t("重新加载关卡")}
-          </button>
-          <button type="button" className="text-action" onClick={() => router.push(localePath(locale, "/"))}>
-            {t("返回首页")}
-          </button>
-        </div>
-      </main>
-    );
-  }
-
-  const displayLevel = level?.level ?? session?.level ?? 1;
-  const limit = level?.limitMs ?? PUBLIC_LEVELS_V1[displayLevel - 1]?.limitMs ?? 0;
   const remaining = remainingMs ?? limit;
   const interactive = phase.kind === "playing" && painted && !locked;
   const slowLoading = phase.kind === "loading" && slowEpoch === loadEpoch;
-
   const activitySteps = aiActivitySnapshot?.steps ?? [];
   const danmakuMessages = danmakuFromActivitySteps(activitySteps, true, locale);
+  const terminalSteps = aiActivitySnapshot?.steps ?? buildAiActivitySteps(aiProgress, phase.kind === "submitting", locale);
+  const aiNow = [...terminalSteps].reverse().find((step) => step.state === "active") ?? terminalSteps[terminalSteps.length - 1];
+  const humanNow = locked || phase.kind === "submitting" ? t("答案已锁定") : interactive ? t("作答中…") : t("准备中");
 
-  return (
-    <main className="mobile-shell game one-screen">
-      <div className="play-top">
-        <GameHeader level={displayLevel} lives={session?.lives ?? 3} />
-        <div className="ai-status ai-status-inline">
-          <span className="ai">
-            <span className="ai-dot" aria-hidden />
-            {t("AI 进行中")}
-          </span>
-          <span className="hint">{t("点击不同项")}</span>
-        </div>
+  const board =
+    phase.kind === "error" ? (
+      <div className="board board-message" data-testid="board">
+        <p className="inline-error">{phase.message}</p>
       </div>
-      <div className={remaining < 1000 ? "timer timer-compact urgent" : "timer timer-compact"} aria-live="off">
-        <div className="value" data-testid="timer">
-          {countdown(remaining)}
-        </div>
-        <div className="unit">{t("秒")}</div>
-      </div>
-      <div className="play-stage">
-        <div className="board-stage">
-          <AiDanmakuLane messages={danmakuMessages} paused={aiDetailsOpen} />
-          <GameBoard
-            gridSize={level?.gridSize ?? PUBLIC_LEVELS_V1[displayLevel - 1]?.gridSize ?? 3}
-            imageUrl={imageReady && level ? level.imageUrl : null}
-            disabled={!interactive}
-            selected={selected}
-            loadingLabel={slowLoading ? t("正在加载关卡") : null}
-            onChoose={lockAnswer}
-            onImagePainted={onImagePainted}
-          />
-        </div>
-      </div>
-      <div className="play-foot">
-        <button type="button" className="text-action details-link" onClick={() => setAiDetailsOpen(true)}>
-          {t("AI 详情")}
+    ) : (
+      <GameBoard
+        gridSize={gridSize}
+        imageUrl={imageReady && level ? level.imageUrl : null}
+        disabled={!interactive}
+        selected={selected}
+        loadingLabel={slowLoading ? t("正在加载关卡") : null}
+        onChoose={lockAnswer}
+        onImagePainted={onImagePainted}
+      />
+    );
+
+  const foot =
+    phase.kind === "error" ? (
+      <div className="game-foot-actions">
+        <button
+          type="button"
+          className="primary-action"
+          onClick={() => {
+            if (phase.action === "resubmit") void sendSubmission();
+            else void boot();
+          }}
+        >
+          {phase.action === "resubmit" ? t("重试提交") : t("重新加载关卡")}
+        </button>
+        <button type="button" className="text-action" onClick={() => router.push(localePath(locale, "/spot-the-difference"))}>
+          {t("返回首页")}
         </button>
       </div>
-      <DetailsSheet open={aiDetailsOpen} title={t("AI 活动")} onClose={() => setAiDetailsOpen(false)}>
-        <AiActivityPanel progress={aiProgress} submitting={phase.kind === "submitting"} snapshot={aiActivitySnapshot} />
-      </DetailsSheet>
-    </main>
+    ) : (
+      <>
+        <span className="game-hint">
+          ▸ {t("点击不同项")} · {gridSize}×{gridSize}
+        </span>
+        <button type="button" className="secondary-action details-link mobile-only" onClick={() => setAiDetailsOpen(true)}>
+          {t("AI 详情")}
+        </button>
+      </>
+    );
+
+  return (
+    <GameStage
+      phase={phase.kind}
+      topBar={<GameTopBar crumb={crumb} />}
+      hud={<GameHud level={displayLevel} chances={session?.lives ?? STARTING_LIVES} remainingMs={remaining} limitMs={limit} />}
+      lane={<AiDanmakuLane messages={danmakuMessages} paused={aiDetailsOpen} />}
+      board={board}
+      overlay={
+        phase.kind === "countdown" ? (
+          <div className="countdown-overlay" aria-live="assertive">
+            <span key={phase.value}>{phase.value}</span>
+          </div>
+        ) : null
+      }
+      foot={foot}
+      side={
+        <>
+          <div className="vs-card" data-testid="vs-status">
+            <div className="vs-row">
+              <span className="badge badge-human">{t("你")}</span>
+              <span className="vs-state">{humanNow}</span>
+            </div>
+            <div className="vs-row">
+              <span className="badge badge-ai">AI</span>
+              <span className="vs-state">{aiNow?.label ?? t("准备 AI 请求")}</span>
+            </div>
+          </div>
+          <AiTerminal title={t("AI 终端 · {model}", { model: "gpt-6-luna" })} steps={terminalSteps} live footer={t("真实调用 · 真实速度 · 对局中不显示答案")} />
+        </>
+      }
+      extra={
+        <DetailsSheet open={aiDetailsOpen} title={t("AI 活动")} onClose={() => setAiDetailsOpen(false)}>
+          <AiActivityPanel progress={aiProgress} submitting={phase.kind === "submitting"} snapshot={aiActivitySnapshot} />
+        </DetailsSheet>
+      }
+    />
   );
 }

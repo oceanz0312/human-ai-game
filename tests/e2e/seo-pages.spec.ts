@@ -1,16 +1,16 @@
 import { expect, test } from "@playwright/test";
-import { assertOneScreen, CONTENT_PATHS } from "./helpers";
+import { assertNoHorizontalOverflow, CONTENT_PATHS } from "./helpers";
 
 
-test.describe("@layout content pages fit one screen", () => {
+test.describe("@layout content pages: first screen + no sideways scroll", () => {
   for (const path of CONTENT_PATHS) {
     for (const prefix of ["", "/zh"]) {
       const url = prefix && path === "/" ? prefix : `${prefix}${path}`;
-      test(`${url} fits`, async ({ page }) => {
+      test(`${url} renders`, async ({ page }) => {
         const response = await page.goto(url);
         expect(response?.status()).toBe(200);
         await expect(page.locator("h1")).toHaveCount(1);
-        await assertOneScreen(page);
+        await assertNoHorizontalOverflow(page);
       });
     }
   }

@@ -35,7 +35,12 @@ export function GameBoard({ gridSize, imageUrl, disabled, selected, loadingLabel
           alt=""
           draggable={false}
           decoding="sync"
-          onLoad={() => requestAnimationFrame(() => requestAnimationFrame(() => onImagePainted?.()))}
+          onLoad={(event) => {
+            // Start the clock only once the raster is decoded *and* painted, never on a merely downloaded image.
+            const image = event.currentTarget;
+            const decoded = typeof image.decode === "function" ? image.decode().catch(() => undefined) : Promise.resolve();
+            void decoded.then(() => requestAnimationFrame(() => requestAnimationFrame(() => onImagePainted?.())));
+          }}
         />
       ) : null}
       {!imageUrl && loadingLabel ? <div className="board-loading">{loadingLabel}</div> : null}

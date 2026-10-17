@@ -11,9 +11,10 @@ interface RevealHeatmapBoardProps {
   probabilities: Record<string, number> | null;
   aiChoice: string | null;
   correctChoice: string | null;
+  humanChoice?: string | null;
 }
 
-export function RevealHeatmapBoard({ gridSize, imageUrl, probabilities, aiChoice, correctChoice }: RevealHeatmapBoardProps) {
+export function RevealHeatmapBoard({ gridSize, imageUrl, probabilities, aiChoice, correctChoice, humanChoice = null }: RevealHeatmapBoardProps) {
   const t = useT();
   const cells = Array.from({ length: gridSize * gridSize }, (_, index) => {
     const row = Math.floor(index / gridSize) + 1;
@@ -25,7 +26,7 @@ export function RevealHeatmapBoard({ gridSize, imageUrl, probabilities, aiChoice
   return (
     <div className={`board reveal-board size-${gridSize}`} data-testid="reveal-board">
       {/* eslint-disable-next-line @next/next/no-img-element -- same raster the player saw in play */}
-      <img src={imageUrl} alt="" draggable={false} decoding="async" />
+      <img src={imageUrl} alt="" draggable={false} decoding="sync" />
       <div
         className="grid reveal-grid"
         role="img"
@@ -42,13 +43,17 @@ export function RevealHeatmapBoard({ gridSize, imageUrl, probabilities, aiChoice
           const markers: string[] = [];
           if (aiChoice === cell.id) markers.push("ai-pick");
           if (correctChoice === cell.id) markers.push("correct-pick");
+          if (humanChoice === cell.id) markers.push("human-pick");
           return (
             <div
               key={cell.id}
               className={markers.length ? `heatmap-cell ${markers.join(" ")}` : "heatmap-cell"}
-              style={{ backgroundColor: alpha > 0 ? `rgba(17, 17, 17, ${alpha.toFixed(3)})` : undefined }}
+              style={alpha > 0 ? ({ "--heat": alpha.toFixed(3) } as React.CSSProperties) : undefined}
               aria-label={`${t("第 {row} 行第 {col} 列", { row: cell.row, col: cell.column })}${probability > 0 ? t("，概率 {p}%", { p: Math.round(probability * 100) }) : ""}`}
-            />
+            >
+              {aiChoice === cell.id ? <span className="pick-tag pick-tag-ai">AI</span> : null}
+              {humanChoice === cell.id ? <span className="pick-tag pick-tag-you">{t("你")}</span> : null}
+            </div>
           );
         })}
       </div>

@@ -6,7 +6,7 @@ test("@layout a full clear run follows the approved mobile layout on every view"
   // The language-suggestion banner is covered by locale-banner.spec.ts; dismiss it here.
   await page.context().addCookies([{ name: "hv_locale_banner", value: "1", url: "http://127.0.0.1:3100" }]);
   await page.goto("/zh");
-  await expect(page.getByText("HUMAN VS AI")).toBeVisible();
+  await expect(page.getByRole("link", { name: "HUMAN VS AI" }).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: /你比 AI\s*更快吗/ })).toBeVisible();
   await expect(page.getByRole("button")).toHaveCount(1);
   await assertMobileLayout(page);
@@ -31,14 +31,17 @@ test("@layout a full clear run follows the approved mobile layout on every view"
     await answer(page, n, "correct");
     if (n === 1) {
       await expect(page.getByRole("heading", { name: /你赢了|AI 赢了|AI 仍在判断/ })).toBeVisible();
-      await expect(page.getByRole("button", { name: "AI 详情" })).toBeVisible();
+      const details = page.getByRole("button", { name: "AI 详情" });
+      // Stacked layouts (phones, portrait tablets) open AI details in a sheet; side-panel layouts show insights inline.
+      if (await details.isVisible()) await expect(details).toBeEnabled();
+      else await expect(page.getByTestId("ai-insights").first()).toBeVisible();
       await expect(page.getByTestId("ai-danmaku")).toBeVisible();
       await expect(page.getByTestId("reveal-next")).toBeVisible();
       await expect(page.getByTestId("reveal-board")).toBeVisible();
       await assertMobileLayout(page);
       await screenshot(page, testInfo, "3-reveal");
     }
-    if (n === 2) await expect(page.getByRole("heading", { name: "AI 掉线" })).toBeVisible();
+    if (n === 2) await expect(page.getByRole("heading", { name: /AI 掉线/ })).toBeVisible();
     await next(page);
   }
 
@@ -65,7 +68,7 @@ test("three failures end the run at the third failed level", async ({ page }) =>
   await answer(page, 3, "wrong");
   await next(page);
   await waitForPlayable(page, 4);
-  await expect(page.locator(".life.lost")).toHaveCount(2);
+  await expect(page.locator(".chance.used")).toHaveCount(2);
   await answer(page, 4, "wrong");
   await expect(page.getByRole("button", { name: /^查看结果/ })).toBeVisible();
   await next(page);
@@ -93,7 +96,7 @@ test("a level that runs out of time counts as a timeout and keeps going", async 
   await expect(page.getByText("你超时了 · 用掉 1 次机会")).toBeVisible();
   await next(page);
   await waitForPlayable(page, 2);
-  await expect(page.locator(".life.lost")).toHaveCount(1);
+  await expect(page.locator(".chance.used")).toHaveCount(1);
 });
 
 test("replay starts a fresh run from level 1", async ({ page }) => {
@@ -106,5 +109,5 @@ test("replay starts a fresh run from level 1", async ({ page }) => {
   await page.getByRole("button", { name: "再玩一次" }).click();
   await page.waitForURL(/\/play\//);
   await waitForPlayable(page, 1);
-  await expect(page.locator(".life.lost")).toHaveCount(0);
+  await expect(page.locator(".chance.used")).toHaveCount(0);
 });

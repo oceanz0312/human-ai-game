@@ -16,8 +16,8 @@ export async function startGame(page: Page) {
 }
 
 export async function waitForPlayable(page: Page, n: number) {
-  await expect(page.locator(".mobile-shell.reveal")).toHaveCount(0, { timeout: 20_000 });
-  await expect(page.locator(".game-header .level")).toHaveText(`${pad2(n)} / 20`, { timeout: 30_000 });
+  await expect(page.locator('.game-stage[data-phase="reveal"]')).toHaveCount(0, { timeout: 20_000 });
+  await expect(page.locator(".game-hud .level")).toHaveText(`${pad2(n)} / 20`, { timeout: 30_000 });
   await expect(page.getByRole("button", { name: "第 1 行第 1 列" })).toBeEnabled({ timeout: 20_000 });
 }
 
@@ -25,7 +25,7 @@ export async function answer(page: Page, n: number, kind: "correct" | "wrong") {
   await waitForPlayable(page, n);
   const spec = level(n);
   const choice = kind === "correct" ? spec.correctChoice : spec.choices.find((c) => c !== spec.correctChoice)!;
-  await page.getByRole("button", { name: cellName(choice) }).tap();
+  await page.getByRole("button", { name: cellName(choice) }).click();
   await expect(page.getByText("答案揭晓")).toBeVisible();
 }
 
@@ -35,7 +35,7 @@ export async function next(page: Page) {
   await expect(button).toBeVisible({ timeout: 10_000 });
   await button.click();
   await page.waitForFunction(
-    () => document.querySelector(".game-header .level") != null || location.pathname.startsWith("/result/"),
+    () => document.querySelector('.game-stage:not([data-phase="reveal"]) .game-hud .level') != null || location.pathname.startsWith("/result/"),
     undefined,
     { timeout: 20_000 },
   );
@@ -58,22 +58,33 @@ export async function assertRevealNextBelowBoard(page: Page) {
   const layout = await page.evaluate(() => {
     const button = document.querySelector('[data-testid="reveal-next"]');
     const board = document.querySelector('[data-testid="reveal-board"]');
-    const legend = document.querySelector(".heatmap-legend");
     if (!button || !board) return null;
     const b = button.getBoundingClientRect();
     const h = board.getBoundingClientRect();
-    const l = legend?.getBoundingClientRect();
     return {
       buttonTop: b.top,
       boardBottom: h.bottom,
-      legendBottom: l ? l.bottom : h.bottom,
+      overlapX: Math.min(b.right, h.right) - Math.max(b.left, h.left),
       buttonInView: b.top >= 0 && b.bottom <= window.innerHeight,
     };
   });
   expect(layout, "reveal layout present").not.toBeNull();
   expect(layout!.buttonInView, "reveal next in viewport").toBe(true);
   expect(layout!.buttonTop, "next below board").toBeGreaterThanOrEqual(layout!.boardBottom - 1);
-  expect(layout!.buttonTop, "next below legend").toBeGreaterThanOrEqual(layout!.legendBottom - 1);
+  expect(layout!.buttonTop - layout!.boardBottom, "next sits directly under the board").toBeLessThanOrEqual(40);
+  expect(layout!.overlapX, "next is in the board column").toBeGreaterThan(0);
+}
+
+/** Content pages (option B) may scroll vertically but never sideways. */
+export async function assertNoHorizontalOverflow(page: Page) {
+  const metrics = await page.evaluate(() => ({ scrollWidth: document.documentElement.scrollWidth, innerWidth: window.innerWidth }));
+  expect(metrics.scrollWidth, "no horizontal scroll").toBeLessThanOrEqual(metrics.innerWidth + 1);
+}
+
+/** Copy rules: chances, never lives. */
+export async function assertNoForbiddenWords(page: Page) {
+  const text = await page.evaluate(() => document.body.innerText);
+  expect(text, "no 命/条 life wording").not.toMatch(/命|\d\s*条|lives\b/i);
 }
 
 export async function boardSize(page: Page) {
@@ -81,7 +92,7 @@ export async function boardSize(page: Page) {
     const board = document.querySelector(".board-stage .board");
     if (!board) return null;
     const r = board.getBoundingClientRect();
-    return { width: r.width, height: r.height };
+    return { x: r.x, y: r.y, width: r.width, height: r.height };
   });
 }
 
@@ -126,7 +137,10 @@ export async function assertMobileLayout(page: Page) {
       (element) =>
         !element.classList.contains("visually-hidden") &&
         // danmaku pills ellipsize by design
-        !element.classList.contains("ai-danmaku-item") && element.scrollWidth > element.clientWidth + 1 && getComputedStyle(element).overflow === "hidden",
+        !element.classList.contains("ai-danmaku-item") &&
+        // terminal lines, crumbs and AI status ellipsize by design
+        !element.closest(".ai-terminal, .game-crumb, .vs-state, .ai-danmaku, .verdict-detail") &&
+        element.scrollWidth > element.clientWidth + 1 && getComputedStyle(element).overflow === "hidden",
     );
     return {
       viewport,
@@ -145,7 +159,7 @@ export async function assertMobileLayout(page: Page) {
   expect(report.scrollWidth, "no horizontal scroll").toBeLessThanOrEqual(report.viewport.width);
   expect(report.purple, "purple is reserved for the AI status dot").toEqual([]);
   expect(report.clipped, "no clipped text").toBe(0);
-  const onReveal = await page.evaluate(() => Boolean(document.querySelector(".mobile-shell.reveal")));
+  const onReveal = await page.evaluate(() => Boolean(document.querySelector('.game-stage[data-phase="reveal"]')));
   if (report.board) {
     expect(report.board.left).toBeGreaterThanOrEqual(0);
     expect(report.board.right).toBeLessThanOrEqual(report.viewport.width);
@@ -168,7 +182,9 @@ export async function assertMobileLayout(page: Page) {
       expect(report.primary.bottom, "primary action reachable").toBeLessThanOrEqual(report.viewport.height);
     }
   }
-  await assertOneScreen(page);
+  // Game pages are strictly one viewport; site pages (option B) may scroll below a self-contained first screen.
+  if (await page.locator(".game-stage").count()) await assertOneScreen(page);
+  else await assertNoHorizontalOverflow(page);
 }
 
 export async function screenshot(page: Page, testInfo: TestInfo, name: string) {

@@ -47,9 +47,9 @@ export function danmakuInsightFacts(round: RoundReveal, locale: Locale = FALLBAC
   if (ai.confidence != null) items.push({ id: "conf", text: t("置信度 {p}%", { p: Math.round(ai.confidence * 100) }) });
   if (ai.modelElapsedMs != null) {
     const total = ai.elapsedMs != null ? (ai.elapsedMs / 1000).toFixed(2) : "—";
-    items.push({ id: "model", text: t("模型 {m}s · 全程 {total}s", { m: (ai.modelElapsedMs / 1000).toFixed(2), total }) });
+    items.push({ id: "model", text: t("模型 {m}s · AI 用时 {total}s", { m: (ai.modelElapsedMs / 1000).toFixed(2), total }) });
   } else if (ai.elapsedMs != null) {
-    items.push({ id: "elapsed", text: t("AI 耗时 {s}s", { s: (ai.elapsedMs / 1000).toFixed(2) }) });
+    items.push({ id: "elapsed", text: t("AI 用时 {s}s", { s: (ai.elapsedMs / 1000).toFixed(2) }) });
   }
   return items;
 }
