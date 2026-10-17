@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "@/styles/tailwind.css";
 import "@/styles/tokens.css";
 import "@/styles/base.css";
+import "@/core/fx/fx.css";
 import "@/styles/shell.css";
 import "@/styles/game.css";
 import "@/styles/site.css";

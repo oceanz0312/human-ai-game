@@ -1,3 +1,4 @@
+import { spotTheDifferenceClient } from "@/games/spot-the-difference/client-plugin";
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { LevelReveal } from "@/components/LevelReveal";
 import type { RoundReveal } from "@/game/contracts";
@@ -26,7 +27,7 @@ const completeRound: RoundReveal = {
 };
 
 test("the reveal page surfaces probability, confidence, and measured timing", async () => {
-  render(<LevelReveal round={completeRound} fasterThanAiCount={1} ended={false} onNext={() => undefined} />);
+  render(<LevelReveal game={spotTheDifferenceClient} round={completeRound} fasterThanAiCount={1} ended={false} onNext={() => undefined} />);
   expect(screen.getByTestId("reveal-board")).toBeInTheDocument();
   // Desktop keeps the insights in the side panel; the sheet repeats them for phones.
   expect(screen.getAllByText(/AI 最看好/).length).toBeGreaterThanOrEqual(1);
@@ -44,7 +45,7 @@ test("the reveal page surfaces probability, confidence, and measured timing", as
 
 test("a refusal shows the dedicated copy without faking progress", () => {
   render(
-    <LevelReveal
+    <LevelReveal game={spotTheDifferenceClient}
       round={{
         ...completeRound,
         ai: {
@@ -71,7 +72,7 @@ test("a refusal shows the dedicated copy without faking progress", () => {
 });
 
 test("the next button sits below the board", () => {
-  render(<LevelReveal round={completeRound} fasterThanAiCount={0} ended={false} onNext={() => undefined} />);
+  render(<LevelReveal game={spotTheDifferenceClient} round={completeRound} fasterThanAiCount={0} ended={false} onNext={() => undefined} />);
   const board = screen.getByTestId("reveal-board");
   const next = screen.getByTestId("reveal-next");
   expect(board.compareDocumentPosition(next) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();

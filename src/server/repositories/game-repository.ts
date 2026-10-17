@@ -346,6 +346,16 @@ export function createGameRepository(db: Database) {
       return { played: Number(row?.played ?? 0), humanCorrect: Number(row?.humanCorrect ?? 0), aiCorrect: Number(row?.aiCorrect ?? 0) };
     },
 
+    /** Per-level outcome of settled rounds, in level order (core result grid). */
+    async sessionOutcomes(sessionId: string) {
+      const rows = await db
+        .select({ level: rounds.level, humanStatus: rounds.humanStatus, winner: rounds.winner, aiStatus: rounds.aiStatus })
+        .from(rounds)
+        .where(eq(rounds.sessionId, sessionId))
+        .orderBy(rounds.level);
+      return rows.filter((row) => row.humanStatus !== null);
+    },
+
     async insertEvent(event: typeof events.$inferInsert) {
       await db.insert(events).values(event);
     },

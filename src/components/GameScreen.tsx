@@ -6,6 +6,9 @@ import type { AiEvent, PublicLevel, RoundReveal, SessionSnapshot } from "@/game/
 import { spotTheDifferenceClient } from "@/games/spot-the-difference/client-plugin";
 import type { ClientGamePlugin } from "@/core/client-game";
 import { getGame } from "@/games/registry";
+import { playSfx, unlockAudio } from "@/core/fx/sfx";
+import { StreakCounter } from "@/core/fx/Banners";
+import { streaks, type LevelOutcome } from "@/core/fx/result-grid";
 import { aiStatusLabel, buildAiEventSteps } from "@/game/ai-activity";
 import { AiActivityPanel } from "./AiActivityPanel";
 import { AiDanmakuLane } from "./AiDanmakuLane";
@@ -31,7 +34,7 @@ const WAIT_SLACK_MS = 3_000;
 
 type Phase =
   | { kind: "loading" }
-  | { kind: "countdown"; value: number }
+  | { kind: "countdown"; value: number | string }
   | { kind: "playing" }
   | { kind: "submitting" }
   /** Human locked and settled; the board stays while the real AI is still analysing. */
@@ -101,6 +104,9 @@ export function GameScreen({ sessionId, game = spotTheDifferenceClient as unknow
   /** Next round fetched during the reveal (never shown, so its AI has not started). */
   const prefetchRef = useRef<{ forRound: string; promise: Promise<Awaited<ReturnType<typeof api.startNextRound>>> } | null>(null);
   const [waitingMs, setWaitingMs] = useState<number | null>(null);
+  /** F6: per-run history for COMBO (consecutive correct) / STREAK (consecutive wins over the AI). */
+  const historyRef = useRef<Map<string, { humanCorrect: boolean; winner: LevelOutcome }>>(new Map());
+  const [streak, setStreak] = useState({ combo: 0, streak: 0 });
 
   const pushAiEvent = useCallback((roundId: string, event: AiEvent) => {
     if (aiRoundRef.current !== roundId) return;
@@ -130,6 +136,11 @@ export function GameScreen({ sessionId, game = spotTheDifferenceClient as unknow
 
   const showReveal = useCallback(
     (round: RoundReveal, next: SessionSnapshot, previousLives: number | null) => {
+      if (round.human) {
+        const winner: LevelOutcome = round.winner === "human" ? "human" : round.winner === "ai" ? "ai" : round.ai.status === "error" ? "void" : "none";
+        historyRef.current.set(round.id, { humanCorrect: round.human.status === "correct", winner });
+        setStreak(streaks([...historyRef.current.values()]));
+      }
       setReveal(round);
       setSession(next);
       if (previousLives !== null && next.lives < previousLives) haptic();
@@ -210,6 +221,8 @@ export function GameScreen({ sessionId, game = spotTheDifferenceClient as unknow
       setSelected(choice);
       if (choice === null) setRemainingMs(0);
       haptic();
+      unlockAudio();
+      playSfx("tap");
       pendingSubmitRef.current = { choice, elapsedMs: Math.min(elapsedMs, 60_000) };
       void sendSubmission();
     },
@@ -245,11 +258,17 @@ export function GameScreen({ sessionId, game = spotTheDifferenceClient as unknow
       const preload = Promise.all(game.assetUrls(response.level).map((url) => preloadImage(url))).then(() => undefined);
       if (response.level.level === 1 && !countdownShownRef.current) {
         countdownShownRef.current = true;
+        // F7: 3-2-1 FIGHT! with a beep per beat. The AI cannot start before the board is painted.
         for (const value of [3, 2, 1]) {
           if (!mountedRef.current) return;
           setPhase({ kind: "countdown", value });
+          playSfx("beep");
           await sleep(1000);
         }
+        if (!mountedRef.current) return;
+        setPhase({ kind: "countdown", value: "FIGHT!" });
+        playSfx("fight");
+        await sleep(500);
       }
       await preload;
       if (!mountedRef.current) return;
@@ -422,7 +441,7 @@ export function GameScreen({ sessionId, game = spotTheDifferenceClient as unknow
   const boardLevel = level ?? game.publicLevel(displayLevel);
   const limit = boardLevel?.limitMs ?? 0;
   const Board = game.Board;
-  const crumb = `${t("大家来找茬")} / ${t("第 {n} 关", { n: pad2(displayLevel) })}`;
+  const crumb = `${game.title(t)} / ${t("第 {n} 关", { n: pad2(displayLevel) })}`;
 
   if (phase.kind === "reveal" && reveal && session) {
     return (
@@ -431,8 +450,10 @@ export function GameScreen({ sessionId, game = spotTheDifferenceClient as unknow
         fasterThanAiCount={session.fasterThanAiCount}
         ended={session.status === "ended"}
         onNext={advance}
+        game={game}
+        streak={streak}
         browserAiActivity={aiEvents.length ? { steps: buildAiEventSteps(aiEvents, { locale, reveal }), capturedAt: 0 } : null}
-        topBar={<GameTopBar crumb={`${t("大家来找茬")} / ${t("第 {n} 关", { n: pad2(reveal.level) })}`} />}
+        topBar={<GameTopBar crumb={`${game.title(t)} / ${t("第 {n} 关", { n: pad2(reveal.level) })}`} />}
       />
     );
   }
@@ -505,13 +526,23 @@ export function GameScreen({ sessionId, game = spotTheDifferenceClient as unknow
     <GameStage
       phase={phase.kind}
       topBar={<GameTopBar crumb={crumb} />}
-      hud={<GameHud level={displayLevel} chances={session?.lives ?? game.startingChances} remainingMs={remaining} limitMs={limit} />}
+      hud={<GameHud
+          level={displayLevel}
+          chances={session?.lives ?? game.startingChances}
+          remainingMs={remaining}
+          limitMs={limit}
+          totalLevels={game.totalLevels}
+          startingChances={game.startingChances}
+          badge={<StreakCounter combo={streak.combo} streak={streak.streak} />}
+        />}
       lane={<AiDanmakuLane messages={danmakuMessages} paused={aiDetailsOpen} />}
       board={board}
       overlay={
         phase.kind === "countdown" ? (
           <div className="countdown-overlay" aria-live="assertive">
-            <span key={phase.value}>{phase.value}</span>
+            <span key={phase.value} className={typeof phase.value === "string" ? "fx-fight" : undefined}>
+              {phase.value}
+            </span>
           </div>
         ) : null
       }

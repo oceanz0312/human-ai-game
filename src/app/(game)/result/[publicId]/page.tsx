@@ -4,6 +4,8 @@ import { Leaderboard } from "@/components/Leaderboard";
 import { ResultSummary } from "@/components/ResultSummary";
 import { ShareActions } from "@/components/ShareActions";
 import { StartButton } from "@/components/StartButton";
+import { ResultGrid } from "@/core/share/ResultGrid";
+import { shareLine } from "@/lib/share-copy";
 import { getGameService } from "@/server/container";
 import { readPlayerId } from "@/server/http";
 import { isPublicId, publicBaseUrl } from "@/server/public-url";
@@ -36,6 +38,7 @@ export default async function ResultPage({ params }: { params: Promise<{ publicI
             <span className="brand">HUMAN VS AI</span>
           </div>
           <ResultSummary result={result} locale={locale} />
+          <ResultGrid outcomes={result.outcomes ?? []} title={shareLine(result, locale)} url={shareUrl} />
           <div className="bottom-actions">
             <ShareActions result={result} shareUrl={shareUrl} />
             <StartButton label={t("再玩一次")} replay />

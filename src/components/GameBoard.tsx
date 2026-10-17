@@ -59,6 +59,7 @@ export function GameBoard({ gridSize, imageUrl, disabled, selected, loadingLabel
             <button
               key={cell.id}
               type="button"
+              data-answer={cell.id}
               className={selected === cell.id ? "cell selected" : "cell"}
               aria-label={t("第 {row} 行第 {col} 列", { row: cell.row, col: cell.column })}
               aria-pressed={selected === cell.id}

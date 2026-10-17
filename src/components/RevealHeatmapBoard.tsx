@@ -52,6 +52,7 @@ export function RevealHeatmapBoard({ gridSize, imageUrl, probabilities, aiChoice
               key={cell.id}
               className={markers.length ? `heatmap-cell ${markers.join(" ")}` : "heatmap-cell"}
               data-heat={alpha > 0 ? heatStep(alpha) : undefined}
+              data-answer={cell.id}
               style={alpha > 0 ? ({ "--heat": alpha.toFixed(3) } as React.CSSProperties) : undefined}
               aria-label={`${t("第 {row} 行第 {col} 列", { row: cell.row, col: cell.column })}${probability > 0 ? t("，概率 {p}%", { p: Math.round(probability * 100) }) : ""}`}
             >
