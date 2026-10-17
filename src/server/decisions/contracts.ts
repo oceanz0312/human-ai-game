@@ -99,15 +99,4 @@ export const workerAiResultReportSchema = z.object({
 
 export type WorkerAiResultReport = z.infer<typeof workerAiResultReportSchema>;
 
-export function gridSizeFromChoices(choices: string[]) {
-  return choices.length === 81 ? 9 : 3;
-}
-
-export function buildOddCellInstructions(gridSize: number) {
-  return [
-    `The image shows a ${gridSize} by ${gridSize} grid of tiles.`,
-    "Every tile contains the same pattern except exactly one tile, which differs in shape, orientation, mirroring, color, shade, a missing or extra part, or a small positional offset.",
-    `Rows are numbered 1 to ${gridSize} from top to bottom and columns 1 to ${gridSize} from left to right.`,
-    "Which tile is the odd one out?",
-  ].join(" ");
-}
+export { buildOddCellInstructions, gridSizeFromChoices } from "../../models/tasks/spot-the-difference";

@@ -1,3 +1,5 @@
+import { liveModels } from "@/models/registry";
+
 /**
  * Game registry: the single source of truth for every game on the platform.
  * Adding a game = one entry here + its dictionary copy + src/games/<slug>/ components.
@@ -40,7 +42,13 @@ export interface AiOpponent {
   api: string;
 }
 
-export const aiOpponents: AiOpponent[] = [{ slug: "luna", model: "gpt-6-luna", provider: "OpenAI", api: "Decisions API" }];
+/** Derived from the model registry (src/models/registry.ts): only live models get pages and routes. */
+export const aiOpponents: AiOpponent[] = liveModels().map((model) => ({
+  slug: model.slug,
+  model: model.upstreamModel,
+  provider: model.provider,
+  api: model.api,
+}));
 
 /**
  * Placeholder cards for games that are being planned. They render only as greyed "筹备中 · 暂定名" cards on the
