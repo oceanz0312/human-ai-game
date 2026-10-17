@@ -58,13 +58,13 @@ test("the limit is config: 0 disables it", async () => {
   }
 });
 
-test("only hashes: keys never contain the fingerprint, IP or UA; fp and IP are combined", async () => {
+test("only hashes: keys never contain the fingerprint, IP or UA; the fingerprint is the identity", async () => {
   const fp = "c".repeat(64);
   const a = await playLimitKey({ fingerprint: fp, ip: "198.51.100.1", userAgent: "UA", salt: "s" });
   const b = await playLimitKey({ fingerprint: fp, ip: "198.51.101.2", userAgent: "UA", salt: "s" });
   const noFp = await playLimitKey({ fingerprint: null, ip: "198.51.100.1", userAgent: "UA", salt: "s" });
   expect(a).toMatch(/^[a-f0-9]{64}$/);
-  expect(a).not.toBe(b);
+  expect(a).toBe(b);
   expect(noFp).not.toBe(a);
   for (const key of [a, b, noFp]) expect(key).not.toContain("198.51");
   expect(await playLimitKey({ fingerprint: "not-a-hash", ip: "198.51.100.1", userAgent: "UA", salt: "s" })).toBe(noFp);
@@ -91,7 +91,10 @@ test("rotating addresses inside one network prefix keep the same person key", as
   const fp = "a".repeat(64);
   const a = await playLimitKey({ fingerprint: fp, ip: "2a04:4e41:80:3622::679f:3622", userAgent: null, salt: "s" });
   const b = await playLimitKey({ fingerprint: fp, ip: "2a04:4e41:80:707e::6765:707e", userAgent: null, salt: "s" });
-  const other = await playLimitKey({ fingerprint: fp, ip: "198.51.100.4", userAgent: null, salt: "s" });
   expect(a).toBe(b);
-  expect(a).not.toBe(other);
+  const noFpA = await playLimitKey({ fingerprint: null, ip: "2a04:4e41:80:3622::679f:3622", userAgent: "UA", salt: "s" });
+  const noFpB = await playLimitKey({ fingerprint: null, ip: "2a04:4e41:80:707e::6765:707e", userAgent: "UA", salt: "s" });
+  const noFpOther = await playLimitKey({ fingerprint: null, ip: "198.51.100.4", userAgent: "UA", salt: "s" });
+  expect(noFpA).toBe(noFpB);
+  expect(noFpA).not.toBe(noFpOther);
 });

@@ -1,13 +1,10 @@
 /**
  * Who is "a person" for the daily limit. Only hashes are stored — never the raw fingerprint, IP or UA.
  *
- * key = SHA-256(salt | fp | netHash) when the browser sent a fingerprint (fp AND network together, so two
- * identical phones behind different networks don't collide, and one browser can't reset by clearing
- * cookies). Without a fingerprint: SHA-256(salt | netHash | uaHash).
- *
- * netHash hashes the network prefix (IPv4 /24, IPv6 /48), not the exact address: privacy relays and
- * IPv6 privacy extensions rotate the address per request, which would otherwise hand out a fresh
- * allowance on every start.
+ * key = SHA-256(salt | fp) when the browser sent a fingerprint: the fingerprint is the identity, so
+ * clearing cookies or hopping networks (privacy relays, IPv4↔IPv6, mobile↔Wi-Fi) does not reset it.
+ * Fallback without a fingerprint (JS off / blocked): SHA-256(salt | netHash | uaHash), where netHash
+ * hashes the network prefix (IPv4 /24, IPv6 /48) because relays rotate the exact address per request.
  */
 async function sha256Hex(text: string) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -35,9 +32,9 @@ export function networkPrefix(ip: string) {
 }
 
 export async function playLimitKey(input: { fingerprint?: string | null; ip: string; userAgent: string | null; salt: string }) {
-  const ipHash = await sha256Hex(`net|${input.salt}|${networkPrefix(input.ip)}`);
   const fp = input.fingerprint && FP_PATTERN.test(input.fingerprint) ? input.fingerprint : null;
-  if (fp) return sha256Hex(`fp|${input.salt}|${fp}|${ipHash}`);
+  if (fp) return sha256Hex(`fp|${input.salt}|${fp}`);
+  const ipHash = await sha256Hex(`net|${input.salt}|${networkPrefix(input.ip)}`);
   const uaHash = await sha256Hex(`ua|${input.userAgent ?? ""}`);
   return sha256Hex(`ipua|${input.salt}|${ipHash}|${uaHash}`);
 }
