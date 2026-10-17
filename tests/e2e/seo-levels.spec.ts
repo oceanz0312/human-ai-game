@@ -37,3 +37,25 @@ test("Open Graph images exist per locale", async ({ request }) => {
     expect(response.headers()["content-type"]).toContain("image/png");
   }
 });
+
+test("each difficulty band has its own keyword title, description and H1", async ({ request }) => {
+  const expectations: [string, RegExp, RegExp][] = [
+    ["/games/spot-the-difference/levels/1", /<title>Spot the Difference Level 1 – Easy Odd One Out, 8s/, /<h1[^>]*>Spot the Difference Level 1: Find the Odd One Out<\/h1>/],
+    ["/games/spot-the-difference/levels/7", /<title>Hard Spot the Difference Level 7 \(9×9, 6\.5s Timer\)/, /<h1[^>]*>Hard Spot the Difference: Level 7<\/h1>/],
+    ["/games/spot-the-difference/levels/20", /<title>Expert Spot the Difference Level 20: 3s to Beat the AI/, /<h1[^>]*>Expert Spot the Difference: Level 20<\/h1>/],
+    ["/zh/games/spot-the-difference/levels/3", /<title>大家来找茬第 3 关：3×3 找不同入门（7 秒）/, /<h1[^>]*>大家来找茬第 3 关：找出不一样的那个<\/h1>/],
+    ["/zh/games/spot-the-difference/levels/10", /<title>大家来找茬第 10 关：9×9 高难度找不同（5 秒）/, /<h1[^>]*>大家来找茬第 10 关：9×9 高难度找不同<\/h1>/],
+    ["/zh/games/spot-the-difference/levels/18", /<title>大家来找茬第 18 关：极限找不同，仅 3\.4 秒/, /<h1[^>]*>大家来找茬第 18 关：极限 3\.4 秒找不同<\/h1>/],
+  ];
+  const descriptions = new Set<string>();
+  for (const [url, title, h1] of expectations) {
+    const html = await (await request.get(url)).text();
+    expect(html, url).toMatch(title);
+    expect(html, url).toMatch(h1);
+    const description = html.match(/<meta name="description" content="([^"]+)"/)?.[1] ?? "";
+    expect(description.length, `${url} description`).toBeGreaterThan(url.startsWith("/zh") ? 40 : 100);
+    descriptions.add(description);
+    expect(html, url).not.toMatch(/命|条命/);
+  }
+  expect(descriptions.size, "unique descriptions").toBe(expectations.length);
+});

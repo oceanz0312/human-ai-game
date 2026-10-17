@@ -1142,3 +1142,34 @@
     font-size: var(--fs-px-2);
   }
 }
+
+/* phones: the brand mark alone is enough in the game bar, so the breadcrumb reads in full */
+@media (max-width: 767px) {
+  .game-topbar {
+    gap: var(--s3);
+  }
+  .game-topbar .site-logo-text {
+    display: none;
+  }
+}
+
+/* stacked layouts: when little height is left for the terminal (375x667, portrait tablets), it drops its
+   title bar and fades the oldest line, so at least 2 status lines + the prompt stay readable */
+@media (max-width: 767px), (orientation: portrait) {
+  .game-side-body > .ai-terminal {
+    container-type: size;
+    container-name: terminal;
+  }
+}
+
+@container terminal (max-height: 120px) {
+  .ai-terminal-head {
+    display: none;
+  }
+  .ai-terminal-body {
+    line-height: 1.5;
+    padding-block: 4px;
+    -webkit-mask-image: linear-gradient(to bottom, transparent 0, #000 14px);
+    mask-image: linear-gradient(to bottom, transparent 0, #000 14px);
+  }
+}

@@ -18,6 +18,22 @@ test.describe("@viewport web-first responsive", () => {
     await assertOneScreen(page);
     await assertNoForbiddenWords(page);
     await expect(page.getByTestId("ai-terminal")).toBeVisible();
+    // the breadcrumb is never truncated, and the AI terminal shows at least 2 complete lines
+    const crumb = await page.locator(".game-crumb").evaluate((el) => ({ scroll: el.scrollWidth, client: el.clientWidth, text: el.textContent }));
+    expect(crumb.scroll, `breadcrumb "${crumb.text}" fits`).toBeLessThanOrEqual(crumb.client + 1);
+    await expect
+      .poll(
+        () =>
+          page.getByTestId("ai-terminal").evaluate((terminal) => {
+            const body = terminal.querySelector(".ai-terminal-body")!.getBoundingClientRect();
+            return [...terminal.querySelectorAll(".term-line")].filter((line) => {
+              const rect = line.getBoundingClientRect();
+              return rect.height > 0 && rect.top >= body.top - 1 && rect.bottom <= body.bottom + 1;
+            }).length;
+          }),
+        { message: "complete terminal lines" },
+      )
+      .toBeGreaterThanOrEqual(2);
     const play = await boardSize(page);
     expect(play!.width, "board is a usable square").toBeGreaterThanOrEqual(300);
 
