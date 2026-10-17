@@ -235,9 +235,12 @@ export async function renderPoster(input: PosterInput) {
     ctx.font = `${s}px ${families.cjk}`;
     ctx.fillText(line, pad + 36, footY + 132 + i * 66);
   });
+  // Full link lives in the QR; print the whole short URL only if it stays legible (>= 24px), else just the host.
   ctx.fillStyle = P.hi;
-  fit(ctx, input.shortUrl, families.cjk, [36, 24, 12], textMax);
-  ctx.fillText(input.shortUrl, pad + 36, footY + footH - 42);
+  let urlText = input.shortUrl;
+  if (fit(ctx, urlText, families.cjk, [36, 24, 12], textMax) < 24) urlText = input.shortUrl.split("/")[0];
+  fit(ctx, urlText, families.cjk, [36, 24, 12], textMax);
+  ctx.fillText(urlText, pad + 36, footY + footH - 42);
 
   return new Promise<Blob>((resolve, reject) => canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("poster_failed"))), "image/png"));
 }
