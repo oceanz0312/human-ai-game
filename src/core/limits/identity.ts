@@ -1,9 +1,13 @@
 /**
  * Who is "a person" for the daily limit. Only hashes are stored — never the raw fingerprint, IP or UA.
  *
- * key = SHA-256(salt | fp | ipHash) when the browser sent a fingerprint (fp AND ip together, so two
+ * key = SHA-256(salt | fp | netHash) when the browser sent a fingerprint (fp AND network together, so two
  * identical phones behind different networks don't collide, and one browser can't reset by clearing
- * cookies). Without a fingerprint: SHA-256(salt | ipHash | uaHash).
+ * cookies). Without a fingerprint: SHA-256(salt | netHash | uaHash).
+ *
+ * netHash hashes the network prefix (IPv4 /24, IPv6 /48), not the exact address: privacy relays and
+ * IPv6 privacy extensions rotate the address per request, which would otherwise hand out a fresh
+ * allowance on every start.
  */
 async function sha256Hex(text: string) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(text));
@@ -16,8 +20,22 @@ export function clientIp(request: Request) {
   return request.headers.get("cf-connecting-ip") || request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || request.headers.get("x-real-ip") || "local";
 }
 
+/** IPv4 → a.b.c.0/24, IPv6 → first three hextets (/48). */
+export function networkPrefix(ip: string) {
+  const v4 = /^(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.\d{1,3}$/.exec(ip) ?? /^::ffff:(\d{1,3})\.(\d{1,3})\.(\d{1,3})\.\d{1,3}$/i.exec(ip);
+  if (v4) return `${v4[1]}.${v4[2]}.${v4[3]}.0/24`;
+  if (ip.includes(":")) {
+    const [head, tail = ""] = ip.toLowerCase().split("::");
+    const left = head ? head.split(":") : [];
+    const right = tail ? tail.split(":") : [];
+    const full = ip.includes("::") ? [...left, ...Array(Math.max(0, 8 - left.length - right.length)).fill("0"), ...right] : left;
+    return `${full.slice(0, 3).map((part) => part.replace(/^0+(?=.)/, "")).join(":")}::/48`;
+  }
+  return ip;
+}
+
 export async function playLimitKey(input: { fingerprint?: string | null; ip: string; userAgent: string | null; salt: string }) {
-  const ipHash = await sha256Hex(`ip|${input.salt}|${input.ip}`);
+  const ipHash = await sha256Hex(`net|${input.salt}|${networkPrefix(input.ip)}`);
   const fp = input.fingerprint && FP_PATTERN.test(input.fingerprint) ? input.fingerprint : null;
   if (fp) return sha256Hex(`fp|${input.salt}|${fp}|${ipHash}`);
   const uaHash = await sha256Hex(`ua|${input.userAgent ?? ""}`);

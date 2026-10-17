@@ -61,7 +61,7 @@ test("the limit is config: 0 disables it", async () => {
 test("only hashes: keys never contain the fingerprint, IP or UA; fp and IP are combined", async () => {
   const fp = "c".repeat(64);
   const a = await playLimitKey({ fingerprint: fp, ip: "198.51.100.1", userAgent: "UA", salt: "s" });
-  const b = await playLimitKey({ fingerprint: fp, ip: "198.51.100.2", userAgent: "UA", salt: "s" });
+  const b = await playLimitKey({ fingerprint: fp, ip: "198.51.101.2", userAgent: "UA", salt: "s" });
   const noFp = await playLimitKey({ fingerprint: null, ip: "198.51.100.1", userAgent: "UA", salt: "s" });
   expect(a).toMatch(/^[a-f0-9]{64}$/);
   expect(a).not.toBe(b);
@@ -80,4 +80,18 @@ test("bypass header, UTC day helpers and env config", () => {
   expect(nextUtcMidnight(t)).toBe(Date.UTC(2026, 9, 19));
   expect(readPlayLimitConfig({})).toEqual({ runsPerDay: 3, scope: "per-game" });
   expect(readPlayLimitConfig({ PLAY_LIMIT_RUNS_PER_DAY: "5", PLAY_LIMIT_SCOPE: "global" })).toEqual({ runsPerDay: 5, scope: "global" });
+});
+
+test("rotating addresses inside one network prefix keep the same person key", async () => {
+  const { networkPrefix } = await import("@/core/limits/identity");
+  expect(networkPrefix("2a04:4e41:80:3622::679f:3622")).toBe("2a04:4e41:80::/48");
+  expect(networkPrefix("2a04:4e41:0080:f8ea::9f9b:f8ea")).toBe("2a04:4e41:80::/48");
+  expect(networkPrefix("203.0.113.7")).toBe("203.0.113.0/24");
+  expect(networkPrefix("::ffff:203.0.113.9")).toBe("203.0.113.0/24");
+  const fp = "a".repeat(64);
+  const a = await playLimitKey({ fingerprint: fp, ip: "2a04:4e41:80:3622::679f:3622", userAgent: null, salt: "s" });
+  const b = await playLimitKey({ fingerprint: fp, ip: "2a04:4e41:80:707e::6765:707e", userAgent: null, salt: "s" });
+  const other = await playLimitKey({ fingerprint: fp, ip: "198.51.100.4", userAgent: null, salt: "s" });
+  expect(a).toBe(b);
+  expect(a).not.toBe(other);
 });
