@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     if (!parsed.success) throw new GameError("invalid_request");
     if (!allowIp(request, 120, 60 * 60 * 1000)) throw new GameError("too_many_requests");
     const playerId = await requirePlayer(service);
-    const limit = await playLimitContext(request, parsed.data.fp);
+    const limit = await playLimitContext(request, parsed.data.pk);
     const session = await service.createSession({
       playerId,
       nickname: parsed.data.nickname,

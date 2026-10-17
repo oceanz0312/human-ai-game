@@ -6,7 +6,7 @@ import { api, ApiError, track } from "@/lib/api-client";
 import { LOCALE_COOKIE, localePath, type Locale } from "@/i18n/config";
 import { useLocale, useT } from "@/i18n/client";
 import { Button } from "@/components/ui/8bit";
-import { browserFingerprint } from "@/core/limits/fingerprint";
+import { getPlayerKey } from "@/core/limits/player-key";
 import { PlayLimitBadge, PlayLimitBlocked, usePlayLimit } from "@/core/limits/PlayLimit";
 import { getGame } from "@/games/registry";
 
@@ -52,9 +52,8 @@ export function StartButton({
       return;
     }
     try {
-      const fp = await browserFingerprint();
       const remembered = ai ?? (typeof window !== "undefined" ? (window.localStorage.getItem(`hai.opponent.${game}`) ?? undefined) : undefined);
-      const session = await api.createSession({ replay, ...(remembered ? { ai: remembered } : {}), ...(fp ? { fp } : {}) });
+      const session = await api.createSession({ replay, ...(remembered ? { ai: remembered } : {}), pk: getPlayerKey() });
       if (session.playLimit) setStatus(session.playLimit);
       router.push(`/play/${session.id}`);
     } catch (cause) {

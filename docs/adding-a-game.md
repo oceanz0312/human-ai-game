@@ -30,7 +30,7 @@ Rules for plugins:
 | Humanized captions / terminal / danmaku from events | `src/game/ai-activity.ts`, `ai-error-copy.ts`, `danmaku-messages.ts` | done |
 | Lock-in waiting (“你已锁定 · AI 还在分析 x.xs”), next-round prefetch (AI never pre-run) | `src/components/GameScreen.tsx` (core screen, `game` prop) | done |
 | Model adapters + model registry (+ game↔model via `ModelEntry.games`) | `src/models/` | done (only `openai-decisions` live) |
-| Daily play limit (fingerprint hash is the identity; IPv4 /24 · IPv6 /48 + UA hash only as fallback; N runs/day, `per-game` or `global`, env `PLAY_LIMIT_RUNS_PER_DAY` / `PLAY_LIMIT_SCOPE`; test bypass header `x-play-limit-bypass`) | `src/core/limits/` (`config`, `identity`, `fingerprint`, `PlayLimit.tsx`), `GET /api/play-limit` | done |
+| Daily play limit (random per-browser player key `hai_player_key` in localStorage, stored as SHA-256(salt \| key); no fingerprint / IP; N runs/day, `per-game` or `global`, env `PLAY_LIMIT_RUNS_PER_DAY` / `PLAY_LIMIT_SCOPE`; test bypass header `x-play-limit-bypass`) | `src/core/limits/` (`config`, `identity`, `player-key`, `PlayLimit.tsx`), `GET /api/play-limit` | done |
 | Opponent select (registry cards, coming-soon greyed, "数据不足" under 30 runs, remembered choice, `?ai=`) | `src/core/opponents/OpponentSelect.tsx`, `GET /api/opponents?game=` | done |
 | Per-model + overall leaderboards | `listByModel` / `modelStats` in the leaderboard repo, `?ai=<slug>` on the leaderboard page | done |
 | D1: `sessions.game_id/model_id`, `results.game_id/model_id`, `rounds.ai_model_id`, `daily_plays` | `drizzle/0003_models_daily_limit.sql` | done |

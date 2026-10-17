@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { nextUtcMidnight, readPlayLimitConfig, utcDay } from "@/core/limits/config";
-import { bypassMatches, playLimitKey } from "@/core/limits/identity";
+import { bypassMatches, isPlayerKey, playLimitKey } from "@/core/limits/identity";
 import { createSpotTheDifferencePlugin } from "@/games/spot-the-difference/server-plugin";
 import { FakeDecisionClient } from "@/server/decisions/fake";
 import { createGameService } from "@/server/game-service";
@@ -28,7 +28,7 @@ async function setup(playLimit = { runsPerDay: 3, scope: "per-game" as const }) 
 test("3 runs per person per UTC day, enforced at session start; resets at 00:00 UTC", async () => {
   const s = await setup();
   try {
-    const key = await playLimitKey({ fingerprint: "a".repeat(64), ip: "203.0.113.9", userAgent: "UA", salt: "salt" });
+    const key = await playLimitKey({ playerKey: randomUUID(), salt: "salt" });
     const first = await s.service.createSession({ playerId: s.playerId, limitKey: key });
     expect(first.playLimit).toMatchObject({ limit: 3, used: 1, remaining: 2 });
     await s.service.createSession({ playerId: s.playerId, limitKey: key });
@@ -36,7 +36,7 @@ test("3 runs per person per UTC day, enforced at session start; resets at 00:00 
     expect(third.playLimit?.remaining).toBe(0);
     await expect(s.service.createSession({ playerId: s.playerId, limitKey: key })).rejects.toMatchObject({ code: "daily_limit", status: 429 });
     // A different person is unaffected; the bypass (tests) is never counted.
-    const other = await playLimitKey({ fingerprint: "b".repeat(64), ip: "203.0.113.9", userAgent: "UA", salt: "salt" });
+    const other = await playLimitKey({ playerKey: randomUUID(), salt: "salt" });
     expect((await s.service.createSession({ playerId: s.playerId, limitKey: other })).playLimit?.remaining).toBe(2);
     expect((await s.service.createSession({ playerId: s.playerId, limitKey: key, bypassLimit: true })).playLimit).toMatchObject({ bypass: true });
     expect((await s.service.getPlayLimit({ limitKey: key })).remaining).toBe(0);
@@ -58,16 +58,16 @@ test("the limit is config: 0 disables it", async () => {
   }
 });
 
-test("only hashes: keys never contain the fingerprint, IP or UA; the fingerprint is the identity", async () => {
-  const fp = "c".repeat(64);
-  const a = await playLimitKey({ fingerprint: fp, ip: "198.51.100.1", userAgent: "UA", salt: "s" });
-  const b = await playLimitKey({ fingerprint: fp, ip: "198.51.101.2", userAgent: "UA", salt: "s" });
-  const noFp = await playLimitKey({ fingerprint: null, ip: "198.51.100.1", userAgent: "UA", salt: "s" });
+test("only hashes: the key is SHA-256(salt | random player key); a new key is a fresh allowance", async () => {
+  const pk = randomUUID();
+  const a = await playLimitKey({ playerKey: pk, salt: "s" });
   expect(a).toMatch(/^[a-f0-9]{64}$/);
-  expect(a).toBe(b);
-  expect(noFp).not.toBe(a);
-  for (const key of [a, b, noFp]) expect(key).not.toContain("198.51");
-  expect(await playLimitKey({ fingerprint: "not-a-hash", ip: "198.51.100.1", userAgent: "UA", salt: "s" })).toBe(noFp);
+  expect(a).not.toContain(pk.slice(0, 8));
+  expect(await playLimitKey({ playerKey: pk, salt: "s" })).toBe(a);
+  expect(await playLimitKey({ playerKey: randomUUID(), salt: "s" })).not.toBe(a);
+  expect(await playLimitKey({ playerKey: pk, salt: "other-salt" })).not.toBe(a);
+  expect(isPlayerKey(pk)).toBe(true);
+  for (const bad of ["", "not-a-uuid", "a".repeat(64), null, undefined]) expect(isPlayerKey(bad)).toBe(false);
 });
 
 test("bypass header, UTC day helpers and env config", () => {
@@ -82,19 +82,3 @@ test("bypass header, UTC day helpers and env config", () => {
   expect(readPlayLimitConfig({ PLAY_LIMIT_RUNS_PER_DAY: "5", PLAY_LIMIT_SCOPE: "global" })).toEqual({ runsPerDay: 5, scope: "global" });
 });
 
-test("rotating addresses inside one network prefix keep the same person key", async () => {
-  const { networkPrefix } = await import("@/core/limits/identity");
-  expect(networkPrefix("2a04:4e41:80:3622::679f:3622")).toBe("2a04:4e41:80::/48");
-  expect(networkPrefix("2a04:4e41:0080:f8ea::9f9b:f8ea")).toBe("2a04:4e41:80::/48");
-  expect(networkPrefix("203.0.113.7")).toBe("203.0.113.0/24");
-  expect(networkPrefix("::ffff:203.0.113.9")).toBe("203.0.113.0/24");
-  const fp = "a".repeat(64);
-  const a = await playLimitKey({ fingerprint: fp, ip: "2a04:4e41:80:3622::679f:3622", userAgent: null, salt: "s" });
-  const b = await playLimitKey({ fingerprint: fp, ip: "2a04:4e41:80:707e::6765:707e", userAgent: null, salt: "s" });
-  expect(a).toBe(b);
-  const noFpA = await playLimitKey({ fingerprint: null, ip: "2a04:4e41:80:3622::679f:3622", userAgent: "UA", salt: "s" });
-  const noFpB = await playLimitKey({ fingerprint: null, ip: "2a04:4e41:80:707e::6765:707e", userAgent: "UA", salt: "s" });
-  const noFpOther = await playLimitKey({ fingerprint: null, ip: "198.51.100.4", userAgent: "UA", salt: "s" });
-  expect(noFpA).toBe(noFpB);
-  expect(noFpA).not.toBe(noFpOther);
-});
