@@ -17,10 +17,10 @@ async function load(publicId: string) {
 
 export async function generateMetadata({ params }: { params: Promise<{ publicId: string }> }): Promise<Metadata> {
   const result = await load((await params).publicId);
-  if (!result) return { title: "HUMAN / AI" };
+  if (!result) return { title: "HUMAN VS AI" };
   const locale = await getCookieLocale();
   const t = translator(locale);
-  const title = `${shareHeadline(result, locale)} · HUMAN / AI`;
+  const title = `${shareHeadline(result, locale)} · HUMAN VS AI`;
   return {
     metadataBase: new URL(await publicBaseUrl()),
     robots: { index: false, follow: true },
@@ -40,7 +40,7 @@ export default async function ShareLandingPage({ params }: { params: Promise<{ p
   return (
     <main className="mobile-shell share-landing one-screen">
       <div className="topline">
-        <span className="brand">HUMAN / AI</span>
+        <span className="brand">HUMAN VS AI</span>
         <span className="eyebrow">{t("20 关挑战")}</span>
       </div>
       <section className="hero-number">

@@ -57,9 +57,9 @@ export function ShareActions({ result, shareUrl }: ShareActionsProps) {
     try {
       const file = poster ? new File([poster.blob], "human-ai.png", { type: "image/png" }) : null;
       if (file && navigator.canShare?.({ files: [file] })) {
-        await navigator.share({ title: "HUMAN / AI", text, url: shareUrl, files: [file] });
+        await navigator.share({ title: "HUMAN VS AI", text, url: shareUrl, files: [file] });
       } else {
-        await navigator.share({ title: "HUMAN / AI", text, url: shareUrl });
+        await navigator.share({ title: "HUMAN VS AI", text, url: shareUrl });
       }
       track("share_completed", { metadata: { method: "system" } });
     } catch (error) {
@@ -85,7 +85,7 @@ export function ShareActions({ result, shareUrl }: ShareActionsProps) {
         <div className="poster-view" role="dialog" aria-modal="true" aria-label={t("战绩海报")}>
           <main className="mobile-shell one-screen poster-shell">
             <div className="topline">
-              <span className="brand">HUMAN / AI</span>
+              <span className="brand">HUMAN VS AI</span>
               <button type="button" className="close-action" onClick={() => setOpen(false)}>
                 {t("关闭")}
               </button>

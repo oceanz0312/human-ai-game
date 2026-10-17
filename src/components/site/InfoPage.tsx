@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { localePath, type Locale } from "@/i18n/config";
-import { SiteTop } from "./SiteTop";
+import { SiteShell } from "./SiteShell";
 import { getPages } from "@/i18n/pages";
 import { breadcrumbLd, JsonLd } from "@/seo/jsonld";
 
@@ -47,9 +47,9 @@ export function InfoPage({
   }
   if (path !== "/") crumbs.push({ name: h1, path });
   return (
-    <main className={`mobile-shell info-page one-screen${className ? ` ${className}` : ""}`}>
+    <SiteShell locale={locale} path={path}>
+      <div className={`container info-page${className ? ` ${className}` : ""}`}>
       <JsonLd data={[breadcrumbLd(locale, crumbs), ...ld]} />
-      <SiteTop locale={locale} path={path} />
       <section className="info-head">
         <p className="eyebrow">{eyebrow}</p>
         <h1 className="page-title">{h1}</h1>
@@ -68,6 +68,7 @@ export function InfoPage({
           </nav>
         ) : null}
       </div>
-    </main>
+      </div>
+    </SiteShell>
   );
 }

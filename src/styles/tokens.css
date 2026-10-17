@@ -1,0 +1,77 @@
+/*
+ * Design tokens: the single swappable theme layer.
+ * Phase 1 ships neutral values; phase 2 swaps them for the pixel-art system.
+ * Components must read colours, type, borders, shadows and layout sizes from here only.
+ */
+:root {
+  /* palette */
+  --c-ink: #111111;
+  --c-paper: #fafaf8;
+  --c-surface: #ffffff;
+  --c-text: #111111;
+  --c-text-2: #555555;
+  --c-muted: #6b6b6b;
+  --c-line: #e6e6e1;
+  --c-human: #e5484d;
+  --c-human-text: #c8003c;
+  --c-ai: #3b82f6;
+  --c-ai-text: #1d5fc4;
+  --c-ok: #22c55e;
+  --c-warn: #f59e0b;
+  --c-hi: #fde047;
+  --c-cta-bg: #111111;
+  --c-cta-fg: #ffffff;
+  --c-cta-hover: #333333;
+  --c-term-bg: #16181f;
+  --c-term-fg: #d4d4d8;
+  --c-term-dim: #8b8b99;
+
+  /* type */
+  --f-display: Inter, -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", sans-serif;
+  --f-display-latin: var(--f-display);
+  --f-body: Inter, -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  /* shape */
+  --bw: 1px;
+  --bw-sm: 1px;
+  --radius: 10px;
+  --sh-sm: none;
+  --sh: none;
+  --sh-lg: none;
+
+  /* spacing (4px grid) */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 24px;
+  --s6: 32px;
+  --s7: 48px;
+  --s8: 64px;
+
+  /* layout */
+  --container: 1200px;
+  --game-max: 1280px;
+  --prose: 720px;
+  --nav-h: 64px;
+  --side-w: 380px;
+  --lane-h: 28px;
+  --hud-h: 52px;
+  --foot-h: 64px;
+  --gutter: 24px;
+}
+
+@media (max-width: 1023px) {
+  :root {
+    --side-w: 300px;
+  }
+}
+
+@media (max-width: 767px) {
+  :root {
+    --nav-h: 52px;
+    --foot-h: 56px;
+    --gutter: 16px;
+  }
+}

@@ -17,7 +17,7 @@ test("refreshing during a shown level settles it as a timeout", async ({ page })
   await waitForPlayable(page, 1);
   await page.reload();
   await expect(page.getByText("答案揭晓")).toBeVisible();
-  await expect(page.getByText("你超时了 · 失去 1 条命")).toBeVisible();
+  await expect(page.getByText("你超时了 · 用掉 1 次机会")).toBeVisible();
   await next(page);
   await waitForPlayable(page, 2);
   await expect(page.locator(".life.lost")).toHaveCount(1);
@@ -37,7 +37,7 @@ test("a dropped submission is retried with the original locked answer", async ({
   await answer(page, 1, "correct");
   expect(failures).toBe(1);
   await expect(page.getByRole("heading", { name: /你赢了|AI 赢了|AI 仍在判断/ })).toBeVisible();
-  await expect(page.getByText("失去 1 条命")).toHaveCount(0);
+  await expect(page.getByText("用掉 1 次机会")).toHaveCount(0);
 });
 
 test("the AI being offline does not cost the player a life", async ({ page }) => {
@@ -46,7 +46,7 @@ test("the AI being offline does not cost the player a life", async ({ page }) =>
   await next(page);
   await answer(page, 2, "wrong");
   await expect(page.getByRole("heading", { name: "AI 掉线" })).toBeVisible();
-  await expect(page.getByText("你答错了 · 失去 1 条命")).toBeVisible();
+  await expect(page.getByText("你答错了 · 用掉 1 次机会")).toBeVisible();
   await next(page);
   await waitForPlayable(page, 3);
   await expect(page.locator(".life.lost")).toHaveCount(1);
@@ -64,5 +64,5 @@ test("backgrounding does not pause the absolute deadline", async ({ page }) => {
     Object.defineProperty(document, "visibilityState", { configurable: true, get: () => "visible" });
     document.dispatchEvent(new Event("visibilitychange"));
   });
-  await expect(page.getByText("你超时了 · 失去 1 条命")).toBeVisible();
+  await expect(page.getByText("你超时了 · 用掉 1 次机会")).toBeVisible();
 });

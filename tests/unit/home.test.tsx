@@ -5,7 +5,7 @@ vi.mock("next/navigation", () => ({ useRouter: () => ({ push: vi.fn() }) }));
 
 test("shows the approved one-action landing page", async () => {
   render(await HomePage({ params: Promise.resolve({ locale: "zh" }) }));
-  expect(screen.getByText("HUMAN / AI")).toBeInTheDocument();
+  expect(screen.getByText("HUMAN VS AI")).toBeInTheDocument();
   expect(screen.getByRole("heading", { name: /你比 AI\s*更快吗/ })).toBeInTheDocument();
   expect(screen.getAllByRole("button")).toHaveLength(1);
   expect(screen.getByRole("button", { name: "开始挑战" })).toBeInTheDocument();

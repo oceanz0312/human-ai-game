@@ -6,7 +6,7 @@ test("@layout a full clear run follows the approved mobile layout on every view"
   // The language-suggestion banner is covered by locale-banner.spec.ts; dismiss it here.
   await page.context().addCookies([{ name: "hv_locale_banner", value: "1", url: "http://127.0.0.1:3100" }]);
   await page.goto("/zh");
-  await expect(page.getByText("HUMAN / AI")).toBeVisible();
+  await expect(page.getByText("HUMAN VS AI")).toBeVisible();
   await expect(page.getByRole("heading", { name: /你比 AI\s*更快吗/ })).toBeVisible();
   await expect(page.getByRole("button")).toHaveCount(1);
   await assertMobileLayout(page);
@@ -58,7 +58,7 @@ test("three failures end the run at the third failed level", async ({ page }) =>
   await startGame(page);
   await answer(page, 1, "wrong");
   await expect(page.getByRole("heading", { name: /AI 赢了|无人获胜/ })).toBeVisible();
-  await expect(page.getByText("失去 1 条命")).toBeVisible();
+  await expect(page.getByText("用掉 1 次机会")).toBeVisible();
   await next(page);
   await answer(page, 2, "correct");
   await next(page);
@@ -90,7 +90,7 @@ test("a level that runs out of time counts as a timeout and keeps going", async 
   await waitForPlayable(page, 1);
   await expect(page.getByTestId("timer")).not.toHaveText("08.00", { timeout: 2000 });
   await expect(page.getByText("答案揭晓")).toBeVisible({ timeout: 12_000 });
-  await expect(page.getByText("你超时了 · 失去 1 条命")).toBeVisible();
+  await expect(page.getByText("你超时了 · 用掉 1 次机会")).toBeVisible();
   await next(page);
   await waitForPlayable(page, 2);
   await expect(page.locator(".life.lost")).toHaveCount(1);

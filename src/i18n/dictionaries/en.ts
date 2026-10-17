@@ -1,5 +1,5 @@
 const en = {
-  brand: "HUMAN / AI",
+  brand: "HUMAN VS AI",
   home: {
     title: "Find the Difference Game: Human vs AI",
     description: "Free find the difference game. Spot the one odd cell faster than a real AI opponent. No signup, plays in your browser.",

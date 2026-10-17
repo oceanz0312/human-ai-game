@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import "../globals.css";
+import "@/styles/tokens.css";
+import "@/styles/shell.css";
 import { htmlLang, isLocale, locales } from "@/i18n/config";
 import { SITE_NAME, SITE_URL } from "@/config/site";
 import { I18nProvider } from "@/i18n/client";
@@ -22,8 +24,8 @@ export default async function LocaleLayout({ children, params }: { children: Rea
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   return (
-    <html lang={htmlLang[locale]} className="one-screen-app">
-      <body className="one-screen-app">
+    <html lang={htmlLang[locale]}>
+      <body>
         <I18nProvider locale={locale}>{children}</I18nProvider>
         <LocaleBanner />
         <Analytics />
