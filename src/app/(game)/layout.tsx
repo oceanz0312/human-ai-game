@@ -1,9 +1,11 @@
 import type { Metadata, Viewport } from "next";
+import "@/styles/tailwind.css";
 import "@/styles/tokens.css";
 import "@/styles/base.css";
 import "@/styles/shell.css";
 import "@/styles/game.css";
 import "@/styles/site.css";
+import { fontVariables } from "@/lib/fonts";
 import { htmlLang } from "@/i18n/config";
 import { I18nProvider } from "@/i18n/client";
 import { Analytics } from "@/components/site/Analytics";
@@ -22,7 +24,7 @@ export const viewport: Viewport = {
 export default async function GameLayout({ children }: { children: React.ReactNode }) {
   const locale = await getCookieLocale();
   return (
-    <html lang={htmlLang[locale]}>
+    <html lang={htmlLang[locale]} className={fontVariables}>
       <body>
         <I18nProvider locale={locale}>{children}</I18nProvider>
         <Analytics />

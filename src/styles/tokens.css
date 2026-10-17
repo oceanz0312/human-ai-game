@@ -1,44 +1,54 @@
 /*
- * Design tokens: the single swappable theme layer.
- * Phase 1 ships neutral values; phase 2 swaps them for the pixel-art system.
- * Components must read colours, type, borders, shadows and layout sizes from here only.
+ * Design tokens: the single swappable theme layer (phase 2: pixel-art system).
+ * Components must read colours, type, borders, shadows and layout sizes from here only;
+ * tailwind.css maps the same tokens into Tailwind's @theme so utilities stay in sync.
+ *
+ * Palette: PICO-8 base, contrast-fixed for WCAG AA on the light theme.
+ * Type: pixel faces render only at 12 / 24 / 36 / 48px (the Fusion Pixel 12px grid); use --fs-px-*.
  */
 :root {
   /* palette */
-  --c-ink: #111111;
-  --c-paper: #fafaf8;
+  --c-ink: #1a1c2c;
+  --c-paper: #f4f4f4;
   --c-surface: #ffffff;
-  --c-text: #111111;
-  --c-text-2: #555555;
-  --c-muted: #6b6b6b;
-  --c-line: #e6e6e1;
-  --c-human: #e5484d;
-  --c-human-text: #c8003c;
-  --c-ai: #3b82f6;
-  --c-ai-text: #1d5fc4;
-  --c-ok: #22c55e;
-  --c-warn: #f59e0b;
-  --c-hi: #fde047;
-  --c-cta-bg: #111111;
+  --c-text: #1a1c2c;
+  --c-text-2: #5f574f;
+  --c-muted: #6b6560; /* 5.2:1 on paper (PICO #8b8680 is only 3.3:1) */
+  --c-line: #c2c3c7;
+  --c-human: #ff004d; /* fills only */
+  --c-human-text: #c8003c; /* red text on light */
+  --c-ai: #29adff; /* fills only */
+  --c-ai-text: #0a6abf; /* blue text on light */
+  --c-ok: #00e436;
+  --c-ok-text: #008751;
+  --c-warn: #ffa300;
+  --c-hi: #ffec27;
+  --c-purple: #7e2553;
+  --c-cta-bg: #c8003c; /* white on #c8003c = 5.96:1 */
   --c-cta-fg: #ffffff;
-  --c-cta-hover: #333333;
-  --c-term-bg: #16181f;
-  --c-term-fg: #d4d4d8;
-  --c-term-dim: #8b8b99;
+  --c-cta-hover: #7e2553;
+  --c-term-bg: #1a1c2c;
+  --c-term-fg: #c2c3c7;
+  --c-term-dim: #83769c;
+  --grid-dot: #d9d9dc;
 
   /* type */
-  --f-display: Inter, -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", sans-serif;
-  --f-display-latin: var(--f-display);
-  --f-body: Inter, -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", "Helvetica Neue", Arial, sans-serif;
-  --f-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  --f-display: var(--font-fusion-pixel), var(--font-press-start), "PingFang SC", "Noto Sans CJK SC", monospace;
+  --f-display-latin: var(--font-press-start), var(--font-fusion-pixel), monospace;
+  --f-body: -apple-system, BlinkMacSystemFont, "PingFang SC", "Noto Sans CJK SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+  --f-mono: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, Consolas, "PingFang SC", "Noto Sans CJK SC", monospace;
+  --fs-px-1: 12px;
+  --fs-px-2: 24px;
+  --fs-px-3: 36px;
+  --fs-px-4: 48px;
 
   /* shape */
-  --bw: 1px;
-  --bw-sm: 1px;
-  --radius: 10px;
-  --sh-sm: none;
-  --sh: none;
-  --sh-lg: none;
+  --bw: 4px;
+  --bw-sm: 2px;
+  --radius: 0;
+  --sh-sm: 2px 2px 0 var(--c-ink);
+  --sh: 4px 4px 0 var(--c-ink);
+  --sh-lg: 6px 6px 0 var(--c-ink);
 
   /* spacing (4px grid) */
   --s1: 4px;
