@@ -6,6 +6,7 @@ import Link from "next/link";
 import { localePath, resolveLocaleParam } from "@/i18n/config";
 import { getModel, modelsForGame } from "@/models/registry";
 import { translator } from "@/i18n/messages";
+import { displayNickname } from "@/i18n/nickname";
 import { fill, getPages } from "@/i18n/pages";
 import { pageMetadata } from "@/lib/page-meta";
 import { getGameService } from "@/server/container";
@@ -73,7 +74,7 @@ export default async function LeaderboardPage({ params, searchParams }: Props) {
           {top.map((row, index) => (
             <li key={index}>
               <span className="rank">{row.rank}</span>
-              <span className="name">{locale === "en" ? row.nickname.replace(/^玩家 /, "Player ") : row.nickname}</span>
+              <span className="name">{displayNickname(row.nickname, t)}</span>
               <span className="lvl">{fill(copy.level, { n: String(row.reachedLevel) })}</span>
             </li>
           ))}

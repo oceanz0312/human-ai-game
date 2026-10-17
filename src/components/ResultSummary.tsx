@@ -12,7 +12,6 @@ type Summary = Pick<ResultView, "reachedLevel" | "cleared" | "played" | "humanCo
  */
 export function ResultSummary({ result, locale = FALLBACK_MESSAGE_LOCALE, label }: { result: Summary; locale?: Locale; label?: string }) {
   const t = translator(locale);
-  const zh = locale === "zh";
   const of = (n: number) => (
     <>
       {n}
@@ -52,17 +51,7 @@ export function ResultSummary({ result, locale = FALLBACK_MESSAGE_LOCALE, label 
           <div className="row">
             <dt className="label">{t("全服排名")}</dt>
             <dd className="value num" data-testid="rank">
-              {zh ? (
-                <>
-                  <small>第</small>
-                  {result.rank} <small>名</small>
-                </>
-              ) : (
-                <>
-                  <small>#</small>
-                  {result.rank}
-                </>
-              )}
+              {t("第 {n} 名", { n: result.rank })}
             </dd>
           </div>
         ) : null}
@@ -70,17 +59,7 @@ export function ResultSummary({ result, locale = FALLBACK_MESSAGE_LOCALE, label 
           <div className="row">
             <dt className="label">{t("个人最佳")}</dt>
             <dd className="value num">
-              {zh ? (
-                <>
-                  <small>第</small>
-                  {result.bestLevel} <small>关</small>
-                </>
-              ) : (
-                <>
-                  <small>Lv </small>
-                  {result.bestLevel}
-                </>
-              )}
+              {t("第 {n} 关", { n: result.bestLevel })}
             </dd>
           </div>
         ) : null}

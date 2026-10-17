@@ -4,5 +4,8 @@ import zh from "./zh";
 
 const all: Record<Locale, PagesDictionary> = { en, zh };
 export const getPages = (locale: Locale) => all[locale];
-export const fill = (text: string, vars: Record<string, string>) => text.replace(/\{(\w+)\}/g, (m, k: string) => vars[k] ?? m);
+export const fill = (text: string, vars: Record<string, string>) =>
+  text
+    .replace(/\{(\w+)\|([^|}]*)\|([^}]*)\}/g, (m, k: string, one: string, other: string) => (k in vars ? (Number(vars[k]) === 1 ? one : other) : m))
+    .replace(/\{(\w+)\}/g, (m, k: string) => vars[k] ?? m);
 export type { PagesDictionary };

@@ -2,7 +2,8 @@ const CELLS = Array.from({ length: 9 }, (_, index) => index);
 const ODD_CELL = 5;
 
 /** Decorative ~3s loop: you and the AI race to the one odd cell. Pure CSS. */
-export function HomeRaceAnimation({ you = "你", caption = "同一张图，谁先找到不同？", ariaLabel = "示意：你和 AI 同时找不同" }: { you?: string; caption?: string | null; ariaLabel?: string } = {}) {
+/** Copy comes from the page dictionary (no hard-coded zh defaults). */
+export function HomeRaceAnimation({ you, caption, ariaLabel }: { you: string; caption: string | null; ariaLabel: string }) {
   return (
     <div className="home-race" data-testid="home-race" aria-label={ariaLabel} role="img">
       <div className="home-race-board">
