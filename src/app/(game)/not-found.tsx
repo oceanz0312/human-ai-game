@@ -1,7 +1,7 @@
-import Link from "next/link";
 import { localePath } from "@/i18n/config";
 import { getCookieLocale } from "@/i18n/server";
 import { getDictionary } from "@/i18n/dictionaries";
+import { Button } from "@/components/ui/8bit";
 
 export default async function GameNotFound() {
   const locale = await getCookieLocale();
@@ -14,9 +14,9 @@ export default async function GameNotFound() {
         <p className="body-text">{t.body}</p>
       </div>
       <div className="bottom-actions">
-        <Link className="primary-action link-action" href={localePath(locale, "/")}>
+        <Button variant="primary" className="link-action" href={localePath(locale, "/")}>
           {t.home}
-        </Link>
+        </Button>
       </div>
     </main>
   );

@@ -5,6 +5,7 @@ import { aiOpponents, type GameEntry, type PlannedGame } from "@/games/registry"
 import { localePath, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import { getPages } from "@/i18n/pages";
+import { Badge, Button } from "@/components/ui/8bit";
 
 /** Live registry game: preview frame, badges, tagline, Start + landing link. */
 export function LiveGameCard({ game, locale }: { game: GameEntry; locale: Locale }) {
@@ -21,15 +22,15 @@ export function LiveGameCard({ game, locale }: { game: GameEntry; locale: Locale
         <Link href={localePath(locale, game.landingPath)}>{copy?.name ?? game.slug}</Link>
       </h3>
       <div className="badges">
-        <span className="badge badge-ok">● {ui.live}</span>
-        {model ? <span className="badge">{hub.opponent.replace("{model}", model)}</span> : null}
+        <Badge variant="ok">● {ui.live}</Badge>
+        {model ? <Badge>{hub.opponent.replace("{model}", model)}</Badge> : null}
       </div>
       <p className="game-card-text">{copy?.tagline}</p>
       <div className="game-card-actions">
         <StartButton label={hub.start} locale={locale} />
-        <Link className="secondary-action" href={localePath(locale, game.landingPath)}>
+        <Button variant="secondary" href={localePath(locale, game.landingPath)}>
           {hub.howAndBoard}
-        </Link>
+        </Button>
       </div>
     </article>
   );
@@ -47,8 +48,8 @@ export function PlannedGameCard({ game, locale }: { game: PlannedGame | null; lo
       <div>
         <h3 className="game-card-title">{name}</h3>
         <div className="badges">
-          <span className="badge">{ui.inTheWorks}</span>
-          {game ? <span className="badge">{hub.tentative}</span> : null}
+          <Badge>{ui.inTheWorks}</Badge>
+          {game ? <Badge>{hub.tentative}</Badge> : null}
         </div>
         <p className="game-card-text">{game ? hub.plannedNote : hub.moreGamesNote}</p>
       </div>

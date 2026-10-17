@@ -15,6 +15,7 @@ import { VsRaceBar } from "./VsRaceBar";
 import { AiTerminal } from "./game/AiTerminal";
 import { GameStage } from "./game/GameStage";
 import { useLocale, useT } from "@/i18n/client";
+import { Button, Kbd } from "@/components/ui/8bit";
 
 interface LevelRevealProps {
   round: RoundReveal;
@@ -93,19 +94,19 @@ export function LevelReveal({ round, fasterThanAiCount, ended, onNext, browserAi
         />
       }
       foot={
-        <button type="button" className="primary-action reveal-next num" data-testid="reveal-next" aria-label={nextLabel} onClick={onNext}>
+        <Button variant="primary" className="reveal-next num" data-testid="reveal-next" aria-label={nextLabel} onClick={onNext}>
           {nextLabel}
-          <kbd className="kbd desk-only">Enter</kbd>
-        </button>
+          <Kbd className="desk-only">Enter</Kbd>
+        </Button>
       }
       side={
         <>
           <div className="race-card">
             <VsRaceBar humanMs={humanMs} aiMs={aiMs} />
             {fasterThanAiCount > 0 ? <p className="faster-note">{t("本局已有 {n} 关比 AI 更快", { n: fasterThanAiCount })}</p> : null}
-            <button type="button" className="secondary-action details-link mobile-only" onClick={() => setDetailsOpen(true)}>
+            <Button variant="secondary" className="details-link mobile-only" onClick={() => setDetailsOpen(true)}>
               {t("AI 详情")}
-            </button>
+            </Button>
           </div>
           <div className="desk-only reveal-insights">
             <p className="reveal-legend">

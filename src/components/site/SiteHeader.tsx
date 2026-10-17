@@ -2,6 +2,7 @@ import Link from "next/link";
 import { hreflang, localeLabel, localePath, locales, type Locale } from "@/i18n/config";
 import { getPages } from "@/i18n/pages";
 import { gamePlayPath, liveGames } from "@/games/registry";
+import { Button } from "@/components/ui/8bit";
 
 export function SiteLogo({ href }: { href: string }) {
   return (
@@ -66,9 +67,9 @@ export function SiteHeader({ locale, path }: { locale: Locale; path: string }) {
         <span className="site-header-spacer" />
         <LangSwitch locale={locale} path={path} />
         {first ? (
-          <Link className="primary-action nav-cta" href={localePath(locale, gamePlayPath(first))}>
+          <Button variant="primary" className="nav-cta" href={localePath(locale, gamePlayPath(first))}>
             {nav.play}
-          </Link>
+          </Button>
         ) : null}
         <details className="nav-menu">
           <summary aria-label={ui.menu}>

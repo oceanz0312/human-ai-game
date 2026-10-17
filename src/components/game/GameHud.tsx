@@ -3,14 +3,13 @@
 import { STARTING_LIVES, TOTAL_LEVELS } from "@/game/contracts";
 import { countdown, pad2 } from "@/lib/format";
 import { useT } from "@/i18n/client";
+import { SegmentedProgress } from "@/components/ui/8bit";
 
 /** Level, misses left (「机会」) and the countdown. One element: a side card on desktop, the top bar on mobile. */
 export function GameHud({ level, chances, remainingMs, limitMs }: { level: number; chances: number; remainingMs: number | null; limitMs: number }) {
   const t = useT();
   const remaining = remainingMs ?? limitMs;
   const ratio = limitMs > 0 ? Math.max(0, Math.min(1, remaining / limitMs)) : 0;
-  const segments = 12;
-  const lit = Math.ceil(ratio * segments);
   return (
     <div className="game-header hud-card">
       <div className="hud-level">
@@ -27,11 +26,7 @@ export function GameHud({ level, chances, remainingMs, limitMs }: { level: numbe
           </span>
           <span className="unit">{t("秒")}</span>
         </span>
-        <span className="hud-segments" aria-hidden>
-          {Array.from({ length: segments }, (_, index) => (
-            <i key={index} className={index < lit ? "on" : undefined} />
-          ))}
-        </span>
+        <SegmentedProgress className="hud-segments" value={ratio} segments={12} />
       </div>
       <div className="hud-chances">
         <span className="hud-label">{t("机会")}</span>
