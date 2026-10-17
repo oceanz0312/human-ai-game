@@ -42,6 +42,7 @@
 | 页面 | Title | H1 |
 |---|---|---|
 | 首页 | Human vs AI Games – Can You Beat the AI? | Play Games Against Real AI |
+| 找茬落地页（实际路径 `/spot-the-difference`，2026-10 起承接 find the difference 主词） | Spot the Difference Online – Find the Difference Game vs AI (Free) | Spot the Difference: You vs AI |
 | 找茬 | Spot the Difference Online – Beat the AI (Free) | Spot the Difference: You vs AI |
 | 关卡页 | Spot the Difference Level 7 – Human vs AI | Level 7: Find 5 Differences Before the AI |
 | 意图页 | Hard Spot the Difference Puzzles for Adults – vs AI | Hard Spot the Difference Puzzles |

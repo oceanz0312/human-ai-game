@@ -91,6 +91,10 @@ export interface ResultView {
   nickname: string | null;
   reachedLevel: number;
   fasterThanAiCount: number;
+  /** Settled rounds in this run, and how many the player / the AI answered correctly. */
+  played: number;
+  humanCorrect: number;
+  aiCorrect: number;
   cleared: boolean;
   rank: number;
   bestLevel: number;

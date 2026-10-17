@@ -20,7 +20,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 async function loadTop() {
   try {
-    return (await (await getGameService()).getLeaderboard({ viewerPlayerId: null, limit: 8 })).top;
+    return (await (await getGameService()).getLeaderboard({ viewerPlayerId: null, limit: 50 })).top;
   } catch {
     return [];
   }
@@ -28,7 +28,7 @@ async function loadTop() {
 
 export default async function LeaderboardPage({ params }: Props) {
   const locale = await resolveLocaleParam(params);
-  const { nav, pages } = getPages(locale);
+  const { nav, pages, gameCopy } = getPages(locale);
   const copy = pages.leaderboard;
   const top = await loadTop();
   return (
@@ -38,6 +38,7 @@ export default async function LeaderboardPage({ params }: Props) {
       eyebrow={copy.eyebrow}
       h1={copy.h1}
       intro={copy.intro}
+      crumbs={[{ name: nav.games, path: "/games" }, { name: gameCopy[game.slug]?.name ?? nav.spot, path: game.landingPath }, { name: copy.h1, path: PATH }]}
       action={<StartButton label={nav.play} locale={locale} />}
       links={[{ href: game.landingPath, label: nav.spot }, { href: "/human-vs-ai", label: nav.humanVsAi }]}
     >

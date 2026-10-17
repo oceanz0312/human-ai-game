@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { StartButton } from "@/components/StartButton";
 import { shareHeadline } from "@/game/reveal-copy";
-import { pad2 } from "@/lib/format";
+import { ResultSummary } from "@/components/ResultSummary";
+import { SiteShell } from "@/components/site/SiteShell";
 import { getGameService } from "@/server/container";
 import { isPublicId, publicBaseUrl } from "@/server/public-url";
 import { getCookieLocale } from "@/i18n/server";
@@ -38,30 +39,27 @@ export default async function ShareLandingPage({ params }: { params: Promise<{ p
   const who = result.nickname ?? t("TA");
 
   return (
-    <main className="mobile-shell share-landing one-screen">
-      <div className="topline">
-        <span className="brand">HUMAN VS AI</span>
-        <span className="eyebrow">{t("20 关挑战")}</span>
+    <SiteShell locale={locale} path="/">
+      <div className="container share-page">
+        <section className="card result-card share-landing" aria-labelledby="share-title">
+          <div className="topline">
+            <span className="brand">HUMAN VS AI</span>
+            <span className="eyebrow">{t("20 关挑战")}</span>
+          </div>
+          <h1 className="eyebrow share-who" id="share-title">
+            {t("{who} 到达了", { who })}
+          </h1>
+          <ResultSummary
+            result={{ ...result, rank: undefined, bestLevel: undefined }}
+            locale={locale}
+            label={result.cleared ? t("已通关") : t("到达关卡")}
+          />
+          <div className="bottom-actions">
+            <p className="body-text share-copy">{t("同样的 20 关，你能走到哪里？")}</p>
+            <StartButton fromShare locale={locale} />
+          </div>
+        </section>
       </div>
-      <section className="hero-number">
-        <p className="eyebrow">{t("{who} 到达了", { who })}</p>
-        <div className="big-number" data-testid="reached-level">
-          {pad2(result.reachedLevel)}
-        </div>
-        <div className="big-label">{result.cleared ? t("已通关") : t("到达关卡")}</div>
-      </section>
-      <section className="stats">
-        <div className="row">
-          <span className="label">{t("比 AI 更快")}</span>
-          <span className="value">
-            {result.fasterThanAiCount} <small>{t("关")}</small>
-          </span>
-        </div>
-      </section>
-      <div className="bottom-actions">
-        <p className="body-text share-copy">{t("同样的 20 关，你能走到哪里？")}</p>
-        <StartButton fromShare locale={locale} />
-      </div>
-    </main>
+    </SiteShell>
   );
 }

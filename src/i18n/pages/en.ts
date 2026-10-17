@@ -24,7 +24,85 @@ const en = {
       cta: "Play",
     },
   } as Record<string, { name: string; tagline: string; cta: string }>,
+  /** Tentative names for registry plannedGames (shown only as 筹备中 placeholder cards). */
+  plannedCopy: {
+      "memory-match": "Memory Match",
+      "picture-guess": "Picture Guess"
+    } as Record<string, string>,
+  /** Platform hub home page. */
+  hub: {
+      "title": "Human vs AI Games – Can You Beat the AI?",
+      "description": "Play free browser games against a real AI model. Same puzzle, same start, real AI speed. Start with Spot the Difference – no signup.",
+      "eyebrowLive": "{n} game live",
+      "eyebrowSoon": "More in the works",
+      "h1": [
+        "Human vs AI",
+        "Play games against real AI"
+      ],
+      "lede": "In every game you and a real AI model get the same puzzle at the same moment. Its speed is its real speed, and every reveal shows how it thought.",
+      "playCta": "Play {game}",
+      "allGames": "All games",
+      "facts": [
+        "Real AI answers live",
+        "No signup · plays in your browser",
+        "English / 中文"
+      ],
+      "vsYou": "You",
+      "vsYouLabel": "Human player",
+      "vsYouSub": "eyes + instinct",
+      "vsAiLabel": "Real AI model",
+      "vsFoot": "> same puzzle · same start",
+      "gamesTitle": "All games",
+      "gamesMore": "Game index →",
+      "opponent": "Opponent {model}",
+      "howAndBoard": "How to play & leaderboard",
+      "start": "Start",
+      "tentative": "Tentative name",
+      "plannedNote": "In the works · opens here when it ships",
+      "moreGames": "More games",
+      "moreGamesNote": "New games appear here automatically",
+      "howTitle": "How it works",
+      "steps": [
+        [
+          "Pick a game",
+          "No signup, just open it. Every game has one fixed puzzle set."
+        ],
+        [
+          "Start with the AI",
+          "You and a real AI model get the same puzzle; the clock starts together. The AI is never sped up or slowed down."
+        ],
+        [
+          "Reveal · see how the AI thinks",
+          "Each round shows both answers, both times and the AI's confidence, then you get a shareable result."
+        ]
+      ],
+      "faqTitle": "FAQ",
+      "faqMore": "All FAQ →",
+      "faq": [
+        {
+          "q": "Is the opponent really an AI?",
+          "a": "Yes. Every puzzle calls a real model live (currently gpt-6-luna). The speed you see is its real speed."
+        },
+        {
+          "q": "Do I need to sign up or pay?",
+          "a": "No. Every game is free and plays in your browser, on phone or desktop."
+        },
+        {
+          "q": "Does the AI know the answer in advance?",
+          "a": "No. The AI only sees the same picture you see; answers are checked on our server after both of you answer."
+        },
+        {
+          "q": "When are new games coming?",
+          "a": "New games appear on this page as soon as they ship. Cards marked “in the works” are tentative."
+        }
+      ],
+      "itemListName": "Human vs AI games"
+    },
   ui: {
+    footerGames: "Games",
+    footerLearn: "Learn",
+    footerSite: "Site",
+    breadcrumb: "Breadcrumb",
     menu: "Menu",
     live: "Live",
     comingSoon: "Coming soon",
@@ -36,10 +114,13 @@ const en = {
   },
   pages: {
     spotTheDifference: {
-      title: "Spot the Difference Game vs a Real AI | HUMAN VS AI",
-      description: "Play spot the difference online for free: find the one odd cell in 20 levels and race a real AI that answers at real speed. No signup.",
-      eyebrow: "Spot the difference",
-      h1: "Spot the Difference Game",
+      title: "Spot the Difference Online – Find the Difference Game vs AI (Free)",
+      description: "Free find the difference game: spot the one odd cell in 20 levels and race a real AI that answers at real speed. No signup, plays in your browser.",
+      eyebrow: "Find the difference game",
+      h1: "Spot the Difference: You vs AI",
+      facts: ["Same picture, same start", "3×3 to 9×9 grids", "Free · no signup"],
+      howTitle: "How to play",
+      levelsTitle: "Levels",
       intro: "Twenty puzzles, one odd cell in each. You and a real AI see the same picture at the same moment — whoever spots the difference first wins the level. Free, no signup, made for phones.",
     },
     findTheDifference: {

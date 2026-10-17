@@ -212,20 +212,11 @@
 }
 
 .site-footer .container {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: var(--s4) var(--s6);
   padding-top: var(--s6);
   padding-bottom: var(--s6);
   font-size: 14px;
 }
 
-.site-footer nav {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--s3) var(--s5);
-}
 
 .site-footer a {
   color: inherit;

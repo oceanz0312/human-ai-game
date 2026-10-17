@@ -2,13 +2,13 @@ import { expect, test } from "@playwright/test";
 import { answer, assertDanmakuOffBoard, assertNoHorizontalOverflow, assertOneScreen, assertRevealNextBelowBoard, boardSize, startGame, waitForPlayable } from "./helpers";
 
 test.describe("@layout one-screen zero scroll", () => {
-  test("home first screen shows the race animation and Start", async ({ page }) => {
-    await page.goto("/zh");
+  test("game landing first screen shows the race animation and Start", async ({ page }) => {
+    await page.goto("/zh/spot-the-difference");
     await assertNoHorizontalOverflow(page);
     await expect(page.getByTestId("home-race")).toBeVisible();
     const start = await page.getByRole("button", { name: "开始挑战" }).boundingBox();
     expect(start!.y + start!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
-    await expect(page.locator("body")).not.toContainText(/命|20 关/);
+    await expect(page.locator("body")).not.toContainText(/命/);
   });
 
   test("countdown and play fit one viewport", async ({ page }) => {

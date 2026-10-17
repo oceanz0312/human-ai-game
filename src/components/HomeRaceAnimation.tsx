@@ -2,7 +2,7 @@ const CELLS = Array.from({ length: 9 }, (_, index) => index);
 const ODD_CELL = 5;
 
 /** Decorative ~3s loop: you and the AI race to the one odd cell. Pure CSS. */
-export function HomeRaceAnimation({ you = "你", caption = "同一张图，谁先找到不同？", ariaLabel = "示意：你和 AI 同时找不同" }: { you?: string; caption?: string; ariaLabel?: string } = {}) {
+export function HomeRaceAnimation({ you = "你", caption = "同一张图，谁先找到不同？", ariaLabel = "示意：你和 AI 同时找不同" }: { you?: string; caption?: string | null; ariaLabel?: string } = {}) {
   return (
     <div className="home-race" data-testid="home-race" aria-label={ariaLabel} role="img">
       <div className="home-race-board">
@@ -32,7 +32,7 @@ export function HomeRaceAnimation({ you = "你", caption = "同一张图，谁�
           </span>
         </div>
       </div>
-      <p className="home-race-caption">{caption}</p>
+      {caption ? <p className="home-race-caption">{caption}</p> : null}
     </div>
   );
 }

@@ -26,7 +26,85 @@ const zh: PagesDictionary = {
       cta: "开始玩",
     },
   },
+  /** Tentative names for registry plannedGames (shown only as 筹备中 placeholder cards). */
+  plannedCopy: {
+      "memory-match": "记忆翻牌",
+      "picture-guess": "看图猜词"
+    },
+  /** Platform hub home page. */
+  hub: {
+      "title": "人类 vs AI 小游戏：和真实 AI 对战 | HUMAN VS AI",
+      "description": "免费在线和真实 AI 对战的小游戏：同一道题、同一秒开始，AI 用的是真实速度。先玩大家来找茬，无需注册。",
+      "eyebrowLive": "{n} 款游戏在线",
+      "eyebrowSoon": "更多筹备中",
+      "h1": [
+        "人类 VS AI",
+        "和真实 AI 同场对战"
+      ],
+      "lede": "每一款游戏里，你和真实 AI 模型拿到同一道题、同一秒开始。它的速度就是真实速度，揭晓时还能看到它是怎么想的。",
+      "playCta": "玩{game}",
+      "allGames": "全部游戏",
+      "facts": [
+        "真实 AI 实时作答",
+        "免注册 · 浏览器即玩",
+        "中文 / English"
+      ],
+      "vsYou": "你",
+      "vsYouLabel": "人类玩家",
+      "vsYouSub": "眼睛 + 直觉",
+      "vsAiLabel": "真实 AI 模型",
+      "vsFoot": "> 同一道题 · 同一秒开始",
+      "gamesTitle": "全部游戏",
+      "gamesMore": "查看游戏目录 →",
+      "opponent": "对手 {model}",
+      "howAndBoard": "玩法与排行",
+      "start": "开始挑战",
+      "tentative": "暂定名",
+      "plannedNote": "筹备中 · 上线后在这里开放",
+      "moreGames": "更多游戏",
+      "moreGamesNote": "新游戏会自动出现在这里",
+      "howTitle": "怎么玩",
+      "steps": [
+        [
+          "选一款游戏",
+          "不用注册，打开即玩。每款游戏都有固定的一套题。"
+        ],
+        [
+          "和 AI 同时开始",
+          "你和真实 AI 模型拿到同一道题，计时同时启动，AI 不加速也不放慢。"
+        ],
+        [
+          "揭晓 · 看 AI 怎么想",
+          "每关揭晓双方答案、用时与 AI 的把握度，最后生成战绩。"
+        ]
+      ],
+      "faqTitle": "常见问题",
+      "faqMore": "全部 FAQ →",
+      "faq": [
+        {
+          "q": "对手真的是 AI 吗？",
+          "a": "是。每一题都实时调用真实模型（当前为 gpt-6-luna），你看到的速度就是它的真实速度。"
+        },
+        {
+          "q": "需要注册或付费吗？",
+          "a": "不需要。所有游戏免费，手机和电脑浏览器都能玩。"
+        },
+        {
+          "q": "AI 会提前知道答案吗？",
+          "a": "不会。AI 只看到和你一样的图，答案在双方作答后由服务器判定。"
+        },
+        {
+          "q": "什么时候有新游戏？",
+          "a": "新游戏上线后会自动出现在这个页面。标着「筹备中」的卡片名字都是暂定的。"
+        }
+      ],
+      "itemListName": "人类 vs AI 小游戏"
+    },
   ui: {
+    footerGames: "游戏",
+    footerLearn: "了解",
+    footerSite: "站点",
+    breadcrumb: "面包屑",
     menu: "菜单",
     live: "已上线",
     comingSoon: "即将推出",
@@ -38,10 +116,13 @@ const zh: PagesDictionary = {
   },
   pages: {
     spotTheDifference: {
-      title: "大家来找茬：和真实 AI 比快 | HUMAN VS AI",
-      description: "免费在线大家来找茬：20 关，每关找出唯一不同的格子，和真实 AI 同场比快。无需注册。",
-      eyebrow: "大家来找茬",
-      h1: "大家来找茬",
+      title: "大家来找茬在线玩：找不同小游戏，和真实 AI 比快 | HUMAN VS AI",
+      description: "免费在线找不同游戏：20 关，每关找出唯一不同的格子，和真实 AI 同场比快。无需注册，打开即玩。",
+      eyebrow: "找不同小游戏",
+      h1: "大家来找茬：你比 AI 更快吗？",
+      facts: ["同一张图 · 同一秒开始", "3×3 到 9×9", "免费 · 免注册"],
+      howTitle: "怎么玩",
+      levelsTitle: "关卡",
       intro: "20 道题，每道只有一个格子不一样。你和真实 AI 同时看到同一张图，谁先找到谁赢下这一关。免费、无需注册，手机即玩。",
     },
     findTheDifference: {

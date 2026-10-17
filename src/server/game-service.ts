@@ -379,7 +379,11 @@ export function createGameService(deps: GameServiceDeps) {
       if (!row) return null;
       const best = await deps.leaderboard.getBest(row.result.playerId, row.result.levelSetVersion);
       const bestLevel = best?.bestLevel ?? row.result.reachedLevel;
+      const accuracy = await deps.games.sessionAccuracy(row.session.id);
       return {
+        played: accuracy.played,
+        humanCorrect: accuracy.humanCorrect,
+        aiCorrect: accuracy.aiCorrect,
         publicId: row.result.publicId,
         nickname: row.nickname,
         reachedLevel: row.result.reachedLevel,
