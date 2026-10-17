@@ -35,7 +35,7 @@ export interface GameServiceDeps {
 
 export function createGameService(deps: GameServiceDeps) {
   const sleep = deps.sleep ?? ((ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms)));
-  const aiRevealWaitMs = deps.aiRevealWaitMs ?? 1500;
+  const aiRevealWaitMs = deps.aiRevealWaitMs ?? 0;
   const aiTimeoutMs = deps.aiTimeoutMs ?? 10_000;
   const aiStaleMs = aiTimeoutMs + 5_000;
   const maxSessionsPerHour = deps.maxSessionsPerHour ?? 40;
@@ -360,6 +360,7 @@ export function createGameService(deps: GameServiceDeps) {
 
       let current = (await deps.games.getRound(roundId)) ?? round;
       const deadline = deps.now() + aiRevealWaitMs;
+      // No server-side wait by default: the client shows the still-running AI and fetches it once it answers.
       while ((current.aiStatus === "running" || current.aiStatus === "pending") && deps.now() < deadline) {
         await sleep(100);
         current = (await deps.games.getRound(roundId)) ?? current;
