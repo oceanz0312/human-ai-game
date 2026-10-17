@@ -27,3 +27,10 @@ test("game base path 308s to the keyword landing page", async ({ request }) => {
 test("unknown AI opponent is a 404", async ({ request }) => {
   expect((await request.get("/ai-opponents/not-a-model")).status()).toBe(404);
 });
+
+test("registry-driven game templates: unknown or not-live games are 404", async ({ request }) => {
+  for (const path of ["/games/not-a-game/leaderboard", "/games/memory-match/play", "/zh/games/not-a-game/levels/1", "/games/spot-the-difference/levels/99"]) {
+    expect((await request.get(path)).status(), path).toBe(404);
+  }
+  expect((await request.get("/games/spot-the-difference/levels/7")).status()).toBe(200);
+});
