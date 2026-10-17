@@ -25,6 +25,8 @@ export interface SessionSnapshot {
   status: SessionStatus;
   reachedLevel: number;
   cleared: boolean;
+  /** Opponent model id (registry). */
+  modelId?: string;
   publicId: string | null;
   activeRound: { id: string; level: number; shown: boolean } | null;
 }

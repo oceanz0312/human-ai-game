@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { InfoPage } from "@/components/site/InfoPage";
-import { StartButton } from "@/components/StartButton";
+import { Suspense } from "react";
+import { OpponentSelect } from "@/core/opponents/OpponentSelect";
 import { resolveLocaleParam } from "@/i18n/config";
 import { getPages } from "@/i18n/pages";
 import { pageMetadata } from "@/lib/page-meta";
@@ -25,7 +26,11 @@ export default async function Page({ params }: Props) {
       eyebrow={copy.eyebrow}
       h1={copy.h1}
       intro={copy.intro}
-      action={<StartButton label={nav.play} locale={locale} />}
+      action={
+        <Suspense fallback={null}>
+          <OpponentSelect game="spot-the-difference" locale={locale} />
+        </Suspense>
+      }
       links={[{ href: "/how-to-play", label: nav.howToPlay }, { href: "/spot-the-difference", label: nav.spot }]}
     ></InfoPage>
   );

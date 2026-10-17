@@ -1,5 +1,6 @@
 import type { AiEvent, BeginRoundResponse, RoundStartLine, ResultView, RoundStartResponse, SessionSnapshot, SubmitResponse, LeaderboardRow } from "@/game/contracts";
 import type { AnalyticsEventName } from "@/game/schemas";
+import type { PlayLimitStatus } from "@/core/limits/config";
 
 export class ApiError extends Error {
   constructor(
@@ -24,7 +25,9 @@ export async function jsonRequest<T>(url: string, init?: RequestInit): Promise<T
 const post = <T>(url: string, body?: unknown) => jsonRequest<T>(url, { method: "POST", body: JSON.stringify(body ?? {}) });
 
 export const api = {
-  createSession: (body: { nickname?: string; replay?: boolean } = {}) => post<SessionSnapshot>("/api/sessions", body),
+  createSession: (body: { nickname?: string; replay?: boolean; ai?: string; fp?: string } = {}) =>
+    post<SessionSnapshot & { playLimit?: PlayLimitStatus }>("/api/sessions", body),
+  getPlayLimit: (fp: string) => jsonRequest<PlayLimitStatus>(`/api/play-limit${fp ? `?fp=${fp}` : ""}`),
   getSession: (sessionId: string) => jsonRequest<SessionSnapshot>(`/api/sessions/${sessionId}`),
   startNextRound: (sessionId: string) => post<RoundStartResponse>(`/api/sessions/${sessionId}/rounds`),
   beginRound: (roundId: string) => post<BeginRoundResponse>(`/api/rounds/${roundId}/start`),

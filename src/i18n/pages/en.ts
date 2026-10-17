@@ -173,8 +173,8 @@ const en = {
       intro: "Short answers to common questions.",
       items: [
         { q: "Is the AI real?", a: "Yes. Every level sends the picture to a real AI model and shows its real answer time. Nothing is scripted." },
-        { q: "Which AI do I play against?", a: "OpenAI's Decisions API with the gpt-6-luna model. We are not affiliated with OpenAI." },
-        { q: "Is it free?", a: "Yes, free with no signup. It runs in your phone or desktop browser." },
+        { q: "Which AI do I play against?", a: "Luna: OpenAI's Decisions API (gpt-6-luna). More opponents are coming soon. We are not affiliated with OpenAI." },
+        { q: "Is it free?", a: "Yes, free with no signup. It runs in your phone or desktop browser. Everyone gets 3 runs a day; they come back at 00:00 UTC." },
         { q: "How does ranking work?", a: "By the highest level reached; ties share a rank." },
         { q: "Why did the AI go offline?", a: "If the AI can't answer in time the level still counts for you." },
       ],
@@ -191,7 +191,7 @@ const en = {
       description: "What HUMAN VS AI stores: an anonymous player id cookie, your runs and an optional nickname.",
       eyebrow: "Legal",
       h1: "Privacy",
-      intro: "We store an anonymous player cookie, your runs and an optional nickname to run the game and leaderboard. We don't sell data. Level images are sent to the AI provider to get its answer; no personal data is included.",
+      intro: "We store an anonymous player cookie, your runs and an optional nickname to run the game and leaderboard. We don't sell data. Level images are sent to the AI provider to get its answer; no personal data is included. To enforce the 3-runs-a-day limit we keep only a one-way hash computed from browser traits and your IP, never the raw fingerprint or IP.",
     },
     terms: {
       title: "Terms | HUMAN VS AI",

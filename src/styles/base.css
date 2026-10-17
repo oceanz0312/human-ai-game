@@ -249,3 +249,167 @@ img {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* ── Daily play limit (core) ─────────────────────────────── */
+.play-limit-badge {
+  font-family: var(--f-display);
+  font-size: var(--fs-px-1);
+  line-height: 1;
+}
+.start-stack {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s2);
+}
+.play-limit-blocked {
+  display: grid;
+  gap: var(--s2);
+  justify-items: center;
+  text-align: center;
+  padding: var(--s3) var(--s4);
+  background: var(--c-surface);
+  border: var(--bw) solid var(--c-ink);
+  box-shadow: var(--sh);
+  max-width: 420px;
+}
+.play-limit-title {
+  margin: 0;
+  font-family: var(--f-display);
+  font-size: var(--fs-px-2);
+  line-height: 1.2;
+  color: var(--c-ink);
+}
+@media (max-width: 767px) {
+  .play-limit-title {
+    font-size: var(--fs-px-1);
+  }
+}
+.play-limit-reset {
+  margin: 0;
+  font-family: var(--f-mono);
+  font-size: 14px;
+  color: var(--c-text-2);
+}
+.play-limit-reset-at {
+  color: var(--c-muted);
+}
+.play-limit-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s3);
+  align-items: center;
+  justify-content: center;
+}
+.play-limit-tomorrow {
+  font-size: 14px;
+  color: var(--c-muted);
+}
+
+/* ── Opponent select (core) ──────────────────────────────── */
+.opponent-select {
+  display: grid;
+  gap: var(--s3);
+  justify-items: center;
+  width: 100%;
+}
+.opponent-select-title {
+  margin: 0;
+  font-family: var(--f-display);
+  font-size: var(--fs-px-1);
+}
+.opponent-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s3);
+  width: 100%;
+  max-width: 720px;
+}
+.opponent-card {
+  display: grid;
+  gap: var(--s1);
+  justify-items: center;
+  align-content: start;
+  padding: var(--s3) var(--s2);
+  background: var(--c-surface);
+  border: var(--bw) solid var(--c-ink);
+  box-shadow: var(--sh-sm);
+  cursor: pointer;
+  font: inherit;
+  color: var(--c-text);
+  min-width: 0;
+}
+.opponent-card.is-active {
+  outline: var(--bw) solid var(--accent, var(--c-ai));
+  outline-offset: 2px;
+  box-shadow: var(--sh);
+}
+.opponent-card.is-soon {
+  cursor: not-allowed;
+  opacity: 0.55;
+  filter: grayscale(1);
+  box-shadow: none;
+}
+.opponent-avatar {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  background: var(--accent, var(--c-ai));
+  border: var(--bw-sm) solid var(--c-ink);
+  font-family: var(--f-display);
+  font-size: var(--fs-px-2);
+  line-height: 1;
+  color: var(--c-ink);
+  image-rendering: pixelated;
+}
+.opponent-name {
+  font-family: var(--f-display);
+  font-size: var(--fs-px-1);
+}
+.opponent-meta,
+.opponent-stats {
+  font-size: 12px;
+  color: var(--c-muted);
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+.opponent-soon {
+  font-size: 12px;
+}
+@media (max-width: 480px) {
+  .opponent-grid {
+    gap: var(--s2);
+  }
+  .opponent-card {
+    padding: var(--s2) var(--s1);
+  }
+  .opponent-avatar {
+    width: 32px;
+    height: 32px;
+    font-size: var(--fs-px-1);
+  }
+  .opponent-meta {
+    display: none;
+  }
+}
+
+.board-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+  margin: 0 0 var(--s3);
+}
+.board-tab {
+  padding: var(--s1) var(--s3);
+  border: var(--bw-sm) solid var(--c-ink);
+  background: var(--c-surface);
+  color: var(--c-text);
+  font-family: var(--f-display);
+  font-size: var(--fs-px-1);
+  text-decoration: none;
+}
+.board-tab.is-active {
+  background: var(--c-ink);
+  color: var(--c-paper);
+}

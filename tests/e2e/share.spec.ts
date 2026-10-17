@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { answer, next, startGame } from "./helpers";
+import { answer, next, pickOpponent, startGame } from "./helpers";
 
 test("a finished run generates a poster and a shareable landing page", async ({ page, browser }) => {
   await startGame(page);
@@ -28,7 +28,7 @@ test("a finished run generates a poster and a shareable landing page", async ({ 
   await expect(page.getByRole("button", { name: "复制链接" })).toBeVisible();
   await page.getByRole("button", { name: "关闭" }).click();
 
-  const friend = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true });
+  const friend = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true, extraHTTPHeaders: { "x-play-limit-bypass": "local-e2e-bypass-0123456789" } });
   const friendPage = await friend.newPage();
   await friendPage.goto(`/share/${publicId}`);
   await expect(friendPage.getByTestId("reached-level")).toHaveText("03");
@@ -36,7 +36,7 @@ test("a finished run generates a poster and a shareable landing page", async ({ 
   await friendPage.goto(`/result/${publicId}`);
   await friendPage.waitForURL(/\/share\//);
   await friendPage.getByRole("button", { name: "Start" }).click();
-  await friendPage.waitForURL(/\/play\//);
+  await pickOpponent(friendPage);
   await friend.close();
 
   const shareHtml = await (await page.request.get(`/share/${publicId}`)).text();

@@ -30,8 +30,10 @@ Rules for plugins:
 | Humanized captions / terminal / danmaku from events | `src/game/ai-activity.ts`, `ai-error-copy.ts`, `danmaku-messages.ts` | done |
 | Lock-in waiting (“你已锁定 · AI 还在分析 x.xs”), next-round prefetch (AI never pre-run) | `src/components/GameScreen.tsx` (core screen, `game` prop) | done |
 | Model adapters + model registry (+ game↔model via `ModelEntry.games`) | `src/models/` | done (only `openai-decisions` live) |
-| Daily play limit (fingerprint + IP hash, N runs/day, per game or global) | `src/core/limits/` | planned (M2) |
-| Opponent select, per-model + overall leaderboards | `src/core/opponents/`, leaderboard repo | planned (M3) |
+| Daily play limit (fingerprint + IP hash, N runs/day, `per-game` or `global`, env `PLAY_LIMIT_RUNS_PER_DAY` / `PLAY_LIMIT_SCOPE`; test bypass header `x-play-limit-bypass`) | `src/core/limits/` (`config`, `identity`, `fingerprint`, `PlayLimit.tsx`), `GET /api/play-limit` | done |
+| Opponent select (registry cards, coming-soon greyed, "数据不足" under 30 runs, remembered choice, `?ai=`) | `src/core/opponents/OpponentSelect.tsx`, `GET /api/opponents?game=` | done |
+| Per-model + overall leaderboards | `listByModel` / `modelStats` in the leaderboard repo, `?ai=<slug>` on the leaderboard page | done |
+| D1: `sessions.game_id/model_id`, `results.game_id/model_id`, `rounds.ai_model_id`, `daily_plays` | `drizzle/0003_models_daily_limit.sql` | done |
 | Feel/FX kit (sparks, shake, SFX + mute, miss blocks, 3-2-1 FIGHT, WIN / K.O. banners, streak) | `src/core/fx/` | planned (P1–P4) |
 | Reveal shell, share card + Wordle-style result grid | `src/components/LevelReveal.tsx`, share modules | partly game-specific today (reveal board) |
 | SEO templates (landing / levels / leaderboard / ai-opponents) driven by registry | `src/app/[locale]/…`, `src/seo/routes.ts` | registry-driven routes; templates still spot-specific in places |
@@ -40,7 +42,8 @@ Rules for plugins:
 
 1. **Registry entry**: add a `GameEntry` to `src/games/registry.ts` with `status: "coming-soon"` first (cards only — no routes, sitemap or JSON-LD). Add the model ids it supports to each `ModelEntry.games` in `src/models/registry.ts`.
 2. **Levels**: freeze a level set with a new `levelSetVersion` (a new set = a new leaderboard). Public projection must be answer-free.
-3. **Server plugin**: implement `GamePlugin` in `src/games/<slug>/server-plugin.ts`. Register it where the container builds the service (`src/server/container.ts`).
+3. **Server plugin**: implement `GamePlugin` in `src/games/<slug>/server-plugin.ts`. Register it where the container builds the service (`src/server/container.ts`). Sessions store `game_id` = plugin slug; the daily limit scope follows `PLAY_LIMIT_SCOPE`.
+   Add an opponent-select page at `<basePath>/play` rendering `<OpponentSelect game="<slug>" />` (StartButton sends players there first).
 4. **Client plugin**: implement `ClientGamePlugin` (`Board`, `publicLevel`, `assetUrls`, `hint`). Call `onPainted()` only when the level is truly visible: that instant starts both clocks and the server-side AI.
 5. **AI task**: return `{ imageDataUrl, choices, task: { name, instructions, choices[{ value, description }] } }`. Verify with a mocked fetch that the adapter body matches. If the Decisions Worker must forward `task`, redeploy it (older builds strip `task` and fall back to the spot-the-difference prompt).
 6. **Copy**: zh ids are the Chinese strings. Put game-only ids in `src/games/<slug>/messages/en.ts` and register the catalog in `src/games/messages.ts`; the namespace test fails on overlap with common. Page copy goes in `pages.<gameKey>` of `src/i18n/pages/{zh,en}.ts`. When CJK copy changes run `python3 scripts/subset-pixel-font.py` and `npm run share:samples`.

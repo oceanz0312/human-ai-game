@@ -6,6 +6,9 @@ import type { DecisionClient, DecisionResult, WorkerDecisionResponse } from "./d
 import { signDecisionTicket, ticketExpiresAt } from "./decisions/ticket";
 import { GameError } from "./errors";
 import type { AnyGamePlugin, CoreLevel } from "../core/game-plugin";
+import { nextUtcMidnight, PLAY_LIMIT_DEFAULTS, scopeKey, utcDay, type PlayLimitConfig, type PlayLimitStatus } from "../core/limits/config";
+import { decisionClientForModel } from "../models/adapters";
+import { getModel, resolveModelId } from "../models/registry";
 import type { GameRepository, LeaderboardRepository, RoundRow, SessionRow } from "./repositories/game-repository";
 import type { ServerTiming } from "./server-timing";
 
@@ -35,6 +38,10 @@ export interface GameServiceDeps {
    * worker / fake: legacy browser-initiated dispatch (rollback switch). off: AI stays offline.
    */
   decisionsDispatchMode?: "server" | "worker" | "fake" | "off";
+  /** Game↔model compatibility. Default: the model registry (`ModelEntry.games`). */
+  modelPlaysGame?: (modelId: string, game: string) => boolean;
+  /** Daily play limit (runs per person per UTC day). Default 3 per game; runsPerDay 0 disables. */
+  playLimit?: PlayLimitConfig;
   /** Keeps non-critical work (analytics rows) alive after the response. Default: awaited inline (tests). */
   defer?: (work: Promise<unknown>) => void;
 }
@@ -114,6 +121,7 @@ export function createGameService(deps: GameServiceDeps) {
       status: session.status,
       reachedLevel: session.reachedLevel,
       cleared: session.cleared,
+      modelId: session.modelId,
       publicId: null,
       activeRound: open ? { id: open.id, level: open.level, shown: open.shownAt !== null } : null,
     };
@@ -258,7 +266,9 @@ export function createGameService(deps: GameServiceDeps) {
   }
 
   /** Runs the AI for a freshly shown round. The AI clock starts at the same server instant as the human's (shownAt). */
-  async function runServerAi(round: RoundRow, level: CoreLevel, emit: (event: AiEvent) => void) {
+  async function runServerAi(round: RoundRow, level: CoreLevel, emit: (event: AiEvent) => void, modelId: string) {
+    // Only live models reach a real client; anything else gets a scaffold that never calls out.
+    const decisions = decisionClientForModel(modelId, deps.decisions);
     const shownAt = round.shownAt ?? deps.now();
     let answer: DecisionResult;
     try {
@@ -266,7 +276,7 @@ export function createGameService(deps: GameServiceDeps) {
       emit({ event: "image", at: deps.now() });
       const budgetMs = Math.max(1, level.limitMs - (deps.now() - shownAt));
       emit({ event: "sent", at: deps.now() });
-      answer = await deps.decisions.decide(input, AbortSignal.timeout(Math.min(budgetMs, aiTimeoutMs)));
+      answer = await decisions.decide(input, AbortSignal.timeout(Math.min(budgetMs, aiTimeoutMs)));
     } catch {
       answer = { status: "error", choice: null, confidence: null, probabilities: {}, modelElapsedMs: 0, errorCode: "network_error", requestId: "none", elapsedMs: 0 };
     }
@@ -296,7 +306,7 @@ export function createGameService(deps: GameServiceDeps) {
   }
 
   async function beginRoundCore(roundId: string, playerId: string): Promise<{ begun: BeginRoundResponse; run: AiRun | null }> {
-    const { round } = await loadOwnedRound(roundId, playerId);
+    const { round, session } = await loadOwnedRound(roundId, playerId);
     if (round.humanStatus) return { begun: { roundId: round.id, deadlineAt: round.deadlineAt, started: false, ai: null }, run: null };
     const level = game.getLevel(round.level);
     const firstPaint = round.shownAt === null;
@@ -306,8 +316,8 @@ export function createGameService(deps: GameServiceDeps) {
       const begun = { roundId: marked.id, deadlineAt: marked.deadlineAt, started: firstPaint, ai: null };
       // The AI starts before any bookkeeping so its clock and the player's begin at the same shownAt.
       const run =
-        firstPaint && (await deps.games.claimAiRun(roundId, deps.now()))
-          ? createAiRun((emit) => runServerAi(marked, level, emit))
+        firstPaint && (await deps.games.claimAiRun(roundId, deps.now(), session.modelId))
+          ? createAiRun((emit) => runServerAi(marked, level, emit, session.modelId))
           : createAiRun((emit) => watchAi(roundId, level, emit));
       await trackLater("level_shown", { playerId, sessionId: round.sessionId, level: round.level });
       return { begun, run };
@@ -347,19 +357,86 @@ export function createGameService(deps: GameServiceDeps) {
       await deps.games.setNickname(playerId, nickname);
     },
 
-    async createSession(input: { playerId: string; nickname?: string; replay?: boolean }): Promise<SessionSnapshot> {
+    async createSession(input: {
+      playerId: string;
+      nickname?: string;
+      replay?: boolean;
+      /** Requested opponent; resolved to a live model that plays this game. */
+      modelId?: string | null;
+      /** Hashed person key for the daily limit; omitted = not enforced (internal callers, tests). */
+      limitKey?: string | null;
+      bypassLimit?: boolean;
+    }): Promise<SessionSnapshot & { playLimit?: PlayLimitStatus }> {
       const recent = await deps.games.countSessionsSince(input.playerId, deps.now() - 60 * 60 * 1000);
       if (recent >= maxSessionsPerHour) throw new GameError("too_many_requests");
-      if (input.nickname) await deps.games.setNickname(input.playerId, input.nickname);
-      const session = await deps.games.createSession({
-        id: deps.randomId(),
-        playerId: input.playerId,
-        now: deps.now(),
-        levelSetVersion: game.levelSetVersion,
-        startingChances: game.startingChances,
-      });
-      await track(input.replay ? "replay" : "game_start", { playerId: input.playerId, sessionId: session.id, level: 1 });
-      return sessionSnapshot(session);
+      const modelId = resolveModelId(input.modelId);
+      const plays = deps.modelPlaysGame ?? ((id: string, slug: string) => Boolean(getModel(id)?.games.includes(slug)));
+      if (!plays(modelId, game.slug)) throw new GameError("invalid_request");
+
+      const now = deps.now();
+      const config = deps.playLimit ?? PLAY_LIMIT_DEFAULTS;
+      const enforce = Boolean(input.limitKey) && !input.bypassLimit && config.runsPerDay > 0;
+      const slot = { key: input.limitKey ?? "", day: utcDay(now), scope: scopeKey(config, game.slug) };
+      let used: number | null = null;
+      if (enforce) {
+        used = await deps.games.consumeDailyPlay({ ...slot, limit: config.runsPerDay, now });
+        if (used === null) throw new GameError("daily_limit");
+      }
+      let session;
+      try {
+        if (input.nickname) await deps.games.setNickname(input.playerId, input.nickname);
+        session = await deps.games.createSession({
+          id: deps.randomId(),
+          playerId: input.playerId,
+          now,
+          levelSetVersion: game.levelSetVersion,
+          startingChances: game.startingChances,
+          gameId: game.slug,
+          modelId,
+        });
+      } catch (error) {
+        if (enforce) await deps.games.refundDailyPlay(slot).catch(() => undefined);
+        throw error;
+      }
+      await trackLater(input.replay ? "replay" : "game_start", { playerId: input.playerId, sessionId: session.id, level: 1, metadata: { modelId } });
+      const snapshot = await sessionSnapshot(session);
+      if (!input.limitKey || config.runsPerDay <= 0) return snapshot;
+      const count = used ?? (await deps.games.countDailyPlays(slot));
+      return {
+        ...snapshot,
+        playLimit: {
+          limit: config.runsPerDay,
+          used: count,
+          remaining: Math.max(0, config.runsPerDay - count),
+          resetAt: nextUtcMidnight(now),
+          ...(input.bypassLimit ? { bypass: true } : {}),
+        },
+      };
+    },
+
+    /** Opponent-select stats for one model on this game's level set. */
+    async getModelStats(modelId: string) {
+      return deps.leaderboard.modelStats({ version: game.levelSetVersion, modelId });
+    },
+
+    /** Leaderboard for one opponent model (per-model board). */
+    async getModelLeaderboard(modelId: string, limit = 10) {
+      const rows = await deps.leaderboard.listByModel({ version: game.levelSetVersion, modelId, limit });
+      return rows.map((row) => ({ rank: row.rank, nickname: row.nickname ?? `玩家 ${row.playerId.slice(0, 4).toUpperCase()}`, reachedLevel: row.reachedLevel, isMe: false }));
+    },
+
+    /** Remaining plays today for a hashed person key. */
+    async getPlayLimit(input: { limitKey: string; bypassLimit?: boolean }): Promise<PlayLimitStatus> {
+      const now = deps.now();
+      const config = deps.playLimit ?? PLAY_LIMIT_DEFAULTS;
+      const used = config.runsPerDay > 0 ? await deps.games.countDailyPlays({ key: input.limitKey, day: utcDay(now), scope: scopeKey(config, game.slug) }) : 0;
+      return {
+        limit: config.runsPerDay,
+        used,
+        remaining: input.bypassLimit ? config.runsPerDay : Math.max(0, config.runsPerDay - used),
+        resetAt: nextUtcMidnight(now),
+        ...(input.bypassLimit ? { bypass: true } : {}),
+      };
     },
 
     async getSession(sessionId: string, playerId: string) {

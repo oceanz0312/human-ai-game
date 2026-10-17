@@ -5,7 +5,8 @@ export type GameErrorCode =
   | "session_ended"
   | "round_in_progress"
   | "round_not_started"
-  | "too_many_requests";
+  | "too_many_requests"
+  | "daily_limit";
 
 const STATUS: Record<GameErrorCode, number> = {
   invalid_request: 400,
@@ -15,6 +16,7 @@ const STATUS: Record<GameErrorCode, number> = {
   round_in_progress: 409,
   round_not_started: 409,
   too_many_requests: 429,
+  daily_limit: 429,
 };
 
 export class GameError extends Error {

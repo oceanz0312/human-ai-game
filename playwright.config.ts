@@ -13,6 +13,8 @@ const desktop = (width: number, height: number) => ({ viewport: { width, height 
 const tablet = (width: number, height: number) => ({ viewport: { width, height }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
 /** Layout + responsive specs run at every acceptance viewport; the full functional suite runs once at 375x667. */
 const LAYOUT = /@layout|@viewport/;
+/** Local-only bypass so the suite's many runs never hit the daily play limit (the limit spec opts out). */
+export const E2E_BYPASS = "local-e2e-bypass-0123456789";
 
 export default defineConfig({
   testDir: "tests/e2e",
@@ -21,7 +23,10 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   reporter: [["list"]],
-  use: { baseURL: `http://127.0.0.1:${PORT}`, browserName: "chromium", channel: process.env.PW_CHANNEL || undefined, trace: "retain-on-failure" },
+  use: { baseURL: `http://127.0.0.1:${PORT}`, browserName: "chromium", channel: process.env.PW_CHANNEL || undefined,
+    trace: "retain-on-failure",
+    extraHTTPHeaders: { "x-play-limit-bypass": E2E_BYPASS },
+  },
   projects: [
     { name: "375x667", use: mobile(375, 667) },
     { name: "390x844", use: mobile(390, 844), grep: LAYOUT },
@@ -41,6 +46,7 @@ export default defineConfig({
       FAKE_AI_ERROR_LEVELS: "2",
       RESULT_SIGNING_SECRET: "e2e-signing-secret-0123456789abcdef",
       PUBLIC_BASE_URL: `http://127.0.0.1:${PORT}`,
+      PLAY_LIMIT_BYPASS_SECRET: E2E_BYPASS,
     },
   },
 });

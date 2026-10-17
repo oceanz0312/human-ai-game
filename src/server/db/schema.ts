@@ -12,6 +12,8 @@ export const sessions = sqliteTable(
     id: text("id").primaryKey(),
     playerId: text("player_id").notNull().references(() => players.id),
     levelSetVersion: text("level_set_version").notNull(),
+    gameId: text("game_id").notNull().default("spot-the-difference"),
+    modelId: text("model_id").notNull().default("luna"),
     level: integer("level").notNull(),
     lives: integer("lives").notNull(),
     fasterThanAiCount: integer("faster_than_ai_count").notNull().default(0),
@@ -50,6 +52,7 @@ export const rounds = sqliteTable(
     aiErrorCode: text("ai_error_code"),
     aiErrorDetail: text("ai_error_detail"),
     aiRequestId: text("ai_request_id"),
+    aiModelId: text("ai_model_id"),
     winner: text("winner", { enum: ["human", "ai", "none"] }),
     fasterThanAi: integer("faster_than_ai", { mode: "boolean" }),
   },
@@ -64,11 +67,17 @@ export const results = sqliteTable(
     publicId: text("public_id").notNull(),
     playerId: text("player_id").notNull().references(() => players.id),
     levelSetVersion: text("level_set_version").notNull(),
+    gameId: text("game_id").notNull().default("spot-the-difference"),
+    modelId: text("model_id").notNull().default("luna"),
     reachedLevel: integer("reached_level").notNull(),
     cleared: integer("cleared", { mode: "boolean" }).notNull(),
     createdAt: integer("created_at").notNull(),
   },
-  (table) => [uniqueIndex("results_session_idx").on(table.sessionId), uniqueIndex("results_public_idx").on(table.publicId)],
+  (table) => [
+    uniqueIndex("results_session_idx").on(table.sessionId),
+    uniqueIndex("results_public_idx").on(table.publicId),
+    index("results_model_level_idx").on(table.levelSetVersion, table.modelId, table.reachedLevel),
+  ],
 );
 
 export const bests = sqliteTable(
@@ -102,4 +111,17 @@ export const events = sqliteTable(
     metadata: text("metadata"),
   },
   (table) => [index("events_name_ts_idx").on(table.name, table.serverTs)],
+);
+
+/** Daily play limit (core): one row per hashed person per UTC day per scope ("*" = global, else game slug). */
+export const dailyPlays = sqliteTable(
+  "daily_plays",
+  {
+    key: text("key").notNull(),
+    day: text("day").notNull(),
+    scope: text("scope").notNull(),
+    count: integer("count").notNull().default(0),
+    updatedAt: integer("updated_at").notNull(),
+  },
+  (table) => [primaryKey({ columns: [table.key, table.day, table.scope] })],
 );

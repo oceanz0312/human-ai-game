@@ -1,5 +1,6 @@
 import "server-only";
 import { waitUntil } from "./runtime";
+import { readPlayLimitConfig } from "../core/limits/config";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { DecisionClient } from "./decisions/contracts";
 import { createCloudflareDecisionClient, createUnconfiguredDecisionClient } from "./decisions/client";
@@ -135,6 +136,7 @@ async function build(): Promise<Container> {
     decisionsTicketSecret: process.env.DECISIONS_WORKER_SHARED_SECRET ?? null,
     decisionsDispatchMode: dispatchMode,
     defer: (work) => void waitUntil(work),
+    playLimit: readPlayLimitConfig(),
   });
   return { service, ready };
 }
