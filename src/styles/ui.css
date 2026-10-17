@@ -92,18 +92,19 @@
 }
 
 /* ---------- Progress ---------- */
-.px-progress {
+/* zero specificity: a component's own rules (e.g. the HUD hiding its bar on phones) must win */
+:where(.px-progress) {
   display: flex;
   gap: 2px;
   height: 10px;
 }
 
-.px-progress > i {
+:where(.px-progress > i) {
   flex: 1;
   background: var(--c-line);
 }
 
-.px-progress > i.on {
+:where(.px-progress > i.on) {
   background: var(--c-ink);
 }
 

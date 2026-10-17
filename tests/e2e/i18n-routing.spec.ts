@@ -39,8 +39,8 @@ test("the English game flow is fully localized", async ({ page }) => {
   await page.waitForURL(/\/play\//);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.getByRole("button", { name: "Row 1, column 1" })).toBeEnabled({ timeout: 30_000 });
-  await expect(page.getByText("Tap the odd one")).toBeVisible();
-  await page.getByRole("button", { name: "Row 1, column 1" }).tap();
+  await expect(page.locator(".game-hint")).toContainText("Tap the odd one");
+  await page.getByRole("button", { name: "Row 1, column 1" }).click();
   await expect(page.getByTestId("reveal-next")).toHaveText(/Next level|See results/);
   const text = await page.locator("main").innerText();
   expect(text).not.toMatch(/\p{Script=Han}/u);
