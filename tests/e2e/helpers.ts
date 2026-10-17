@@ -225,3 +225,25 @@ export const CONTENT_PATHS = [
   "/games/spot-the-difference/leaderboard",
   "/games/spot-the-difference/play",
 ];
+
+/** Reveal FX overlays (banner, COMBO/STREAK, K.O.) stay inside the board stage and never cross the sidebar. */
+export async function assertFxInBoard(page: Page) {
+  const report = await page.evaluate(() => {
+    const rect = (el: Element) => el.getBoundingClientRect();
+    const stage = document.querySelector(".board-stage");
+    if (!stage) return { error: "no board stage" };
+    const s = rect(stage);
+    const fx = [...document.querySelectorAll('[data-testid="streak"], [data-testid="ai-ko"], [data-testid="result-banner"] > span')].map((el) => ({ id: el.getAttribute("data-testid") ?? "banner", r: rect(el) }));
+    const side = [...document.querySelectorAll(".game-side-body > *")].map(rect).filter((r) => r.width > 0 && r.height > 0);
+    const problems: string[] = [];
+    for (const { id, r } of fx) {
+      if (r.width === 0) continue;
+      if (r.left < s.left - 1 || r.right > s.right + 1 || r.top < s.top - 1 || r.bottom > s.bottom + 1) problems.push(`${id} outside board stage`);
+      for (const b of side) if (r.left < b.right && r.right > b.left && r.top < b.bottom && r.bottom > b.top) problems.push(`${id} intersects sidebar`);
+    }
+    return { count: fx.length, problems };
+  });
+  expect(report.error).toBeUndefined();
+  expect(report.problems).toEqual([]);
+  return report.count ?? 0;
+}

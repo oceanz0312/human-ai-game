@@ -143,6 +143,11 @@ export function LevelReveal({ round, fasterThanAiCount, ended, onNext, browserAi
         <div className="fx-board-host" ref={boardRef}>
           <game.RevealBoard round={round as unknown as RevealRound} />
           <ResultBanner key={`${round.id}-${outcome}`} outcome={outcome} />
+          {/* FX badges are anchored inside the board stage (absolute: no layout shift, never over the sidebar). */}
+          <div className="fx-board-badges" data-testid="fx-board-badges">
+            {aiKo ? <KoMark /> : null}
+            {streak ? <StreakCounter combo={streak.combo} streak={streak.streak} /> : null}
+          </div>
         </div>
       }
       foot={
@@ -155,8 +160,6 @@ export function LevelReveal({ round, fasterThanAiCount, ended, onNext, browserAi
         <>
           <div className="race-card">
             <VsRaceBar humanMs={humanMs} aiMs={aiMs} />
-            {aiKo ? <KoMark /> : null}
-            {streak ? <StreakCounter combo={streak.combo} streak={streak.streak} /> : null}
             {brag ? (
               <Button variant="secondary" className="brag-card" data-testid="brag-card" onClick={shareHighlight} disabled={cardState === "busy"}>
                 {cardState === "done" ? t("卡片已生成") : t("📸 本关值得炫耀")}
