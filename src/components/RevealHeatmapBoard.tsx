@@ -5,6 +5,9 @@ import { heatmapAlpha } from "@/game/ai-insights";
 import type { GridSize } from "@/game/contracts";
 import { useT } from "@/i18n/client";
 
+/** Pixel heatmap: quantise the AI's probability into three flat steps instead of a smooth ramp. */
+const heatStep = (alpha: number) => (alpha > 0.66 ? 3 : alpha > 0.33 ? 2 : alpha > 0.12 ? 1 : undefined);
+
 interface RevealHeatmapBoardProps {
   gridSize: GridSize;
   imageUrl: string;
@@ -48,6 +51,7 @@ export function RevealHeatmapBoard({ gridSize, imageUrl, probabilities, aiChoice
             <div
               key={cell.id}
               className={markers.length ? `heatmap-cell ${markers.join(" ")}` : "heatmap-cell"}
+              data-heat={alpha > 0 ? heatStep(alpha) : undefined}
               style={alpha > 0 ? ({ "--heat": alpha.toFixed(3) } as React.CSSProperties) : undefined}
               aria-label={`${t("第 {row} 行第 {col} 列", { row: cell.row, col: cell.column })}${probability > 0 ? t("，概率 {p}%", { p: Math.round(probability * 100) }) : ""}`}
             >

@@ -74,7 +74,7 @@ test("three failures end the run at the third failed level", async ({ page }) =>
   await next(page);
   await page.waitForURL(/\/result\//);
   await expect(page.getByTestId("reached-level")).toHaveText("04");
-  await expect(page.getByText("挑战结束")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "挑战结束" })).toBeVisible();
 });
 
 test("the reveal screen waits for a tap and does not auto-advance", async ({ page }) => {

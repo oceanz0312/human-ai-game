@@ -29,7 +29,14 @@ export function AiTerminal({
   return (
     <section className="ai-terminal" data-testid={testId} aria-label={title}>
       <div className="ai-terminal-head">
-        <span>{title}</span>
+        <span className="term-title">
+          <span className="term-dots" aria-hidden>
+            <i />
+            <i />
+            <i />
+          </span>
+          {title}
+        </span>
         <span className={live ? "term-live" : "term-dim"}>{live ? `● ${t("实时")}` : t("回放")}</span>
       </div>
       <div className="ai-terminal-body" aria-live={live ? "polite" : undefined}>

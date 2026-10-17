@@ -57,7 +57,7 @@
   display: inline-flex;
   align-items: center;
   text-decoration: none;
-  font-size: 13px;
+  font-size: var(--fs-px-1);
 }
 
 .kbd {
@@ -196,7 +196,7 @@
 }
 
 .cell.selected {
-  box-shadow: inset 0 0 0 3px var(--c-ink);
+  box-shadow: inset 0 0 0 var(--bw) var(--c-ink);
 }
 
 .board-loading,
@@ -247,16 +247,29 @@
 
 .heatmap-cell {
   position: relative;
-  background: color-mix(in srgb, var(--c-ai) calc(var(--heat, 0) * 70%), transparent);
+}
+
+/* flat, quantised steps (pixel look) instead of a smooth alpha ramp */
+.heatmap-cell[data-heat="1"] {
+  background: rgb(41 173 255 / 0.18);
+}
+
+.heatmap-cell[data-heat="2"] {
+  background: rgb(41 173 255 / 0.34);
+}
+
+.heatmap-cell[data-heat="3"] {
+  background: rgb(41 173 255 / 0.55);
 }
 
 .heatmap-cell.ai-pick {
-  box-shadow: inset 0 0 0 3px var(--c-ai);
+  box-shadow: inset 0 0 0 var(--bw) var(--c-ai);
 }
 
 .heatmap-cell.correct-pick {
-  outline: 3px dashed var(--c-ok);
-  outline-offset: -3px;
+  background-color: rgb(0 228 54 / 0.18);
+  outline: var(--bw) dashed var(--c-ok);
+  outline-offset: calc(-1 * var(--bw));
 }
 
 .pick-tag {
@@ -284,7 +297,7 @@
 }
 
 .size-9 .pick-tag {
-  font-size: 9px;
+  font-size: var(--fs-px-1);
   padding: 1px 3px;
 }
 
@@ -380,14 +393,14 @@
 }
 
 .chance {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   background: var(--c-human);
   border: var(--bw-sm) solid var(--c-ink);
 }
 
 .chance.used {
-  background: transparent;
+  background: var(--c-surface);
 }
 
 /* ---------- Side cards ---------- */
@@ -512,7 +525,7 @@
 }
 
 .legend-correct {
-  color: #15803d;
+  color: var(--c-ok-text);
   font-weight: 700;
 }
 
@@ -525,20 +538,22 @@
 .vs-race-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 13px;
-  font-weight: 600;
+  font: 400 var(--fs-px-1)/1.2 var(--f-display);
 }
 
+/* pixel race window: two lanes inside a 2px ink frame */
 .vs-race-track {
   position: relative;
-  height: 14px;
   display: grid;
-  gap: 3px;
+  gap: 2px;
+  padding: 2px;
+  border: var(--bw-sm) solid var(--c-ink);
+  background: var(--c-surface);
 }
 
 .vs-race-segment {
-  height: 5px;
-  min-width: 2px;
+  height: 8px;
+  min-width: 4px;
 }
 
 .vs-race-segment.human {
@@ -570,8 +585,38 @@
   justify-content: space-between;
   gap: var(--s3);
   padding: 6px 12px;
-  border-bottom: 1px solid color-mix(in srgb, var(--c-term-fg) 22%, transparent);
-  font-size: 12px;
+  border-bottom: var(--bw-sm) solid #3a3d55;
+  font: 400 var(--fs-px-1)/1.4 var(--f-display);
+}
+
+.term-title {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.term-dots {
+  display: inline-flex;
+  gap: 4px;
+  flex: none;
+}
+
+.term-dots i {
+  width: 8px;
+  height: 8px;
+  background: var(--c-human);
+}
+
+.term-dots i:nth-child(2) {
+  background: var(--c-hi);
+}
+
+.term-dots i:nth-child(3) {
+  background: var(--c-ok);
 }
 
 .term-live {
@@ -636,7 +681,7 @@
 .ai-terminal-foot {
   flex: none;
   padding: 6px 12px;
-  border-top: 1px solid color-mix(in srgb, var(--c-term-fg) 22%, transparent);
+  border-top: var(--bw-sm) solid #3a3d55;
   color: var(--c-term-dim);
   font-size: 11.5px;
   white-space: nowrap;
@@ -666,9 +711,14 @@
 }
 
 .ai-danmaku-item::before {
-  content: "AI ";
-  color: var(--c-ai-text);
-  font-weight: 700;
+  content: "AI";
+  display: inline-block;
+  margin-right: 6px;
+  padding: 1px 4px;
+  background: var(--c-ai);
+  color: var(--c-ink);
+  font: 400 var(--fs-px-1)/1 var(--f-display);
+  vertical-align: 1px;
 }
 
 .ai-danmaku-motion .ai-danmaku-item:last-child {
@@ -842,7 +892,7 @@
 
 .candidate-tag {
   font-size: 11px;
-  color: #15803d;
+  color: var(--c-ok-text);
   font-weight: 700;
 }
 
@@ -874,6 +924,8 @@
 /* ---------- Stacked layout: phones and portrait tablets ---------- */
 @media (max-width: 767px), (orientation: portrait) {
   .game-stage {
+    /* verdict card: 12px eyebrow + 24px pixel title + detail line */
+    --hud-h: 60px;
     --stage-pad: 12px;
     --board: min(
       calc(100vw - 2 * var(--gutter)),
@@ -934,7 +986,7 @@
   }
   .hud-card .hud-label {
     margin-bottom: 2px;
-    font-size: 11px;
+    font-size: var(--fs-px-1);
   }
   .hud-card .timer {
     justify-self: center;
@@ -945,10 +997,10 @@
     display: none;
   }
   .hud-value {
-    font-size: 20px;
+    font-size: var(--fs-px-2);
   }
   .hud-timer .value {
-    font-size: 32px;
+    font-size: var(--fs-px-3);
   }
   .verdict-card {
     height: 100%;
@@ -959,20 +1011,27 @@
   .verdict-card .result-symbol {
     width: 32px;
     height: 32px;
-    font-size: 18px;
+    font-size: var(--fs-px-2);
   }
   .verdict-copy {
     display: grid;
     gap: 1px;
+    min-width: 0;
   }
   .verdict-eyebrow {
     margin: 0;
-    font-size: 10px;
-    line-height: 1.2;
+    font-size: var(--fs-px-1);
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .verdict-title {
-    font-size: 16px;
-    line-height: 1.15;
+    font-size: var(--fs-px-2);
+    line-height: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .verdict-detail {
     margin: 0;
@@ -1029,7 +1088,7 @@
   .details-link {
     height: 36px;
     padding: 0 12px;
-    font-size: 13px;
+    font-size: var(--fs-px-1);
     white-space: nowrap;
   }
 }
