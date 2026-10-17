@@ -1,7 +1,7 @@
 import type { Dictionary } from "./en";
 
 const zh: Dictionary = {
-  brand: "HUMAN / AI",
+  brand: "HUMAN VS AI",
   home: {
     title: "大家来找茬：你比 AI 更快吗？",
     description: "免费在线找茬游戏：找出唯一不同，和真实 AI 同场比快。无需注册，打开即玩。",

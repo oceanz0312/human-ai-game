@@ -212,7 +212,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
         void bootRef.current();
         return;
       }
-      setPhase({ kind: "error", message: error instanceof ApiError && error.status === 404 ? t("找不到这局挑战。") : t("关卡加载失败，生命不会减少。"), action: "reload" });
+      setPhase({ kind: "error", message: error instanceof ApiError && error.status === 404 ? t("找不到这局挑战。") : t("关卡加载失败，不会扣除机会。"), action: "reload" });
     }
   }, [sessionId, goToResult, t]);
 

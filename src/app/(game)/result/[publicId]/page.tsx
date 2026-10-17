@@ -28,7 +28,7 @@ export default async function ResultPage({ params }: { params: Promise<{ publicI
     <main className="mobile-shell result one-screen">
       <div className="topline">
         <span className="eyebrow">{result.cleared ? t("挑战完成") : t("挑战结束")}</span>
-        <span className="brand">HUMAN / AI</span>
+        <span className="brand">HUMAN VS AI</span>
       </div>
       <ResultSummary result={result} locale={locale} />
       <div className="bottom-actions">

@@ -19,7 +19,7 @@ export function describeReveal(round: RoundReveal, locale: Locale = FALLBACK_MES
   const human = round.human;
   const humanCorrect = human?.status === "correct";
   const humanMissed = human?.status === "timeout" ? t("你超时了") : t("你答错了");
-  const lifeNote = humanCorrect ? "" : t(" · 失去 1 条命");
+  const lifeNote = humanCorrect ? "" : t(" · 用掉 1 次机会");
 
   const humanValue = {
     tag: human?.status === "correct" ? null : human?.status === "timeout" ? t("超时") : t("答错"),
@@ -64,7 +64,7 @@ export function describeReveal(round: RoundReveal, locale: Locale = FALLBACK_MES
 
 export function shareHeadline(result: { reachedLevel: number; fasterThanAiCount: number; cleared: boolean }, locale: Locale = FALLBACK_MESSAGE_LOCALE) {
   const t = translator(locale);
-  if (result.cleared) return t("我通关了 HUMAN / AI");
+  if (result.cleared) return t("我通关了 HUMAN VS AI");
   if (result.fasterThanAiCount > 0) return t("我有 {n} 关比 AI 更快", { n: result.fasterThanAiCount });
   return t("我到达了第 {n} 关", { n: result.reachedLevel });
 }

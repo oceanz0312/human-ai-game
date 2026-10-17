@@ -13,11 +13,11 @@ type Segment = { text: string; underline?: boolean };
 
 export function posterHeadline(result: { reachedLevel: number; fasterThanAiCount: number; cleared: boolean }, locale: Locale = FALLBACK_MESSAGE_LOCALE): Segment[][] {
   if (locale === "en") {
-    if (result.cleared) return [[{ text: "I cleared" }], [{ text: "HUMAN / AI" }]];
+    if (result.cleared) return [[{ text: "I cleared" }], [{ text: "HUMAN VS AI" }]];
     if (result.fasterThanAiCount > 0) return [[{ text: "I beat the AI" }], [{ text: String(result.fasterThanAiCount), underline: true }, { text: result.fasterThanAiCount === 1 ? " time" : " times" }]];
     return [[{ text: "I reached" }], [{ text: "level " }, { text: String(result.reachedLevel), underline: true }]];
   }
-  if (result.cleared) return [[{ text: "我通关了" }], [{ text: "HUMAN / AI" }]];
+  if (result.cleared) return [[{ text: "我通关了" }], [{ text: "HUMAN VS AI" }]];
   if (result.fasterThanAiCount > 0) {
     return [[{ text: "我有 " }, { text: String(result.fasterThanAiCount), underline: true }, { text: " 关" }], [{ text: "比 AI 更快" }]];
   }
@@ -60,7 +60,7 @@ export async function renderPoster(input: { reachedLevel: number; fasterThanAiCo
   ctx.fillStyle = "#111111";
   ctx.font = `800 34px ${FONT}`;
   if ("letterSpacing" in ctx) (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = "6px";
-  ctx.fillText("HUMAN / AI", pad, pad + 34);
+  ctx.fillText("HUMAN VS AI", pad, pad + 34);
   if ("letterSpacing" in ctx) (ctx as CanvasRenderingContext2D & { letterSpacing: string }).letterSpacing = "0px";
   ctx.fillStyle = "#777777";
   ctx.font = `600 34px ${FONT}`;

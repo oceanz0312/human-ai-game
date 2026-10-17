@@ -4,7 +4,7 @@ import { StartButton } from "@/components/StartButton";
 import { isLocale, type Locale } from "@/i18n/config";
 import { getDictionary } from "@/i18n/dictionaries";
 import Link from "next/link";
-import { SiteTop } from "@/components/site/SiteTop";
+import { SiteShell } from "@/components/site/SiteShell";
 import { localePath } from "@/i18n/config";
 import { getPages } from "@/i18n/pages";
 import { pageMetadata } from "@/lib/page-meta";
@@ -35,9 +35,9 @@ export default async function HomePage({ params }: Props) {
     { href: "/faq", label: nav.faq },
   ];
   return (
-    <main className="mobile-shell landing one-screen">
+    <SiteShell locale={locale} path="/">
+      <div className="container landing">
       <JsonLd data={[websiteLd(locale), organizationLd(), gameLd(getGame("spot-the-difference")!, locale, t.title, t.description)]} />
-      <SiteTop locale={locale} path="/" />
       <section className="hero">
         <h1>
           {t.h1[0]}
@@ -66,6 +66,7 @@ export default async function HomePage({ params }: Props) {
           ))}
         </nav>
       </div>
-    </main>
+      </div>
+    </SiteShell>
   );
 }

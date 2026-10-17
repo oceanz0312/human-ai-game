@@ -8,7 +8,7 @@ export default async function GameNotFound() {
   const t = getDictionary(locale).notFound;
   return (
     <main className="mobile-shell one-screen">
-      <div className="brand">HUMAN / AI</div>
+      <div className="brand">HUMAN VS AI</div>
       <div className="reveal-body">
         <h1 className="page-title">{t.title}</h1>
         <p className="body-text">{t.body}</p>
