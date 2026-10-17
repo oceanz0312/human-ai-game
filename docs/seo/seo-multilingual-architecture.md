@@ -25,7 +25,7 @@
 | `/games` | 游戏索引 | human vs ai games | ✅ | SSG | 游戏注册表 |
 | `/games/spot-the-difference` | → 301 `/spot-the-difference` | — | — | — | — |
 | `/games/spot-the-difference/play` | 游戏 App | — | ❌ noindex,follow | CSR | — |
-| `/games/spot-the-difference/levels/[n]` (1–20) | 关卡页 | spot the difference level n / hard spot the difference（TBD） | ✅仅当该关样本≥N(如30局)，否则 noindex | ISR 1h | 题图缩略、AI 用时、人类胜率、最快成绩 |
+| `/games/spot-the-difference/levels/[n]` (1–20) | 关卡页 | 按难度分三档：1–5「spot the difference level n / odd one out」，6–12「hard spot the difference / with timer」，13–20「expert / for adults」；中文「大家来找茬第 n 关 / 找不同 / 高难度 / 极限 / 考眼力」 | ✅仅当该关样本≥N(如30局)，否则 noindex | ISR 1h | 题图缩略、AI 用时、人类胜率、最快成绩 |
 | `/games/spot-the-difference/leaderboard` | 排行榜 | spot the difference leaderboard | ✅ | ISR 5min | 榜单 |
 | `/ai-opponents` | 对手索引 | — | ✅ | SSG | 已接入模型 |
 | `/ai-opponents/[model]`（目前仅 `openai-decisions` 类中性 slug，如 `luna`） | 模型对战页 | 不追品牌词，写真实数据 | ✅ | ISR | 该模型用时/胜率 |
@@ -128,3 +128,32 @@
 - 结构化数据：首页 WebSite + Organization + ItemList（只列上线游戏）+ FAQPage；游戏落地页 VideoGame + BreadcrumbList（首页 › 全部游戏 › 大家来找茬）；`/games` 也输出 ItemList。
 - 新增游戏的流程：在注册表加一条（含落地页/玩法页）+ `gameCopy` 文案，即自动出现在首页、`/games`、顶栏、页脚、sitemap 与 ItemList。占位卡（`plannedGames`）只在首页和 `/games` 以灰色卡片出现，不生成路由，不进 sitemap / 导航 / JSON-LD。
 - 内容页改为方案 B：首屏自成一体（面包屑、H1、简介、主按钮），下方可滚动；对局与揭晓页仍严格一屏。
+
+
+## 实施记录（2026-10-18 · 关卡页长尾词）
+
+| PR | 内容 |
+|---|---|
+| 见 PR「remaining fixes」 | 关卡页按难度分档写 title / description / H1 / 简介 / 技巧段，面包屑改用短名「Level n / 第 n 关」 |
+
+- 分档（`src/seo/level-tier.ts`）：
+  - easy（第 1–5 关，3×3，8→6 秒）
+  - hard（第 6–12 关，9×9，7→4.6 秒）
+  - expert（第 13–20 关，9×9，4.4→3 秒）
+- 文案在 `src/i18n/pages/{en,zh}.ts` 的 `pages.level.tiers`，变量：`{n}`（关卡）、`{grid}`（边长）、`{cells}`（格子数）、`{secs}`（限时秒数）、`{tier}`（档位名）。
+
+| 档位 | 英文主攻 | 中文主攻 |
+|---|---|---|
+| easy | spot the difference level n、find the odd one out | 大家来找茬第 n 关、找不同入门 |
+| hard | hard spot the difference、spot the difference with timer、find the difference | 高难度找不同、找茬、考眼力 |
+| expert | expert / hard spot the difference for adults、beat the AI | 极限找不同、考眼力 |
+
+- 英文示例：
+  - title「Hard Spot the Difference Level 7 (9×9, 6.5s Timer) | HUMAN VS AI」
+  - H1「Hard Spot the Difference: Level 7」
+- 中文示例：
+  - title「大家来找茬第 18 关：极限找不同，仅 3.4 秒 | HUMAN VS AI」
+  - H1「大家来找茬第 18 关：极限 3.4 秒找不同」
+- 每关的 description 都不同（关卡号、格子数、秒数都写进去），并有 E2E 校验（`tests/e2e/seo-levels.spec.ts`）。
+- 收录规则不变：每关对局数 ≥30 才 index，否则 noindex，也不进 sitemap。
+- 选词依据是 `keyword-research.md` 和 `spot-difference-game-seo.md` 的长尾层级（level n / hard / with timer / for adults）。本次 Semrush API 额度不足，没能补到搜索量和 KD，`keyword-research.md` 的关卡行仍记为 TBD；额度恢复后复核，再调整措辞。

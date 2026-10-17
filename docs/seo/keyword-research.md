@@ -11,7 +11,7 @@
 | `/spot-the-difference` | spot the difference game | 5,400 | 53.8 | 同页兼顾 spot the difference（18,100，头部大词） |
 | `/find-the-difference` | find the difference | 9,900 | 48.6 | 换角度：规则/技巧/难度 |
 | `/human-vs-ai` | human vs ai | 2,900 | 27.6 | KD 最低，但较峰值 -56%，只做一个内页 |
-| `/games/spot-the-difference/levels/[n]` | 长尾（level n / hard） | TBD | TBD | 需独有数据，样本不足 noindex |
+| `/games/spot-the-difference/levels/[n]` | 长尾：1–5 关 spot the difference level n / odd one out；6–12 关 hard spot the difference / with timer；13–20 关 expert / for adults | TBD | TBD | 2026-10-18 已按难度分档上线文案（见 seo-multilingual-architecture.md）；需独有数据，样本不足 noindex；量与 KD 待 Semrush 额度恢复后补 |
 | 其他语言（/zh 等） | TBD | — | — | 后续单独调研 |
 
 ## 2. 不追的词
