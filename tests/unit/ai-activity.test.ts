@@ -27,7 +27,7 @@ describe("buildAiActivitySteps", () => {
       base({ responseReceivedAt: 2_000, imageLoadMs: 40, modelElapsedMs: 500, totalElapsedMs: 900 }),
     );
     expect(steps.find((s) => s.id === "image")?.timestamp).toBe(1_140);
-    expect(steps.find((s) => s.id === "response")?.detail).toMatch(/模型 500ms/);
-    expect(steps.find((s) => s.id === "response")?.detail).toMatch(/全程 900ms/);
+    expect(steps.find((s) => s.id === "response")?.detail).toMatch(/模型 0.50s/);
+    expect(steps.find((s) => s.id === "response")?.detail).toMatch(/往返 0.90s/);
   });
 });

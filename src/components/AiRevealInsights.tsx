@@ -113,7 +113,7 @@ export function AiRevealInsights({ round }: AiRevealInsightsProps) {
       {timeline.hasData ? (
         <div className="timing-block">
           <div className="timing-head">
-            <span>{t("真实耗时")}</span>
+            <span>{t("AI 用时")}</span>
             <span className="num">{((timeline.totalMs ?? 0) / 1000).toFixed(2)}s</span>
           </div>
           <div className="timing-bar" role="img" aria-label={t("模型 {m} 秒，其余 {o} 秒", { m: ((timeline.modelMs ?? 0) / 1000).toFixed(2), o: ((timeline.overheadMs ?? 0) / 1000).toFixed(2) })}>
@@ -140,7 +140,7 @@ export function AiRevealInsights({ round }: AiRevealInsightsProps) {
         </div>
       ) : ai.elapsedMs != null ? (
         <p className="insights-muted">
-          {t("总耗时")} <span className="num">{(ai.elapsedMs / 1000).toFixed(2)}s</span>
+          {t("AI 用时")} <span className="num">{(ai.elapsedMs / 1000).toFixed(2)}s</span>
           {ai.modelElapsedMs == null ? t("（未记录模型分段）") : null}
         </p>
       ) : null}

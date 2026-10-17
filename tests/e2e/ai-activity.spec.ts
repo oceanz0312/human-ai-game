@@ -18,5 +18,5 @@ test("live AI activity appears as danmaku during play and full steps in reveal s
   await expect(page.getByTestId("ai-activity-step").filter({ hasText: /Worker 已响应/ })).toBeVisible();
   await expect(page.getByTestId("ai-activity-step").filter({ hasText: "决策凭证已签发" })).toBeVisible();
   await expect(page.locator(".ai-activity-time.num").first()).toBeVisible();
-  await expect(page.getByTestId("candidate-chip").first()).toBeVisible();
+  await expect(page.getByRole("dialog").getByTestId("candidate-chip").first()).toBeVisible();
 });

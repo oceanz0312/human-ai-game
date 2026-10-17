@@ -64,7 +64,7 @@ test("the reveal shows both elapsed times and the faster count", () => {
   expect(screen.getByRole("button", { name: "下一关" })).toBeInTheDocument();
   expect(screen.getByRole("button", { name: "AI 详情" })).toBeInTheDocument();
   fireEvent.click(screen.getByRole("button", { name: "AI 详情" }));
-  expect(screen.getByText("AI 决策过程")).toBeInTheDocument();
+  expect(screen.getAllByText("AI 决策过程").length).toBeGreaterThan(0);
 });
 
 test("tapping next on the reveal invokes the handler", () => {

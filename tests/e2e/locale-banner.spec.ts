@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { assertOneScreen } from "./helpers";
+import { assertNoHorizontalOverflow } from "./helpers";
 
 test("a Chinese browser on the English page gets a banner, not a redirect", async ({ browser }) => {
   const context = await browser.newContext({ locale: "zh-CN", viewport: { width: 375, height: 667 } });
@@ -9,7 +9,7 @@ test("a Chinese browser on the English page gets a banner, not a redirect", asyn
   expect(new URL(page.url()).pathname).toBe("/spot-the-difference");
   const banner = page.getByTestId("locale-banner");
   await expect(banner).toBeVisible();
-  await assertOneScreen(page);
+  await assertNoHorizontalOverflow(page);
   await banner.getByRole("link", { name: "中文" }).click();
   await page.waitForURL(/\/zh\/spot-the-difference$/);
   await expect(page.getByTestId("locale-banner")).toHaveCount(0);

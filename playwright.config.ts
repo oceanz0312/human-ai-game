@@ -9,6 +9,11 @@ const mobile = (width: number, height: number) => ({
   userAgent: "Mozilla/5.0 (iPhone; CPU iPhone OS 18_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.0 Mobile/15E148 Safari/604.1",
 });
 
+const desktop = (width: number, height: number) => ({ viewport: { width, height }, deviceScaleFactor: 1 });
+const tablet = (width: number, height: number) => ({ viewport: { width, height }, deviceScaleFactor: 2, isMobile: true, hasTouch: true });
+/** Layout + responsive specs run at every acceptance viewport; the full functional suite runs once at 375x667. */
+const LAYOUT = /@layout|@viewport/;
+
 export default defineConfig({
   testDir: "tests/e2e",
   timeout: 120_000,
@@ -19,9 +24,11 @@ export default defineConfig({
   use: { baseURL: `http://127.0.0.1:${PORT}`, browserName: "chromium", channel: process.env.PW_CHANNEL || undefined, trace: "retain-on-failure" },
   projects: [
     { name: "375x667", use: mobile(375, 667) },
-    { name: "390x844", use: mobile(390, 844), grep: /@layout/ },
-    { name: "402x874", use: mobile(402, 874), grep: /@layout/ },
-    { name: "430x932", use: mobile(430, 932), grep: /@layout/ },
+    { name: "390x844", use: mobile(390, 844), grep: LAYOUT },
+    { name: "820x1180", use: tablet(820, 1180), grep: LAYOUT },
+    { name: "1024x768", use: desktop(1024, 768), grep: LAYOUT },
+    { name: "1280x720", use: desktop(1280, 720), grep: LAYOUT },
+    { name: "1440x900", use: desktop(1440, 900), grep: LAYOUT },
   ],
   webServer: {
     command: `rm -f e2e.db && npm run build && npx next start -p ${PORT}`,

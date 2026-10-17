@@ -1,15 +1,15 @@
 import { expect, test } from "@playwright/test";
-import { assertOneScreen } from "./helpers";
+import { assertNoHorizontalOverflow } from "./helpers";
 
 test.describe("@layout level pages", () => {
   for (const url of ["/games/spot-the-difference/levels/1", "/games/spot-the-difference/levels/6", "/zh/games/spot-the-difference/levels/20"]) {
-    test(`${url} fits one screen with unique level data`, async ({ page }) => {
+    test(`${url} renders unique level data`, async ({ page }) => {
       const response = await page.goto(url);
       expect(response?.status()).toBe(200);
       await expect(page.locator("h1")).toHaveCount(1);
       await expect(page.getByTestId("level-stats")).toBeVisible();
       await expect(page.locator("img.level-thumb")).toBeVisible();
-      await assertOneScreen(page);
+      await assertNoHorizontalOverflow(page);
     });
   }
 });

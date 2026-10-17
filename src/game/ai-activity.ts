@@ -1,6 +1,7 @@
 import type { AiNetworkProgress } from "@/lib/ai-dispatch";
 import { FALLBACK_MESSAGE_LOCALE, translator } from "@/i18n/messages";
 import type { Locale } from "@/i18n/config";
+import { seconds } from "@/lib/format";
 
 
 export type AiActivityStepState = "pending" | "active" | "done" | "error";
@@ -102,7 +103,7 @@ export function buildAiActivitySteps(progress: AiNetworkProgress | null, submitt
       id: "image",
       label: t("关卡图像已确认"),
       timestamp: progress.requestSentAt + progress.imageLoadMs,
-      detail: progress.imageLoadMs > 0 ? t("验图 {ms}ms", { ms: progress.imageLoadMs }) : null,
+      detail: progress.imageLoadMs > 0 ? t("验图 {s}", { s: seconds(progress.imageLoadMs) }) : null,
       state: "done",
     });
   }
@@ -123,8 +124,8 @@ export function buildAiActivitySteps(progress: AiNetworkProgress | null, submitt
     (progress.requestSentAt != null ? Math.max(0, progress.responseReceivedAt - progress.requestSentAt) : null);
   const modelMs = progress.modelElapsedMs;
   const timingParts: string[] = [];
-  if (modelMs != null) timingParts.push(t("模型 {ms}ms", { ms: modelMs }));
-  if (totalMs != null) timingParts.push(t("全程 {ms}ms", { ms: totalMs }));
+  if (totalMs != null) timingParts.push(t("往返 {s}", { s: seconds(totalMs) }));
+  if (modelMs != null) timingParts.push(t("模型 {s}", { s: seconds(modelMs) }));
 
   steps.push({
     id: "response",

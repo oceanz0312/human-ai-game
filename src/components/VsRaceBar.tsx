@@ -1,5 +1,6 @@
 "use client";
 import { useT } from "@/i18n/client";
+import { seconds } from "@/lib/format";
 
 interface VsRaceBarProps {
   humanLabel?: string;
@@ -8,9 +9,9 @@ interface VsRaceBarProps {
   aiMs: number | null;
 }
 
+/** Same `x.xxs` format as every other AI/human time on the page (lib/format `seconds`). */
 function formatSeconds(ms: number | null) {
-  if (ms == null) return "—";
-  return `${(ms / 1000).toFixed(2)}s`;
+  return ms == null ? "—" : seconds(ms);
 }
 
 export function VsRaceBar({ humanLabel: humanLabelProp, humanMs, aiLabel = "AI", aiMs }: VsRaceBarProps) {

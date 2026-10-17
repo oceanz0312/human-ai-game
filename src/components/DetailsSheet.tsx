@@ -35,7 +35,7 @@ export function DetailsSheet({ open, title, onClose, children }: DetailsSheetPro
   return (
     <div className="details-sheet-backdrop" role="presentation" onClick={onClose}>
       <div
-        className="details-sheet one-screen"
+        className="details-sheet"
         role="dialog"
         aria-modal="true"
         aria-labelledby={titleId}
