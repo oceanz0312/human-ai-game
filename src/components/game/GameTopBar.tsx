@@ -7,6 +7,7 @@ import { SiteLogoLink } from "./SiteLogoLink";
 import { useLocale, useT } from "@/i18n/client";
 import { localePath } from "@/i18n/config";
 import { Button, Kbd } from "@/components/ui/8bit";
+import { MuteToggle } from "@/core/fx/MuteToggle";
 
 /** Slim game bar: logo, breadcrumb, exit. `Esc` asks before leaving (the level would settle as a timeout). */
 export function GameTopBar({ crumb, exitPath = "/spot-the-difference", confirmExit = true }: { crumb: string; exitPath?: string; confirmExit?: boolean }) {
@@ -29,6 +30,7 @@ export function GameTopBar({ crumb, exitPath = "/spot-the-difference", confirmEx
       <SiteLogoLink href={localePath(locale, "/")} />
       <span className="game-crumb">{crumb}</span>
       <span className="game-topbar-spacer" />
+      <MuteToggle />
       <span className="game-kbd-hint">
         {t("退出")} <Kbd>Esc</Kbd>
       </span>

@@ -566,7 +566,8 @@ export function createGameService(deps: GameServiceDeps) {
       if (!row) return null;
       const best = await deps.leaderboard.getBest(row.result.playerId, row.result.levelSetVersion);
       const bestLevel = best?.bestLevel ?? row.result.reachedLevel;
-      const accuracy = await deps.games.sessionAccuracy(row.session.id);
+      const [accuracy, settled] = await Promise.all([deps.games.sessionAccuracy(row.session.id), deps.games.sessionOutcomes?.(row.session.id) ?? []]);
+      const outcomes = settled.map((round) => (round.aiStatus === "error" ? "void" : (round.winner ?? "none")) as "human" | "ai" | "none" | "void");
       return {
         played: accuracy.played,
         humanCorrect: accuracy.humanCorrect,
@@ -576,6 +577,7 @@ export function createGameService(deps: GameServiceDeps) {
         reachedLevel: row.result.reachedLevel,
         fasterThanAiCount: row.session.fasterThanAiCount,
         cleared: row.result.cleared,
+        outcomes,
         rank: await deps.leaderboard.getRankForLevel(bestLevel, row.result.levelSetVersion),
         bestLevel,
         endedAt: row.result.createdAt,

@@ -202,5 +202,16 @@ const en: Record<string, string> = {
   "网络与排队": "Network & queue",
   "AI 一次给出最终答案，没有边想边改。": "The AI gives one final answer — no second guesses.",
   "错误码 {code}": "code {code}",
+  // Core feel/FX + share kit
+  "打开音效": "Sound on",
+  "关闭音效": "Mute sound",
+  "你赢了 AI": "You beat the AI",
+  "平局": "Draw",
+  "我在第 {n} 关赢了 AI": "I beat the AI on level {n}",
+  "卡片已生成": "Card ready",
+  "📸 本关值得炫耀": "📸 Brag about this level",
+  "复制战况": "Copy result grid",
+  "战况已复制": "Result grid copied",
+  "🟥 你赢 · 🟦 AI 赢 · ⬛ 都没对 · ⬜ AI 未作答": "🟥 you won · 🟦 AI won · ⬛ nobody · ⬜ AI didn't answer",
 };
 export default en;

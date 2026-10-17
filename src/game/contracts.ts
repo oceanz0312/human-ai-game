@@ -109,6 +109,8 @@ export interface ResultView {
   humanCorrect: number;
   aiCorrect: number;
   cleared: boolean;
+  /** One entry per settled level: who won it (core Wordle-style grid). */
+  outcomes?: Array<"human" | "ai" | "none" | "void">;
   rank: number;
   bestLevel: number;
   endedAt: number;

@@ -1,3 +1,4 @@
+import { spotTheDifferenceClient } from "@/games/spot-the-difference/client-plugin";
 import { fireEvent, render, screen } from "@testing-library/react";
 import { GameBoard } from "@/components/GameBoard";
 import { LevelReveal } from "@/components/LevelReveal";
@@ -29,7 +30,7 @@ test("no grid is rendered before the image is ready", () => {
 
 test("the reveal shows both elapsed times and the faster count", () => {
   render(
-    <LevelReveal
+    <LevelReveal game={spotTheDifferenceClient}
       round={{
         id: "r",
         level: 6,
@@ -70,7 +71,7 @@ test("the reveal shows both elapsed times and the faster count", () => {
 test("tapping next on the reveal invokes the handler", () => {
   const onNext = vi.fn();
   render(
-    <LevelReveal
+    <LevelReveal game={spotTheDifferenceClient}
       round={{
         id: "r",
         level: 1,

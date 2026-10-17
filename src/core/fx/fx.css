@@ -1,0 +1,56 @@
+/* ── Core feel kit (game-agnostic). All motion is skipped under prefers-reduced-motion. ── */
+.fx-flash { animation: fx-flash 120ms steps(2) 1; }
+.fx-flash-miss { animation: fx-flash-miss 160ms steps(2) 1; }
+@keyframes fx-flash { 0% { box-shadow: inset 0 0 0 999px rgba(255, 255, 255, 0.85); } 100% { box-shadow: none; } }
+@keyframes fx-flash-miss { 0% { box-shadow: inset 0 0 0 999px rgba(255, 0, 77, 0.45); } 100% { box-shadow: none; } }
+
+.fx-sparks { position: absolute; left: 50%; top: 50%; width: 0; height: 0; pointer-events: none; z-index: 5; }
+.fx-sparks i { position: absolute; width: 6px; height: 6px; margin: -3px; background: var(--c-hi); box-shadow: 0 0 0 2px var(--c-ink); animation: fx-spark 380ms steps(5) forwards; }
+.fx-sparks-miss i { background: var(--c-human); }
+@keyframes fx-spark { to { transform: translate(var(--dx), var(--dy)); opacity: 0; } }
+
+.fx-shake { animation: fx-shake 80ms steps(4) 1; }
+@keyframes fx-shake { 25% { transform: translate(3px, 0); } 50% { transform: translate(-3px, 1px); } 75% { transform: translate(2px, -1px); } 100% { transform: none; } }
+
+.fx-mute { display: inline-grid; place-items: center; min-width: 40px; min-height: 40px; padding: 0 var(--s1); background: var(--c-surface); border: var(--bw-sm) solid var(--c-ink); cursor: pointer; font-size: 18px; line-height: 1; }
+
+/* Chance blocks: the lost one shatters, the last one blinks. */
+.chance.just-lost { animation: fx-shatter 520ms steps(6) 1; outline: 2px solid var(--c-human); }
+@keyframes fx-shatter { 0% { transform: none; } 40% { transform: translateY(2px) rotate(-8deg); } 100% { transform: translateY(14px) rotate(24deg); opacity: 0.2; } }
+.chances.is-last .chance:not(.used) { animation: fx-blink 900ms steps(2) infinite; }
+@keyframes fx-blink { 50% { opacity: 0.35; } }
+
+/* Result banner: stamped across the board, then shrinks to a corner tag. */
+.fx-banner { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 6; animation: fx-banner-dock 1500ms steps(12) forwards; }
+.fx-banner span { padding: var(--s2) var(--s4); border: var(--bw) solid var(--c-ink); box-shadow: var(--sh); font-family: var(--f-display-latin); font-size: var(--fs-px-2); line-height: 1; transform: rotate(-8deg); white-space: nowrap; }
+.fx-banner-win span { background: var(--c-hi); color: var(--c-ink); }
+.fx-banner-lose span { background: var(--c-ai); color: var(--c-ink); }
+.fx-banner-draw span { background: var(--c-surface); color: var(--c-ink); }
+@keyframes fx-banner-dock {
+  0% { transform: scale(1.6); opacity: 0; }
+  10% { transform: scale(1); opacity: 1; }
+  80% { transform: none; place-items: center; }
+  100% { place-items: start end; transform: scale(0.5); transform-origin: top right; }
+}
+
+.fx-ko { display: inline-block; margin-left: var(--s1); padding: 0 var(--s1); background: var(--c-human); color: #fff; border: var(--bw-sm) solid var(--c-ink); font-family: var(--f-display-latin); font-size: var(--fs-px-1); line-height: 1.4; animation: fx-ko 400ms steps(4) 2; }
+@keyframes fx-ko { 25% { transform: translate(2px, -1px) rotate(-6deg); } 75% { transform: translate(-2px, 1px) rotate(6deg); } }
+
+.fx-streak { display: inline-block; padding: 2px var(--s1); background: var(--c-ink); color: var(--c-hi); font-family: var(--f-display-latin); font-size: var(--fs-px-1); line-height: 1.2; animation: fx-pop 240ms steps(3) 1; }
+@keyframes fx-pop { 0% { transform: scale(1.5); } 100% { transform: none; } }
+
+/* 3-2-1 FIGHT */
+.countdown-overlay .fx-fight { font-family: var(--f-display-latin); color: var(--c-human); }
+
+@media (prefers-reduced-motion: reduce) {
+  .fx-flash, .fx-flash-miss, .fx-shake, .chance.just-lost, .chances.is-last .chance:not(.used), .fx-ko, .fx-streak { animation: none !important; }
+  .fx-sparks { display: none; }
+  .fx-banner { animation: none; place-items: start end; }
+  .fx-banner span { transform: scale(0.6); transform-origin: top right; }
+}
+[data-answer]:not(.heatmap-cell) { position: relative; }
+.fx-board-host { display: contents; }
+.brag-card { margin-top: var(--s2); }
+.result-grid { display: grid; gap: var(--s1); justify-items: start; margin: var(--s2) 0; }
+.result-grid-squares { margin: 0; font-size: 20px; line-height: 1.15; letter-spacing: 1px; white-space: pre; }
+.result-grid-legend { font-size: var(--fs-1, 12px); margin: 0; }
