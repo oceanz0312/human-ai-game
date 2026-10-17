@@ -2,9 +2,9 @@
 
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { PublicLevel, RoundReveal, SessionSnapshot } from "@/game/contracts";
+import type { AiEvent, PublicLevel, RoundReveal, SessionSnapshot } from "@/game/contracts";
 import { PUBLIC_LEVELS_V1 } from "@/levels/public-catalog.generated";
-import { buildAiActivitySteps, snapshotAiActivity, type AiActivitySnapshot } from "@/game/ai-activity";
+import { aiStatusLabel, buildAiActivitySteps, buildAiEventSteps, snapshotAiActivity, type AiActivitySnapshot } from "@/game/ai-activity";
 import { STARTING_LIVES } from "@/game/contracts";
 import { dispatchRoundAi, type AiNetworkProgress } from "@/lib/ai-dispatch";
 import { AiActivityPanel } from "./AiActivityPanel";
@@ -77,6 +77,10 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
   const [loadEpoch, setLoadEpoch] = useState(0);
   const [slowEpoch, setSlowEpoch] = useState(-1);
   const [aiDetailsOpen, setAiDetailsOpen] = useState(false);
+  /** Real AI events streamed by /start (server mode). Empty in the legacy browser-dispatch mode. */
+  const [aiEvents, setAiEvents] = useState<AiEvent[]>([]);
+  const aiEventsRef = useRef<AiEvent[]>([]);
+  const aiRoundRef = useRef<string | null>(null);
 
   const roundIdRef = useRef<string | null>(null);
   const startedAtRef = useRef<number | null>(null);
@@ -89,6 +93,13 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
   const bootRef = useRef<() => Promise<void>>(async () => undefined);
   const advancingRef = useRef(false);
   const aiProgressRef = useRef<AiNetworkProgress | null>(null);
+
+  const pushAiEvent = useCallback((roundId: string, event: AiEvent) => {
+    if (aiRoundRef.current !== roundId) return;
+    if (aiEventsRef.current.some((existing) => existing.event === event.event)) return;
+    aiEventsRef.current = [...aiEventsRef.current, event];
+    setAiEvents(aiEventsRef.current);
+  }, []);
 
   const syncAiActivity = useCallback((progress: AiNetworkProgress | null, submitting = false) => {
     aiProgressRef.current = progress;
@@ -138,7 +149,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
         try {
           return await api.submitRound(roundId, submission);
         } catch (error) {
-          if (error instanceof ApiError && error.code === "round_not_started") beginRef.current = api.beginRound(roundId);
+          if (error instanceof ApiError && error.code === "round_not_started") beginRef.current = api.beginRoundStream(roundId, (event) => pushAiEvent(roundId, event));
           throw error;
         }
       }).then((response) => {
@@ -150,7 +161,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
     } catch {
       if (mountedRef.current) setPhase({ kind: "error", message: t("网络不稳定，答案已锁定，请重试提交。"), action: "resubmit" });
     }
-  }, [sessionId, showReveal, t]);
+  }, [sessionId, showReveal, pushAiEvent, t]);
 
   const lockAnswer = useCallback(
     (choice: string | null) => {
@@ -176,6 +187,9 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
     setRemainingMs(null);
     setAiProgress(null);
     setAiActivitySnapshot(null);
+    aiEventsRef.current = [];
+    aiRoundRef.current = null;
+    setAiEvents([]);
     setLocked(false);
     setLoadEpoch((value) => value + 1);
     lockedRef.current = false;
@@ -232,6 +246,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
       if (snapshot.activeRound?.shown) {
         // A level that was already on screen before a refresh is settled as a timeout.
         roundIdRef.current = snapshot.activeRound.id;
+        aiRoundRef.current = snapshot.activeRound.id;
         lockedRef.current = true;
         pendingSubmitRef.current = { choice: null, elapsedMs: 60_000 };
         countdownShownRef.current = true;
@@ -262,7 +277,8 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
     startedAtRef.current = performance.now();
     setPainted(true);
     const roundId = roundIdRef.current;
-    const begin = withRetry(() => api.beginRound(roundId), 3);
+    aiRoundRef.current = roundId;
+    const begin = withRetry(() => api.beginRoundStream(roundId, (event) => pushAiEvent(roundId, event)), 3);
     // The submission only needs the round to be marked shown; it never waits for the AI.
     beginRef.current = begin;
     void begin.then(async (begun) => {
@@ -293,7 +309,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
         }
       }
     }).catch(() => undefined);
-  }, [sessionId, level, syncAiActivity]);
+  }, [sessionId, level, syncAiActivity, pushAiEvent]);
 
   // Absolute-deadline countdown; backgrounding the page does not pause it.
   useEffect(() => {
@@ -383,7 +399,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
         fasterThanAiCount={session.fasterThanAiCount}
         ended={session.status === "ended"}
         onNext={advance}
-        browserAiActivity={aiActivitySnapshot}
+        browserAiActivity={aiEvents.length ? { steps: buildAiEventSteps(aiEvents, { locale, reveal }), capturedAt: 0 } : aiActivitySnapshot}
         topBar={<GameTopBar crumb={`${t("大家来找茬")} / ${t("第 {n} 关", { n: pad2(reveal.level) })}`} />}
       />
     );
@@ -392,10 +408,13 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
   const remaining = remainingMs ?? limit;
   const interactive = phase.kind === "playing" && painted && !locked;
   const slowLoading = phase.kind === "loading" && slowEpoch === loadEpoch;
-  const activitySteps = aiActivitySnapshot?.steps ?? [];
-  const danmakuMessages = danmakuFromActivitySteps(activitySteps, true, locale);
-  const terminalSteps = aiActivitySnapshot?.steps ?? buildAiActivitySteps(aiProgress, phase.kind === "submitting", locale);
-  const aiNow = [...terminalSteps].reverse().find((step) => step.state === "active") ?? terminalSteps[terminalSteps.length - 1];
+  const legacyAi = aiEvents.length === 0 && aiProgress !== null;
+  const terminalSteps = legacyAi
+    ? (aiActivitySnapshot?.steps ?? buildAiActivitySteps(aiProgress, phase.kind === "submitting", locale))
+    : buildAiEventSteps(aiEvents, { locale });
+  const danmakuMessages = danmakuFromActivitySteps(terminalSteps, true, locale);
+  const legacyNow = [...terminalSteps].reverse().find((step) => step.state === "active") ?? terminalSteps[terminalSteps.length - 1];
+  const aiNowLabel = legacyAi ? (legacyNow?.label ?? t("准备中")) : aiStatusLabel(aiEvents, { locale, locked });
   const humanNow = locked || phase.kind === "submitting" ? t("答案已锁定") : interactive ? t("作答中…") : t("准备中");
 
   const board =
@@ -466,15 +485,15 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
             </div>
             <div className="vs-row">
               <Badge variant="ai">AI</Badge>
-              <span className="vs-state">{aiNow?.label ?? t("准备 AI 请求")}</span>
+              <span className="vs-state" data-testid="ai-status">{aiNowLabel}</span>
             </div>
           </div>
-          <AiTerminal title={t("AI 终端 · {model}", { model: "gpt-6-luna" })} steps={terminalSteps} live footer={t("真实调用 · 真实速度 · 对局中不显示答案")} />
+          <AiTerminal title={t("AI 终端 · {model}", { model: "Luna" })} steps={terminalSteps} live footer={t("真实调用 · 真实速度 · 揭晓前不显示答案")} />
         </>
       }
       extra={
         <DetailsSheet open={aiDetailsOpen} title={t("AI 活动")} onClose={() => setAiDetailsOpen(false)}>
-          <AiActivityPanel progress={aiProgress} submitting={phase.kind === "submitting"} snapshot={aiActivitySnapshot} />
+          <AiActivityPanel progress={aiProgress} submitting={phase.kind === "submitting"} snapshot={legacyAi ? aiActivitySnapshot : { steps: terminalSteps, capturedAt: 0 }} />
         </DetailsSheet>
       }
     />

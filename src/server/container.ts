@@ -30,7 +30,7 @@ function createDevDecisionClient(): DecisionClient {
     const wrong = level.choices.find((choice) => choice !== level.correctChoice) ?? null;
     return {
       choice: missedLevels.has(level.level) ? wrong : level.correctChoice,
-      latencyMs: fixedLatency ?? 1100 + level.level * 95,
+      latencyMs: fixedLatency ?? 900 + level.level * 40,
       confidence: missedLevels.has(level.level) ? 0.31 : 0.88,
     };
   });
@@ -61,7 +61,9 @@ async function cloudflareBindings(): Promise<CloudflareBindings | null> {
   }
 }
 
-function resolveDecisionsDispatchMode(): "worker" | "fake" | "off" {
+function resolveDecisionsDispatchMode(): "server" | "worker" | "fake" | "off" {
+  // Default: the game service runs the AI itself at first paint. AI_DISPATCH=browser restores the old ticket flow.
+  if (process.env.AI_DISPATCH !== "browser") return "server";
   const url = process.env.DECISIONS_WORKER_URL;
   const secret = process.env.DECISIONS_WORKER_SHARED_SECRET;
   const mode = process.env.DECISIONS_MODE || (url ? "worker" : process.env.NODE_ENV === "production" ? "off" : "fake");
@@ -71,10 +73,15 @@ function resolveDecisionsDispatchMode(): "worker" | "fake" | "off" {
 }
 
 function selectDecisionClient(decisionsBinding?: Fetcher): DecisionClient {
-  if (process.env.OPENAI_API_KEY) return createDirectOpenAiDecisionClient();
   const url = process.env.DECISIONS_WORKER_URL;
   const secret = process.env.DECISIONS_WORKER_SHARED_SECRET;
   const mode = process.env.DECISIONS_MODE || (url ? "worker" : process.env.NODE_ENV === "production" ? "off" : "fake");
+  // Production keeps the proven egress chain: game → Decisions Worker (us-west-2) → game OpenAI proxy → OpenAI.
+  if (mode === "worker" && url && secret && decisionsBinding) {
+    const fetchImpl = ((input, init) => decisionsBinding.fetch(input, init)) satisfies typeof fetch;
+    return createCloudflareDecisionClient({ url, sharedSecret: secret, fetchImpl });
+  }
+  if (process.env.OPENAI_API_KEY) return createDirectOpenAiDecisionClient();
   if (mode === "worker" && url && secret) {
     const fetchImpl = decisionsBinding ? ((input, init) => decisionsBinding.fetch(input, init)) satisfies typeof fetch : undefined;
     return createCloudflareDecisionClient({ url, sharedSecret: secret, fetchImpl });
@@ -109,6 +116,14 @@ async function build(): Promise<Container> {
     db = createDatabase(process.env.DATABASE_URL ?? "file:./local.db", process.env.DATABASE_AUTH_TOKEN);
     ready = migrateDatabase(db);
   }
+  const imageCache = new Map<number, Promise<string>>();
+  const readImageUncached = readLevelImage;
+  readLevelImage = (level) => {
+    const cached = imageCache.get(level) ?? readImageUncached(level);
+    imageCache.set(level, cached);
+    cached.catch(() => imageCache.delete(level));
+    return cached;
+  };
   const dispatchMode = resolveDecisionsDispatchMode();
   const service = createGameService({
     games: createGameRepository(db),

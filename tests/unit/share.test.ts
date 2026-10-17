@@ -103,10 +103,10 @@ test("reveal copy covers every outcome with the allowed titles", () => {
   });
   expect(describeReveal({ ...base, human: { status: "timeout", choice: null, elapsedMs: 7000 }, winner: "ai" })).toMatchObject({ title: "AI 赢了", detail: "你超时了 · 用掉 1 次机会" });
   expect(describeReveal({ ...base, ai: { status: "error", correct: null, elapsedMs: null, refused: false, ...aiExtras, errorCode: "invalid_response" }, winner: "human" })).toMatchObject({
-    title: "AI 掉线 · invalid_response",
+    title: "AI 掉线了",
     symbol: "—",
   });
-  expect(describeReveal({ ...base, ai: { status: "running", correct: null, elapsedMs: null, refused: false, ...aiExtras }, winner: "pending" }).title).toBe("AI 仍在判断");
+  expect(describeReveal({ ...base, ai: { status: "running", correct: null, elapsedMs: null, refused: false, ...aiExtras }, winner: "pending" }).title).toBe("AI 还在分析");
   expect(
     describeReveal({ ...base, human: { status: "incorrect", choice: "r1c1", elapsedMs: 1000 }, ai: { status: "complete", correct: false, elapsedMs: 900, refused: false, ...aiExtras }, winner: "none" }).title,
   ).toBe("无人获胜");
@@ -117,7 +117,7 @@ test("a Decisions refusal is a real AI loss, not an offline AI", () => {
   expect(describeReveal({ ...base, ai: refused, winner: "human", fasterThanAi: false })).toMatchObject({
     title: "你赢了",
     detail: "AI 放弃作答",
-    aiValue: { tag: "放弃", time: null },
+    aiValue: { tag: "AI 放弃", time: null },
   });
   expect(describeReveal({ ...base, human: { status: "timeout", choice: null, elapsedMs: 7000 }, ai: refused, winner: "none", fasterThanAi: false }).title).toBe("无人获胜");
 });

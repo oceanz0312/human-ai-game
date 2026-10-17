@@ -59,7 +59,18 @@ export interface RoundStartResponse {
   session: SessionSnapshot;
 }
 
-/** Where the browser should trigger AI (visible in DevTools Network). */
+/** Real AI progress events, server-timestamped. Never carry the AI's cell, probabilities or timing. */
+export type AiEventName = "image" | "sent" | "answered" | "error";
+export interface AiEvent {
+  event: AiEventName;
+  at: number;
+  code?: string | null;
+}
+
+/** NDJSON lines streamed by `POST /api/rounds/:id/start` when the server runs the AI. */
+export type RoundStartLine = { type: "begin"; begin: BeginRoundResponse; serverNow: number } | { type: "ai"; ai: AiEvent };
+
+/** Legacy: where the browser should trigger AI (visible in DevTools Network). Only used with AI_DISPATCH=browser. */
 export type AiDispatch =
   | { mode: "worker"; url: string; ticket: string; issuedAt: number }
   | { mode: "fake"; url: string };

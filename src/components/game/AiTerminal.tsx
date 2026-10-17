@@ -50,7 +50,7 @@ export function AiTerminal({
         {children}
         {live ? (
           <p className="term-line term-prompt">
-            <span className="term-ai">luna@decisions</span>:~$ <span className="term-cursor" aria-hidden />
+            <span className="term-ai">luna</span>:~$ <span className="term-cursor" aria-hidden />
           </p>
         ) : null}
       </div>

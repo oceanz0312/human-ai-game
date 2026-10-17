@@ -30,7 +30,7 @@ test("@layout a full clear run follows the approved mobile layout on every view"
     }
     await answer(page, n, "correct");
     if (n === 1) {
-      await expect(page.getByRole("heading", { name: /你赢了|AI 赢了|AI 仍在判断/ })).toBeVisible();
+      await expect(page.getByRole("heading", { name: /你赢了|AI 赢了|AI 还在分析/ })).toBeVisible();
       const details = page.getByRole("button", { name: "AI 详情" });
       // Stacked layouts (phones, portrait tablets) open AI details in a sheet; side-panel layouts show insights inline.
       if (await details.isVisible()) await expect(details).toBeEnabled();
