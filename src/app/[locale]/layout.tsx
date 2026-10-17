@@ -1,10 +1,12 @@
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
+import "@/styles/tailwind.css";
 import "@/styles/tokens.css";
 import "@/styles/base.css";
 import "@/styles/shell.css";
 import "@/styles/game.css";
 import "@/styles/site.css";
+import { fontVariables } from "@/lib/fonts";
 import { htmlLang, isLocale, locales } from "@/i18n/config";
 import { SITE_NAME, SITE_URL } from "@/config/site";
 import { I18nProvider } from "@/i18n/client";
@@ -26,7 +28,7 @@ export default async function LocaleLayout({ children, params }: { children: Rea
   const { locale } = await params;
   if (!isLocale(locale)) notFound();
   return (
-    <html lang={htmlLang[locale]}>
+    <html lang={htmlLang[locale]} className={fontVariables}>
       <body>
         <I18nProvider locale={locale}>{children}</I18nProvider>
         <LocaleBanner />

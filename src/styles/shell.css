@@ -37,7 +37,7 @@
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  font: 700 14px/1 var(--f-display-latin);
+  font: 400 var(--fs-px-1)/1 var(--f-display-latin);
   letter-spacing: 0.08em;
   color: var(--c-ink);
   text-decoration: none;
@@ -71,7 +71,7 @@
 }
 
 .site-nav a {
-  font: 500 14px/1 var(--f-display);
+  font: 400 var(--fs-px-1)/1 var(--f-display);
   color: var(--c-text);
   text-decoration: none;
   padding: 8px 0;
@@ -90,7 +90,7 @@
 .lang-switch {
   display: inline-flex;
   border: var(--bw-sm) solid var(--c-ink);
-  font: 500 12px/1 var(--f-display);
+  font: 400 var(--fs-px-1)/1 var(--f-display);
 }
 
 .lang-switch a,
@@ -108,7 +108,7 @@
 .site-header .nav-cta {
   height: 40px;
   padding: 0 14px;
-  font-size: 13px;
+  font-size: var(--fs-px-1);
 }
 
 .nav-menu {
@@ -175,7 +175,7 @@
   padding: 12px var(--s4);
   color: var(--c-text);
   text-decoration: none;
-  font: 500 15px/1.2 var(--f-display);
+  font: 400 var(--fs-px-1)/1.2 var(--f-display);
 }
 
 .nav-menu-panel .lang-row {

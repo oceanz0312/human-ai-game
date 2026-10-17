@@ -1,0 +1,84 @@
+/*
+ * Tailwind v4, utilities only. Our own base.css replaces preflight, so preflight is not imported.
+ * Every theme value maps onto a design token in tokens.css, so swapping tokens re-skins utilities
+ * and the 8bitcn components (which use shadcn-style names such as bg-primary / border-foreground).
+ * Unlayered site CSS wins over these layered utilities by design: utilities are for new markup.
+ */
+@layer theme, base, components, utilities;
+@import "tailwindcss/theme.css" layer(theme);
+@import "tailwindcss/utilities.css" layer(utilities);
+
+@source "../";
+
+@theme inline {
+  --color-*: initial;
+  --color-ink: var(--c-ink);
+  --color-paper: var(--c-paper);
+  --color-surface: var(--c-surface);
+  --color-text: var(--c-text);
+  --color-text-2: var(--c-text-2);
+  --color-muted: var(--c-muted);
+  --color-line: var(--c-line);
+  --color-human: var(--c-human);
+  --color-human-text: var(--c-human-text);
+  --color-ai: var(--c-ai);
+  --color-ai-text: var(--c-ai-text);
+  --color-ok: var(--c-ok);
+  --color-warn: var(--c-warn);
+  --color-hi: var(--c-hi);
+  --color-purple: var(--c-purple);
+  --color-term-bg: var(--c-term-bg);
+  --color-term-fg: var(--c-term-fg);
+  --color-term-dim: var(--c-term-dim);
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-transparent: transparent;
+  --color-current: currentColor;
+
+  /* shadcn / 8bitcn semantic names */
+  --color-background: var(--c-paper);
+  --color-foreground: var(--c-text);
+  --color-card: var(--c-surface);
+  --color-card-foreground: var(--c-text);
+  --color-popover: var(--c-surface);
+  --color-popover-foreground: var(--c-text);
+  --color-primary: var(--c-cta-bg);
+  --color-primary-foreground: var(--c-cta-fg);
+  --color-secondary: var(--c-surface);
+  --color-secondary-foreground: var(--c-text);
+  --color-muted-foreground: var(--c-muted);
+  --color-accent: var(--c-hi);
+  --color-accent-foreground: var(--c-ink);
+  --color-destructive: var(--c-human);
+  --color-destructive-foreground: #ffffff;
+  --color-border: var(--c-ink);
+  --color-input: var(--c-ink);
+  --color-ring: var(--c-ai);
+
+  --font-*: initial;
+  --font-pixel: var(--f-display);
+  --font-pixel-latin: var(--f-display-latin);
+  --font-sans: var(--f-body);
+  --font-mono: var(--f-mono);
+
+  --radius-*: initial;
+  --radius-none: 0;
+  --radius-xs: var(--radius);
+  --radius-sm: var(--radius);
+  --radius-md: var(--radius);
+  --radius-lg: var(--radius);
+  --radius-xl: var(--radius);
+  --shadow-*: initial;
+  --shadow-sm: var(--sh-sm);
+  --shadow: var(--sh);
+  --shadow-lg: var(--sh-lg);
+  --shadow-none: none;
+
+  --text-px-1: 12px;
+  --text-px-2: 24px;
+  --text-px-3: 36px;
+  --text-px-4: 48px;
+
+  --spacing: 4px;
+  --container-site: var(--container);
+}

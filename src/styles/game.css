@@ -32,7 +32,7 @@
 }
 
 .game-crumb {
-  font: 500 13px/1.2 var(--f-display);
+  font: 400 var(--fs-px-1)/1.2 var(--f-display);
   color: var(--c-text-2);
   white-space: nowrap;
   overflow: hidden;
@@ -117,7 +117,7 @@
 }
 
 .game-hint {
-  font: 500 13px/1.3 var(--f-display);
+  font: 400 var(--fs-px-1)/1.3 var(--f-display);
   color: var(--c-text-2);
 }
 
@@ -224,7 +224,8 @@
 }
 
 .countdown-overlay span {
-  font: 800 clamp(64px, 18vmin, 160px) / 1 var(--f-display-latin);
+  font: 400 96px/1 var(--f-display-latin);
+  font-size: round(down, clamp(72px, 18vmin, 168px), 24px);
   color: var(--c-ink);
   animation: tick 1s steps(2, end) both;
 }
@@ -263,7 +264,7 @@
   left: 50%;
   transform: translateX(-50%);
   padding: 2px 5px;
-  font: 700 11px/1 var(--f-display);
+  font: 400 var(--fs-px-1)/1 var(--f-display);
   border: var(--bw-sm) solid var(--c-ink);
   white-space: nowrap;
   z-index: 2;
@@ -324,13 +325,13 @@
 
 .hud-label {
   display: block;
-  font: 500 12px/1.2 var(--f-display);
+  font: 400 var(--fs-px-1)/1.2 var(--f-display);
   color: var(--c-text-2);
   margin-bottom: 6px;
 }
 
 .hud-value {
-  font: 700 28px/1 var(--f-display-latin);
+  font: 400 var(--fs-px-2)/1 var(--f-display-latin);
 }
 
 .hud-timer {
@@ -340,7 +341,7 @@
 }
 
 .hud-timer .value {
-  font: 800 44px/1 var(--f-display-latin);
+  font: 400 var(--fs-px-4)/1 var(--f-display-latin);
   font-variant-numeric: tabular-nums;
 }
 
@@ -423,7 +424,7 @@
   min-width: 36px;
   height: 26px;
   padding: 0 8px;
-  font: 700 12px/1 var(--f-display);
+  font: 400 var(--fs-px-1)/1 var(--f-display);
   border: var(--bw-sm) solid var(--c-ink);
   border-radius: calc(var(--radius) / 2);
 }
@@ -455,7 +456,7 @@
   height: 44px;
   display: grid;
   place-items: center;
-  font: 800 26px/1 var(--f-display-latin);
+  font: 400 var(--fs-px-2)/1 var(--f-display-latin);
   background: var(--c-paper);
   border: var(--bw-sm) solid var(--c-ink);
 }
@@ -476,7 +477,7 @@
 
 .verdict-title {
   margin: 0;
-  font: 800 28px/1.15 var(--f-display);
+  font: 400 var(--fs-px-2)/1.15 var(--f-display);
 }
 
 .verdict-detail {
@@ -716,7 +717,7 @@
 
 .details-sheet-title {
   margin: 0;
-  font: 700 16px/1.2 var(--f-display);
+  font: 400 var(--fs-px-1)/1.2 var(--f-display);
 }
 
 .details-sheet-body {
@@ -802,7 +803,7 @@
 
 .insights-title {
   margin: 0;
-  font: 700 15px/1.2 var(--f-display);
+  font: 400 var(--fs-px-1)/1.2 var(--f-display);
 }
 
 .insights-label,
