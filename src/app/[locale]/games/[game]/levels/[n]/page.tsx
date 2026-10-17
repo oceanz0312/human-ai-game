@@ -3,29 +3,31 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { InfoPage } from "@/components/site/InfoPage";
 import { StartButton } from "@/components/StartButton";
-import { gameLevelPath, getGame } from "@/games/registry";
+import { gameLevelPath, type GameEntry } from "@/games/registry";
+import { levelSeoFor } from "@/games/level-seo";
+import { resolveGameParam } from "@/games/route-game";
 import { localePath, resolveLocaleParam, type Locale } from "@/i18n/config";
 import { fill, getPages } from "@/i18n/pages";
-import { PUBLIC_LEVELS_V1 } from "@/levels/public-catalog.generated";
 import { pageMetadata } from "@/lib/page-meta";
 import { isIndexableLevel, loadLevelStats, percent, seconds } from "@/seo/level-stats";
-import { levelTier } from "@/seo/level-tier";
 
 export const dynamic = "force-dynamic";
 
-type Props = { params: Promise<{ locale: string; n: string }> };
-const game = getGame("spot-the-difference")!;
+type Props = { params: Promise<{ locale: string; game: string; n: string }> };
 
-function levelVars(n: string) {
-  if (!/^\d{1,2}$/.test(n)) return null;
-  const level = PUBLIC_LEVELS_V1[Number(n) - 1];
-  if (!level) return null;
-  return { level, tier: levelTier(level.level), vars: { n: String(level.level), grid: String(level.gridSize), secs: String(level.limitMs / 1000), cells: String(level.gridSize ** 2) } };
+/** Registry-driven level template: the game's LevelSeoProvider supplies thumbnail, tier and copy vars. */
+function levelVars(game: GameEntry, n: string) {
+  const provider = levelSeoFor(game.slug);
+  if (!provider || !/^\d{1,3}$/.test(n)) return null;
+  const page = provider.page(Number(n));
+  if (!page) return null;
+  return { level: page, tier: page.tier, vars: page.vars, statsGated: provider.statsGated };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const locale = await resolveLocaleParam(params);
-  const found = levelVars((await params).n);
+  const game = await resolveGameParam(params);
+  const found = levelVars(game, (await params).n);
   if (!found) return {};
   const tier = getPages(locale).pages.level.tiers[found.tier];
   const stats = (await loadLevelStats()).get(found.level.level);
@@ -33,13 +35,14 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     locale,
     gameLevelPath(game, found.level.level),
     { title: fill(tier.title, found.vars), description: fill(tier.description, found.vars) },
-    { index: isIndexableLevel(stats), image: `/og/${locale}/spot-the-difference.png` },
+    { index: !found.statsGated || isIndexableLevel(stats), image: `/og/${locale}/${game.slug}.png` },
   );
 }
 
 export default async function LevelPage({ params }: Props) {
   const locale: Locale = await resolveLocaleParam(params);
-  const found = levelVars((await params).n);
+  const game = await resolveGameParam(params);
+  const found = levelVars(game, (await params).n);
   if (!found) notFound();
   const { level } = found;
   const { nav, pages } = getPages(locale);
