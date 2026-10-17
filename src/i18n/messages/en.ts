@@ -164,6 +164,7 @@ const en: Record<string, string> = {
   "AI 已作答 · 答案已封存": "AI has answered · answer sealed",
   "AI 已作答 🔒": "AI answered 🔒",
   "AI 还在分析 {s}": "AI still analyzing {s}",
+  "你已锁定": "You're locked in",
   "AI 正在分析": "AI is analyzing",
   "AI 在看图": "AI is looking",
   "AI 放弃了这一关": "The AI passed on this one",

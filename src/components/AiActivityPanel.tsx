@@ -1,21 +1,17 @@
 "use client";
 
-import { buildAiActivitySteps, formatActivityClock, type AiActivitySnapshot } from "@/game/ai-activity";
-import type { AiNetworkProgress } from "@/lib/ai-dispatch";
-import { useLocale, useT } from "@/i18n/client";
+import { formatActivityClock, type AiActivitySnapshot } from "@/game/ai-activity";
+import { useT } from "@/i18n/client";
 
 interface AiActivityPanelProps {
-  progress: AiNetworkProgress | null;
-  submitting?: boolean;
-  snapshot?: AiActivitySnapshot | null;
+  snapshot: AiActivitySnapshot | null;
   compact?: boolean;
   title?: string;
 }
 
-export function AiActivityPanel({ progress, submitting = false, snapshot, compact = false, title }: AiActivityPanelProps) {
+export function AiActivityPanel({ snapshot, compact = false, title }: AiActivityPanelProps) {
   const t = useT();
-  const locale = useLocale();
-  const steps = snapshot?.steps ?? buildAiActivitySteps(progress, submitting, locale);
+  const steps = snapshot?.steps ?? [];
 
   return (
     <section

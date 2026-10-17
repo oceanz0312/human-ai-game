@@ -34,6 +34,8 @@ export interface GameServiceDeps {
    * worker / fake: legacy browser-initiated dispatch (rollback switch). off: AI stays offline.
    */
   decisionsDispatchMode?: "server" | "worker" | "fake" | "off";
+  /** Keeps non-critical work (analytics rows) alive after the response. Default: awaited inline (tests). */
+  defer?: (work: Promise<unknown>) => void;
 }
 
 /** A live AI run for one round: real events in order, replayed to late subscribers. */
@@ -72,6 +74,12 @@ export function createGameService(deps: GameServiceDeps) {
   const aiTimeoutMs = deps.aiTimeoutMs ?? 10_000;
   const aiStaleMs = aiTimeoutMs + 5_000;
   const maxSessionsPerHour = deps.maxSessionsPerHour ?? 40;
+  /** Analytics writes off the player's critical path when a defer hook exists; inline otherwise. */
+  const trackLater = async (...args: Parameters<typeof track>) => {
+    const work = track(...args);
+    if (deps.defer) deps.defer(work);
+    else await work;
+  };
 
   async function track(name: string, input: { playerId?: string | null; sessionId?: string | null; level?: number | null; metadata?: Record<string, unknown> }) {
     try {
@@ -299,7 +307,7 @@ export function createGameService(deps: GameServiceDeps) {
         firstPaint && (await deps.games.claimAiRun(roundId, deps.now()))
           ? createAiRun((emit) => runServerAi(marked, level, emit))
           : createAiRun((emit) => watchAi(roundId, level, emit));
-      await track("level_shown", { playerId, sessionId: round.sessionId, level: round.level });
+      await trackLater("level_shown", { playerId, sessionId: round.sessionId, level: round.level });
       return { begun, run };
     }
     await track("level_shown", { playerId, sessionId: round.sessionId, level: round.level });
@@ -444,20 +452,23 @@ export function createGameService(deps: GameServiceDeps) {
           result: ended ? { id: deps.randomId(), publicId: deps.randomPublicId() } : null,
         });
         if (settled) {
-          await track("level_result", { playerId, sessionId: session.id, level: round.level, metadata: { human: human.status, elapsedMs: human.elapsedMs, lives: next.lives } });
-          if (ended) await track("run_end", { playerId, sessionId: session.id, level: round.level, metadata: { reachedLevel: round.level, cleared: next.cleared } });
+          await trackLater("level_result", { playerId, sessionId: session.id, level: round.level, metadata: { human: human.status, elapsedMs: human.elapsedMs, lives: next.lives } });
+          if (ended) await trackLater("run_end", { playerId, sessionId: session.id, level: round.level, metadata: { reachedLevel: round.level, cleared: next.cleared } });
         }
       }
 
-      let current = (await deps.games.getRound(roundId)) ?? round;
+      // Round + session re-read in parallel: one D1 round-trip less on the tap-to-reveal path.
+      const [fresh, freshSession] = await Promise.all([deps.games.getRound(roundId), refreshSession(session.id)]);
+      let current = fresh ?? round;
       const deadline = deps.now() + aiRevealWaitMs;
       // No server-side wait by default: the client shows the still-running AI and fetches it once it answers.
       while ((current.aiStatus === "running" || current.aiStatus === "pending") && deps.now() < deadline) {
         await sleep(100);
         current = (await deps.games.getRound(roundId)) ?? current;
       }
+      const waited = current !== (fresh ?? round);
       current = await expireIfStale(current);
-      return { round: toReveal(current), session: await refreshSession(session.id) };
+      return { round: toReveal(current), session: waited ? await refreshSession(session.id) : freshSession };
     },
 
     async getRound(roundId: string, playerId: string): Promise<SubmitResponse> {
