@@ -191,7 +191,7 @@ const en = {
       description: "What HUMAN VS AI stores: an anonymous player id cookie, your runs and an optional nickname.",
       eyebrow: "Legal",
       h1: "Privacy",
-      intro: "We store an anonymous player cookie, your runs and an optional nickname to run the game and leaderboard. We don't sell data. Level images are sent to the AI provider to get its answer; no personal data is included. To enforce the 3-runs-a-day limit we keep only a one-way hash computed from browser traits and your IP, never the raw fingerprint or IP.",
+      intro: "We store an anonymous player cookie, your runs and an optional nickname to run the game and leaderboard. We don't sell data. Level images are sent to the AI provider to get its answer; no personal data is included. To enforce the 3-runs-a-day limit your browser keeps a random ID in local storage and we store only a one-way hash of it — no fingerprinting, no IP. Clearing site data resets the ID.",
     },
     terms: {
       title: "Terms | HUMAN VS AI",

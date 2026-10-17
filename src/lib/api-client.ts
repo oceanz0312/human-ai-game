@@ -25,9 +25,9 @@ export async function jsonRequest<T>(url: string, init?: RequestInit): Promise<T
 const post = <T>(url: string, body?: unknown) => jsonRequest<T>(url, { method: "POST", body: JSON.stringify(body ?? {}) });
 
 export const api = {
-  createSession: (body: { nickname?: string; replay?: boolean; ai?: string; fp?: string } = {}) =>
+  createSession: (body: { nickname?: string; replay?: boolean; ai?: string; pk: string }) =>
     post<SessionSnapshot & { playLimit?: PlayLimitStatus }>("/api/sessions", body),
-  getPlayLimit: (fp: string) => jsonRequest<PlayLimitStatus>(`/api/play-limit${fp ? `?fp=${fp}` : ""}`),
+  getPlayLimit: (pk: string) => jsonRequest<PlayLimitStatus>(`/api/play-limit?pk=${encodeURIComponent(pk)}`),
   getSession: (sessionId: string) => jsonRequest<SessionSnapshot>(`/api/sessions/${sessionId}`),
   startNextRound: (sessionId: string) => post<RoundStartResponse>(`/api/sessions/${sessionId}/rounds`),
   beginRound: (roundId: string) => post<BeginRoundResponse>(`/api/rounds/${roundId}/start`),

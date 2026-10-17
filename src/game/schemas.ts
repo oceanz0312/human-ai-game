@@ -4,8 +4,8 @@ export const startSessionSchema = z.object({
   nickname: z.string().trim().min(1).max(24).optional(),
   /** Opponent model id/slug from the registry (resolved server-side to a live model). */
   ai: z.string().regex(/^[a-z0-9-]{1,32}$/).optional(),
-  /** SHA-256 browser fingerprint for the daily play limit (hash only). */
-  fp: z.string().regex(/^[a-f0-9]{64}$/).optional(),
+  /** Random per-browser player key (crypto.randomUUID in localStorage) for the daily play limit; stored hashed. */
+  pk: z.string().uuid(),
 });
 
 export const submitRoundSchema = z.object({

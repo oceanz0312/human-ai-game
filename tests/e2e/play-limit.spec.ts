@@ -22,4 +22,12 @@ test("@viewport daily play limit: 3 runs a day, then a friendly blocked state wi
   await expect(blocked.getByRole("button", { name: "分享给朋友" })).toBeVisible();
   const scroll = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(scroll).toBeLessThanOrEqual(0);
+
+  // Identity is a random key in localStorage (no fingerprint): clearing it is a fresh allowance.
+  const key = await page.evaluate(() => localStorage.getItem("hai_player_key"));
+  expect(key).toMatch(/^[0-9a-f-]{36}$/);
+  await page.evaluate(() => localStorage.removeItem("hai_player_key"));
+  await page.goto("/zh/spot-the-difference");
+  await expect(page.getByTestId("play-limit")).toHaveText("今日剩余 3/3");
+  expect(await page.evaluate(() => localStorage.getItem("hai_player_key"))).not.toBe(key);
 });

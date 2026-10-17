@@ -2,17 +2,17 @@
 
 import { useCallback, useEffect, useState } from "react";
 import type { PlayLimitStatus } from "./config";
-import { browserFingerprint } from "./fingerprint";
+import { getPlayerKey } from "./player-key";
 import { api } from "@/lib/api-client";
 import { useLocale, useT } from "@/i18n/client";
 import { Badge, Button } from "@/components/ui/8bit";
 
-/** Shared across games: today's remaining runs for this browser (hash-only fingerprint). */
+/** Shared across games: today's remaining runs for this browser (random player key, stored hashed). */
 export function usePlayLimit() {
   const [status, setStatus] = useState<PlayLimitStatus | null>(null);
   const refresh = useCallback(async () => {
     try {
-      setStatus(await api.getPlayLimit(await browserFingerprint()));
+      setStatus(await api.getPlayLimit(getPlayerKey()));
     } catch {
       // Unknown status never blocks: the server enforces the limit on start.
     }
