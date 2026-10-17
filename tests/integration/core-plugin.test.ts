@@ -69,6 +69,8 @@ test("a stub second game plays a full run through the game-agnostic core", async
       randomId: () => randomUUID(),
       randomPublicId: () => randomUUID().replace(/-/g, "").slice(0, 22),
       game: oddWord,
+      // The stub game is not in the public model registry; allow the default model for it.
+      modelPlaysGame: () => true,
       sleep: async (ms) => {
         clock += ms;
       },

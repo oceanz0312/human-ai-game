@@ -9,10 +9,17 @@ export function cellName(choice: string) {
   return `第 ${row} 行第 ${column} 列`;
 }
 
+/** The opponent-select step (always shown, even with one live opponent). */
+export async function pickOpponent(page: Page) {
+  await expect(page.getByTestId("opponent-select")).toBeVisible();
+  await page.getByRole("button", { name: /开始对战|Fight/ }).click();
+  await page.waitForURL(/\/play\//);
+}
+
 export async function startGame(page: Page) {
   await page.goto("/zh/spot-the-difference");
   await page.getByRole("button", { name: "开始挑战" }).click();
-  await page.waitForURL(/\/play\//);
+  await pickOpponent(page);
 }
 
 export async function waitForPlayable(page: Page, n: number) {

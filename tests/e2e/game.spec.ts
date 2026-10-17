@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { answer, assertMobileLayout, next, recordForeignRequests, screenshot, startGame, waitForPlayable } from "./helpers";
+import { answer, assertMobileLayout, next, recordForeignRequests, screenshot, startGame, waitForPlayable, pickOpponent } from "./helpers";
 
 test("@layout a full clear run follows the approved mobile layout on every view", async ({ page }, testInfo) => {
   const foreign = recordForeignRequests(page);
@@ -13,7 +13,7 @@ test("@layout a full clear run follows the approved mobile layout on every view"
   await screenshot(page, testInfo, "1-home");
 
   await page.getByRole("button", { name: "开始挑战" }).click();
-  await page.waitForURL(/\/play\//);
+  await pickOpponent(page);
   await expect(page.locator(".countdown-overlay")).toBeVisible();
 
   await waitForPlayable(page, 1);

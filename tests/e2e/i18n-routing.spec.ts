@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { pickOpponent } from "./helpers";
 
 test("English is served at the root without a prefix", async ({ page }) => {
   const response = await page.goto("/");
@@ -29,14 +30,14 @@ test("unknown paths are 404 in both locales", async ({ request }) => {
 test("the chosen locale carries over to the session pages", async ({ page }) => {
   await page.goto("/zh");
   await page.getByRole("button", { name: "开始挑战" }).click();
-  await page.waitForURL(/\/play\//);
+  await pickOpponent(page);
   await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
 });
 
 test("the English game flow is fully localized", async ({ page }) => {
   await page.goto("/");
   await page.getByRole("button", { name: "Start" }).click();
-  await page.waitForURL(/\/play\//);
+  await pickOpponent(page);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.getByRole("button", { name: "Row 1, column 1" })).toBeEnabled({ timeout: 30_000 });
   await expect(page.locator(".game-hint")).toContainText("Tap the odd one");

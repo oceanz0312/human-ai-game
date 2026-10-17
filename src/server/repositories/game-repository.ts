@@ -3,7 +3,7 @@ import type { HumanStatus, Winner } from "../../game/contracts";
 import { LEVEL_SET_VERSION, STARTING_LIVES } from "../../game/contracts";
 import { resolveRace } from "../../game/rules";
 import type { Database } from "../db/client";
-import { bests, events, players, results, rounds, sessions } from "../db/schema";
+import { bests, dailyPlays, events, players, results, rounds, sessions } from "../db/schema";
 
 export type SessionRow = typeof sessions.$inferSelect;
 export type RoundRow = typeof rounds.$inferSelect;
@@ -86,13 +86,15 @@ export function createGameRepository(db: Database) {
       return Number(row?.count ?? 0);
     },
 
-    async createSession(input: { id: string; playerId: string; now: number; levelSetVersion?: string; startingChances?: number }) {
+    async createSession(input: { id: string; playerId: string; now: number; levelSetVersion?: string; startingChances?: number; gameId?: string; modelId?: string }) {
       const [row] = await db
         .insert(sessions)
         .values({
           id: input.id,
           playerId: input.playerId,
           levelSetVersion: input.levelSetVersion ?? LEVEL_SET_VERSION,
+          ...(input.gameId ? { gameId: input.gameId } : {}),
+          ...(input.modelId ? { modelId: input.modelId } : {}),
           level: 1,
           lives: input.startingChances ?? STARTING_LIVES,
           fasterThanAiCount: 0,
@@ -158,11 +160,44 @@ export function createGameRepository(db: Database) {
       return row;
     },
 
+    /**
+     * Daily play limit: atomically take one play if `count < limit`. Returns the new count, or null when
+     * the budget for (key, day, scope) is already used up.
+     */
+    async consumeDailyPlay(input: { key: string; day: string; scope: string; limit: number; now: number }): Promise<number | null> {
+      const rows = await db
+        .insert(dailyPlays)
+        .values({ key: input.key, day: input.day, scope: input.scope, count: 1, updatedAt: input.now })
+        .onConflictDoUpdate({
+          target: [dailyPlays.key, dailyPlays.day, dailyPlays.scope],
+          set: { count: sql`${dailyPlays.count} + 1`, updatedAt: input.now },
+          setWhere: sql`${dailyPlays.count} < ${input.limit}`,
+        })
+        .returning({ count: dailyPlays.count });
+      return rows[0] ? Number(rows[0].count) : null;
+    },
+
+    /** Gives a play back (session creation failed after the play was taken). */
+    async refundDailyPlay(input: { key: string; day: string; scope: string }) {
+      await db
+        .update(dailyPlays)
+        .set({ count: sql`max(0, ${dailyPlays.count} - 1)` })
+        .where(and(eq(dailyPlays.key, input.key), eq(dailyPlays.day, input.day), eq(dailyPlays.scope, input.scope)));
+    },
+
+    async countDailyPlays(input: { key: string; day: string; scope: string }) {
+      const [row] = await db
+        .select({ count: dailyPlays.count })
+        .from(dailyPlays)
+        .where(and(eq(dailyPlays.key, input.key), eq(dailyPlays.day, input.day), eq(dailyPlays.scope, input.scope)));
+      return Number(row?.count ?? 0);
+    },
+
     /** Atomically moves the AI lease from pending to running; only the winner may call the Worker. */
-    async claimAiRun(roundId: string, now: number): Promise<boolean> {
+    async claimAiRun(roundId: string, now: number, modelId?: string): Promise<boolean> {
       const claimed = await db
         .update(rounds)
-        .set({ aiStatus: "running", aiStartedAt: now })
+        .set({ aiStatus: "running", aiStartedAt: now, ...(modelId ? { aiModelId: modelId } : {}) })
         .where(and(eq(rounds.id, roundId), eq(rounds.aiStatus, "pending")))
         .returning({ id: rounds.id });
       return claimed.length === 1;
@@ -245,6 +280,8 @@ export function createGameRepository(db: Database) {
                       publicId: sql`${input.result.publicId}`.as("public_id"),
                       playerId: sessions.playerId,
                       levelSetVersion: sessions.levelSetVersion,
+                      gameId: sessions.gameId,
+                      modelId: sessions.modelId,
                       reachedLevel: sql`${input.session.reachedLevel}`.as("reached_level"),
                       cleared: sql`${input.session.cleared ? 1 : 0}`.as("cleared"),
                       createdAt: sql`${input.now}`.as("created_at"),
@@ -396,6 +433,57 @@ export function createLeaderboardRepository(db: Database) {
         .limit(input.limit)
         .offset(input.offset ?? 0);
       return rows.map((row) => ({ ...row, rank: Number(row.rank) }));
+    },
+
+    /** Per-model board from results: each player's best run against that model. */
+    async listByModel(input: { version?: string; modelId: string; limit: number }) {
+      const version = input.version ?? LEVEL_SET_VERSION;
+      const rows = await db
+        .select({
+          playerId: results.playerId,
+          nickname: players.nickname,
+          reachedLevel: sql<number>`max(${results.reachedLevel})`,
+          achievedAt: sql<number>`min(${results.createdAt})`,
+        })
+        .from(results)
+        .innerJoin(players, eq(players.id, results.playerId))
+        .where(and(eq(results.levelSetVersion, version), eq(results.modelId, input.modelId)))
+        .groupBy(results.playerId)
+        .orderBy(sql`max(${results.reachedLevel}) desc`, sql`min(${results.createdAt})`, results.playerId)
+        .limit(input.limit);
+      let rank = 0;
+      let previous = Number.POSITIVE_INFINITY;
+      return rows.map((row, index) => {
+        const level = Number(row.reachedLevel);
+        if (level < previous) rank = index + 1;
+        previous = level;
+        return { playerId: row.playerId, nickname: row.nickname, reachedLevel: level, rank };
+      });
+    },
+
+    /** Runs and win stats per model (opponent select). Human "win" = round winner human. */
+    async modelStats(input: { version?: string; modelId: string }) {
+      const version = input.version ?? LEVEL_SET_VERSION;
+      const [row] = await db
+        .select({
+          runs: sql<number>`count(distinct ${sessions.id})`,
+          rounds: sql<number>`count(${rounds.id})`,
+          aiCorrect: sql<number>`sum(case when ${rounds.aiCorrect} = 1 then 1 else 0 end)`,
+          humanWins: sql<number>`sum(case when ${rounds.winner} = 'human' then 1 else 0 end)`,
+          aiWins: sql<number>`sum(case when ${rounds.winner} = 'ai' then 1 else 0 end)`,
+          aiMedianish: sql<number>`avg(case when ${rounds.aiStatus} = 'complete' then ${rounds.aiElapsedMs} end)`,
+        })
+        .from(sessions)
+        .leftJoin(rounds, and(eq(rounds.sessionId, sessions.id), sql`${rounds.humanStatus} is not null`))
+        .where(and(eq(sessions.levelSetVersion, version), eq(sessions.modelId, input.modelId), eq(sessions.status, "ended")));
+      return {
+        runs: Number(row?.runs ?? 0),
+        rounds: Number(row?.rounds ?? 0),
+        aiCorrect: Number(row?.aiCorrect ?? 0),
+        humanWins: Number(row?.humanWins ?? 0),
+        aiWins: Number(row?.aiWins ?? 0),
+        aiAvgMs: row?.aiMedianish == null ? null : Math.round(Number(row.aiMedianish)),
+      };
     },
 
     /** Index of the player inside the stable display order, used to show surrounding rows. */
