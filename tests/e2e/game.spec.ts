@@ -5,7 +5,7 @@ test("@layout a full clear run follows the approved mobile layout on every view"
   const foreign = recordForeignRequests(page);
   // The language-suggestion banner is covered by locale-banner.spec.ts; dismiss it here.
   await page.context().addCookies([{ name: "hv_locale_banner", value: "1", url: "http://127.0.0.1:3100" }]);
-  await page.goto("/zh");
+  await page.goto("/zh/spot-the-difference");
   await expect(page.getByRole("link", { name: "HUMAN VS AI" }).first()).toBeVisible();
   await expect(page.getByRole("heading", { name: /你比 AI\s*更快吗/ })).toBeVisible();
   await expect(page.getByRole("button")).toHaveCount(1);

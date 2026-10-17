@@ -1,0 +1,240 @@
+/* Reset, typography and shared controls. Values come from tokens.css only. */
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+html,
+body {
+  margin: 0;
+  background: var(--c-paper);
+  color: var(--c-text);
+  font-family: var(--f-body);
+  overflow-x: hidden;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+  line-height: 1.5;
+}
+
+button,
+input {
+  font: inherit;
+  color: inherit;
+}
+
+button {
+  touch-action: manipulation;
+}
+
+h1,
+h2,
+h3,
+p {
+  margin: 0;
+}
+
+a {
+  color: inherit;
+}
+
+img {
+  max-width: 100%;
+}
+
+:focus-visible {
+  outline: 3px solid var(--c-ai);
+  outline-offset: 2px;
+}
+
+.num {
+  font-variant-numeric: tabular-nums;
+}
+
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+}
+
+.brand {
+  font: 800 11px/1 var(--f-display-latin);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.eyebrow {
+  font: 600 13px/1.4 var(--f-display);
+  color: var(--c-text-2);
+}
+
+.page-title {
+  font: 800 clamp(30px, 4.2vw, 48px) / 1.15 var(--f-display);
+  letter-spacing: -0.02em;
+}
+
+.body-text {
+  font-size: 16px;
+  line-height: 1.65;
+  color: var(--c-text-2);
+}
+
+.muted {
+  color: var(--c-muted);
+  font-size: 13px;
+  line-height: 1.4;
+}
+
+.blink {
+  animation: blink 1s steps(1, end) infinite;
+}
+
+@keyframes blink {
+  50% {
+    opacity: 0;
+  }
+}
+
+/* ---------- Buttons ---------- */
+.primary-action,
+.secondary-action,
+.text-action {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  min-height: 48px;
+  padding: 0 var(--s5);
+  border-radius: var(--radius);
+  font: 700 15px/1 var(--f-display);
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.primary-action {
+  width: 100%;
+  border: var(--bw) solid var(--c-ink);
+  background: var(--c-cta-bg);
+  color: var(--c-cta-fg);
+  box-shadow: var(--sh);
+}
+
+.primary-action:hover:not(:disabled) {
+  background: var(--c-cta-hover);
+}
+
+.primary-action:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: var(--sh-sm);
+}
+
+.primary-action:disabled {
+  background: var(--c-line);
+  color: var(--c-muted);
+  cursor: default;
+}
+
+.secondary-action {
+  border: var(--bw) solid var(--c-ink);
+  background: var(--c-surface);
+  color: var(--c-ink);
+  box-shadow: var(--sh-sm);
+}
+
+.secondary-action:disabled {
+  border-color: var(--c-line);
+  color: var(--c-muted);
+  cursor: default;
+}
+
+.text-action {
+  width: 100%;
+  border: 0;
+  background: transparent;
+  color: var(--c-text);
+}
+
+.text-action:active {
+  opacity: 0.6;
+}
+
+.link-action {
+  display: inline-flex;
+}
+
+.btn-lg:not(:where(.x)) {
+  width: auto;
+  min-height: 56px;
+  padding: 0 var(--s6);
+  font-size: 16px;
+}
+
+.inline-error {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--c-human-text);
+  text-align: center;
+  margin: 0 0 var(--s2);
+}
+
+.card {
+  background: var(--c-surface);
+  border: var(--bw) solid var(--c-ink);
+  border-radius: var(--radius);
+  box-shadow: var(--sh);
+}
+
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s2);
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 26px;
+  padding: 0 10px;
+  border: var(--bw-sm) solid var(--c-ink);
+  border-radius: calc(var(--radius) / 2);
+  background: var(--c-surface);
+  font: 600 12px/1 var(--f-display);
+  white-space: nowrap;
+}
+
+.badge-ok {
+  background: var(--c-ok);
+}
+
+.close-action {
+  border: var(--bw-sm) solid var(--c-ink);
+  background: var(--c-surface);
+  padding: 6px 12px;
+  border-radius: calc(var(--radius) / 2);
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

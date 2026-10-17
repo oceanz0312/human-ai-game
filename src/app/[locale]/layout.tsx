@@ -1,9 +1,10 @@
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
-import "../globals.css";
 import "@/styles/tokens.css";
+import "@/styles/base.css";
 import "@/styles/shell.css";
 import "@/styles/game.css";
+import "@/styles/site.css";
 import { htmlLang, isLocale, locales } from "@/i18n/config";
 import { SITE_NAME, SITE_URL } from "@/config/site";
 import { I18nProvider } from "@/i18n/client";

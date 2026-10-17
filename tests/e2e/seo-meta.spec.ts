@@ -15,7 +15,7 @@ for (const path of INDEXABLE) {
       const html = await (await request.get(url)).text();
       expect(attr(html, /<title>([^<]+)<\/title>/), "title").toBeTruthy();
       expect(attr(html, /<meta name="description" content="([^"]+)"/), "description").toBeTruthy();
-      expect(html, "h1 in HTML").toMatch(/<h1[^>]*>[^<]+/);
+      expect(html, "h1 in HTML").toMatch(/<h1[^>]*>(?:<[^>]+>)*[^<]+/);
       expect(attr(html, /<link rel="canonical" href="([^"]+)"/)).toBe(abs(url));
       expect(attr(html, /<link rel="alternate" hrefLang="en" href="([^"]+)"/)).toBe(abs(path));
       expect(attr(html, /<link rel="alternate" hrefLang="zh-Hans" href="([^"]+)"/)).toBe(abs(zh(path)));
@@ -32,7 +32,7 @@ test("structured data per page type", async ({ request }) => {
     [...(await (await request.get(url)).text()).matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
       .flatMap((m) => [JSON.parse(m[1])].flat())
       .map((d) => [d["@type"]].flat().join("+"));
-  expect(await types("/")).toEqual(expect.arrayContaining(["WebSite", "Organization", "VideoGame+WebApplication"]));
+  expect(await types("/")).toEqual(expect.arrayContaining(["WebSite", "Organization", "ItemList"]));
   expect(await types("/spot-the-difference")).toEqual(expect.arrayContaining(["BreadcrumbList", "VideoGame+WebApplication"]));
   expect(await types("/faq")).toEqual(expect.arrayContaining(["BreadcrumbList", "FAQPage"]));
 });

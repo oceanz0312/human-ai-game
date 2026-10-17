@@ -42,6 +42,17 @@ export interface AiOpponent {
 
 export const aiOpponents: AiOpponent[] = [{ slug: "luna", model: "gpt-6-luna", provider: "OpenAI", api: "Decisions API" }];
 
+/**
+ * Placeholder cards for games that are being planned. They render only as greyed "筹备中 · 暂定名" cards on the
+ * home hub and /games, never as routes, sitemap entries, nav items or JSON-LD. Names are tentative.
+ * When one ships: move it into `games` with real pages, then delete it here.
+ */
+export interface PlannedGame {
+  slug: string;
+}
+
+export const plannedGames: PlannedGame[] = [{ slug: "memory-match" }, { slug: "picture-guess" }];
+
 export const liveGames = () => games.filter((game) => game.status === "live");
 export const getGame = (slug: string) => games.find((game) => game.slug === slug);
 export const getOpponent = (slug: string) => aiOpponents.find((opponent) => opponent.slug === slug);

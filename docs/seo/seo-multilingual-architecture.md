@@ -18,8 +18,8 @@
 
 | 路径（英文；其它语言加 /zh 等前缀） | 类型 | 目标词 EN（其它语言 TBD） | 索引 | 渲染 | 独有数据 |
 |---|---|---|---|---|---|
-| `/` | 平台首页 + 找茬入口 | find the difference game | ✅ | SSG（统计 ISR 1h） | 全站对局数、人类胜率 |
-| `/spot-the-difference` | 找茬主落地页 | spot the difference game / spot the difference | ✅ | SSG+ISR | 关卡网格、AI 平均用时 |
+| `/` | 平台首页（游戏中心，按注册表列出全部游戏） | human vs ai games / play games against ai（2026-10 起，见下方偏差） | ✅ | SSG | 游戏列表（ItemList） |
+| `/spot-the-difference` | 找茬主落地页（比赛动画 + 开始按钮） | find the difference game / spot the difference game / spot the difference | ✅ | SSG+ISR | 关卡网格、AI 平均用时 |
 | `/find-the-difference` | 同义词落地页（不同角度：规则/技巧/难度） | find the difference | ✅ | SSG+ISR | 最难关卡榜 |
 | `/human-vs-ai` | 话题页 | human vs ai | ✅ | SSG+ISR | 人 vs AI 总胜负 |
 | `/games` | 游戏索引 | human vs ai games | ✅ | SSG | 游戏注册表 |
@@ -109,3 +109,22 @@
 - 分析：GA4/Clarity 仅在 `NEXT_PUBLIC_GA4_ID` / `NEXT_PUBLIC_CLARITY_ID` 非空时加载，默认关闭。
 
 遗留：现有游戏文案仍含「条命」「20 关」等表述待改；仓库无 CI；排行榜昵称回退为「玩家 XXXX」（英文 UI 显示 Player XXXX）。
+
+
+## 实施记录（2026-10 网页版重设计 · 多游戏平台首页）
+
+| PR | 内容 | Worker 版本 |
+|---|---|---|
+| [#20](https://github.com/oceanz0312/human-ai-game/pull/20) | PR-1：响应式站点外壳（顶栏/页脚/容器），品牌改为 HUMAN VS AI | 6a9babb2-3abc-4557-8aac-d6072d64cb39 |
+| [#21](https://github.com/oceanz0312/human-ai-game/pull/21) | PR-2：对局/揭晓 GameStage 响应式布局 | 5e4189b3-5692-40d6-9e23-1f45b4205779 |
+| PR-3 | 平台首页（注册表驱动）、找茬落地页、内容页方案 B、结果页准确率 | 见 PR |
+
+重设计前版本：5fa60be0-0b51-4185-a638-22f9519d0510。
+
+### 偏差：首页改为平台游戏中心（用户 2026-10-17 要求）
+- 原方案中 `/` 是「平台首页 + 找茬入口」，主词 find the difference game。现改为**多游戏平台首页**：首屏为人类 vs AI 平台主张，下方是按 `src/games/registry.ts` 渲染的游戏卡片（上线游戏 + 「筹备中 · 暂定名」占位卡）、怎么玩、FAQ。首页不再是找茬游戏页。
+- 首页 title / description / H1 改用平台词：EN「Human vs AI Games – Can You Beat the AI?」，H1「Human vs AI / Play games against real AI」；ZH「人类 vs AI 小游戏：和真实 AI 对战」，H1「人类 VS AI / 和真实 AI 同场对战」。
+- find the difference / spot the difference 主词移到 `/spot-the-difference`：title「Spot the Difference Online – Find the Difference Game vs AI (Free)」/「大家来找茬在线玩：找不同小游戏，和真实 AI 比快」，H1「Spot the Difference: You vs AI」/「大家来找茬：你比 AI 更快吗？」，首屏保留比赛动画与「开始」按钮；对局仍在 `/games/spot-the-difference/play`。
+- 结构化数据：首页 WebSite + Organization + ItemList（只列上线游戏）+ FAQPage；游戏落地页 VideoGame + BreadcrumbList（首页 › 全部游戏 › 大家来找茬）；`/games` 也输出 ItemList。
+- 新增游戏的流程：在注册表加一条（含落地页/玩法页）+ `gameCopy` 文案，即自动出现在首页、`/games`、顶栏、页脚、sitemap 与 ItemList。占位卡（`plannedGames`）只在首页和 `/games` 以灰色卡片出现，不生成路由，不进 sitemap / 导航 / JSON-LD。
+- 内容页改为方案 B：首屏自成一体（面包屑、H1、简介、主按钮），下方可滚动；对局与揭晓页仍严格一屏。

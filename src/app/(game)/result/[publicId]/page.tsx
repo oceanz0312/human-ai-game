@@ -9,6 +9,7 @@ import { readPlayerId } from "@/server/http";
 import { isPublicId, publicBaseUrl } from "@/server/public-url";
 import { getCookieLocale } from "@/i18n/server";
 import { translator } from "@/i18n/messages";
+import { SiteShell } from "@/components/site/SiteShell";
 
 export const dynamic = "force-dynamic";
 export const metadata: Metadata = { robots: { index: false } };
@@ -25,17 +26,25 @@ export default async function ResultPage({ params }: { params: Promise<{ publicI
   const shareUrl = `${await publicBaseUrl()}/share/${publicId}`;
 
   return (
-    <main className="mobile-shell result one-screen">
-      <div className="topline">
-        <span className="eyebrow">{result.cleared ? t("挑战完成") : t("挑战结束")}</span>
-        <span className="brand">HUMAN VS AI</span>
+    <SiteShell locale={locale} path="/">
+      <div className="container result-page">
+        <section className="card result-card result" aria-labelledby="result-title">
+          <div className="topline">
+            <h1 className="eyebrow" id="result-title">
+              {result.cleared ? t("挑战完成") : t("挑战结束")}
+            </h1>
+            <span className="brand">HUMAN VS AI</span>
+          </div>
+          <ResultSummary result={result} locale={locale} />
+          <div className="bottom-actions">
+            <ShareActions result={result} shareUrl={shareUrl} />
+            <StartButton label={t("再玩一次")} replay />
+          </div>
+        </section>
+        <div className="card result-board">
+          <Leaderboard editable initialNickname={result.nickname} />
+        </div>
       </div>
-      <ResultSummary result={result} locale={locale} />
-      <div className="bottom-actions">
-        <ShareActions result={result} shareUrl={shareUrl} />
-        <StartButton label={t("再玩一次")} replay />
-      </div>
-      <Leaderboard editable initialNickname={result.nickname} compact />
-    </main>
+    </SiteShell>
   );
 }

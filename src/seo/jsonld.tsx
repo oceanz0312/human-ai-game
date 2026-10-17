@@ -59,3 +59,16 @@ export const breadcrumbLd = (locale: Locale, crumbs: { name: string; path: strin
     item: absoluteUrl(localePath(locale, crumb.path)),
   })),
 });
+
+/** Home hub: every live registry game as an ItemList (coming-soon placeholders are never listed). */
+export const itemListLd = (locale: Locale, name: string, items: { name: string; path: string }[]): Json => ({
+  "@context": "https://schema.org",
+  "@type": "ItemList",
+  name,
+  itemListElement: items.map((item, index) => ({
+    "@type": "ListItem",
+    position: index + 1,
+    name: item.name,
+    url: absoluteUrl(localePath(locale, item.path)),
+  })),
+});

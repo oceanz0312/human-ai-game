@@ -83,7 +83,7 @@ export function ShareActions({ result, shareUrl }: ShareActionsProps) {
       </button>
       {open ? (
         <div className="poster-view" role="dialog" aria-modal="true" aria-label={t("战绩海报")}>
-          <main className="mobile-shell one-screen poster-shell">
+          <main className="poster-shell">
             <div className="topline">
               <span className="brand">HUMAN VS AI</span>
               <button type="button" className="close-action" onClick={() => setOpen(false)}>

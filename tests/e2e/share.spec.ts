@@ -61,10 +61,11 @@ test("nicknames can be set from the result page leaderboard", async ({ page }) =
     await next(page);
   }
   await page.waitForURL(/\/result\//);
-  await page.getByRole("button", { name: "完整排行与昵称" }).click();
+  // The web result page shows the full leaderboard with the nickname form inline (no sheet).
   await page.getByPlaceholder("昵称（可选）").fill("测试玩家");
   await page.getByRole("button", { name: "保存" }).click();
   await expect(page.getByText("昵称已更新")).toBeVisible();
-  await page.getByRole("button", { name: "关闭" }).click();
-  await expect(page.locator(".section-compact .board-rows .me")).toContainText("测试玩家");
+  await expect(page.locator(".result-board .board-rows .me")).toContainText("测试玩家");
+  await expect(page.getByTestId("human-correct")).toContainText("0");
+  await expect(page.getByText("比 AI 更快")).toHaveCount(0);
 });

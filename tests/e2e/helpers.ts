@@ -10,7 +10,7 @@ export function cellName(choice: string) {
 }
 
 export async function startGame(page: Page) {
-  await page.goto("/zh");
+  await page.goto("/zh/spot-the-difference");
   await page.getByRole("button", { name: "开始挑战" }).click();
   await page.waitForURL(/\/play\//);
 }

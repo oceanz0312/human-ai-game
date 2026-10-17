@@ -54,6 +54,7 @@ export default async function LevelPage({ params }: Props) {
       h1={fill(copy.h1, vars)}
       intro={fill(copy.intro, vars)}
       className="level-page"
+      crumbs={[{ name: nav.games, path: "/games" }, { name: nav.spot, path: game.landingPath }, { name: fill(copy.h1, vars), path: gameLevelPath(game, level.level) }]}
       action={<StartButton label={nav.play} locale={locale} />}
       links={[
         ...(prev ? [{ href: prev, label: copy.prev }] : []),

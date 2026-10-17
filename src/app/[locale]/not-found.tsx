@@ -9,7 +9,7 @@ export default function NotFound() {
   const locale = localeFromPathname(usePathname() ?? "/");
   const t = getDictionary(locale).notFound;
   return (
-    <main className="mobile-shell one-screen">
+    <main className="container notfound-page">
       <div className="brand">HUMAN VS AI</div>
       <div className="reveal-body">
         <h1 className="page-title">{t.title}</h1>

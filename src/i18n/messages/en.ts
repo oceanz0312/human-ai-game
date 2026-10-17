@@ -65,7 +65,6 @@ const en: Record<string, string> = {
   实线: "Solid",
   已通关: "Cleared",
   开始挑战: "Start",
-  总耗时: "Total",
   "我到达了第 {n} 关": "I reached level {n}",
   "我有 {n} 关比 AI 更快": "I beat the AI on {n} levels",
   "我通关了 HUMAN VS AI": "I cleared HUMAN VS AI",
@@ -102,7 +101,6 @@ const en: Record<string, string> = {
   生成战绩海报: "Create result poster",
   略有犹豫: "Slightly unsure",
   相当笃定: "Quite sure",
-  真实耗时: "Real time taken",
   秒: "sec",
   "第 {level} 关，共 {total} 关": "Level {level} of {total}",
   "第 {n} 关": "Level {n}",
@@ -158,5 +156,7 @@ const en: Record<string, string> = {
   "模型 {s}": "model {s}",
   "模型 {m}s · AI 用时 {total}s": "model {m}s \u00b7 AI time {total}s",
   "AI 用时 {s}s": "AI time {s}s",
+  "你答对": "You got right",
+  "AI 答对": "AI got right",
 };
 export default en;

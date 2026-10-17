@@ -296,6 +296,19 @@ export function createGameRepository(db: Database) {
       return row ?? null;
     },
 
+    /** Settled rounds of one run and how many each side got right (drives the accuracy framing on results). */
+    async sessionAccuracy(sessionId: string) {
+      const [row] = await db
+        .select({
+          played: sql<number>`count(${rounds.humanStatus})`,
+          humanCorrect: sql<number>`coalesce(sum(case when ${rounds.humanStatus} = 'correct' then 1 else 0 end), 0)`,
+          aiCorrect: sql<number>`coalesce(sum(case when ${rounds.humanStatus} is not null and ${rounds.aiCorrect} = 1 then 1 else 0 end), 0)`,
+        })
+        .from(rounds)
+        .where(eq(rounds.sessionId, sessionId));
+      return { played: Number(row?.played ?? 0), humanCorrect: Number(row?.humanCorrect ?? 0), aiCorrect: Number(row?.aiCorrect ?? 0) };
+    },
+
     async insertEvent(event: typeof events.$inferInsert) {
       await db.insert(events).values(event);
     },
