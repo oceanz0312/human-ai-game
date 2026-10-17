@@ -13,8 +13,13 @@ export type T = (id: string, vars?: Vars) => string;
 const en: Record<string, string> = Object.assign({}, commonEn, ...gameMessageCatalogs.map((catalog) => catalog.en ?? {}));
 const catalogs: Partial<Record<Locale, Record<string, string>>> = { en };
 
+/** `{n}` → value; `{n|level|levels}` → singular/plural word for n (English-style one/other). */
 const interpolate = (text: string, vars?: Vars) =>
-  vars ? text.replace(/\{(\w+)\}/g, (match, key: string) => (key in vars ? String(vars[key]) : match)) : text;
+  vars
+    ? text
+        .replace(/\{(\w+)\|([^|}]*)\|([^}]*)\}/g, (match, key: string, one: string, other: string) => (key in vars ? (Number(vars[key]) === 1 ? one : other) : match))
+        .replace(/\{(\w+)\}/g, (match, key: string) => (key in vars ? String(vars[key]) : match))
+    : text;
 
 export function translate(locale: Locale, id: string, vars?: Vars) {
   const catalog = catalogs[locale];

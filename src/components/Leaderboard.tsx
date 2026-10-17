@@ -6,11 +6,11 @@ import { api, ApiError } from "@/lib/api-client";
 import { DetailsSheet } from "./DetailsSheet";
 import { useLocale, useT } from "@/i18n/client";
 import { Button } from "@/components/ui/8bit";
+import { displayNickname } from "@/i18n/nickname";
 
 function Row({ row }: { row: LeaderboardRow }) {
   const t = useT();
-  const locale = useLocale();
-  const nickname = locale === "zh" ? row.nickname : row.nickname.replace(/^玩家 /, "Player ");
+  const nickname = displayNickname(row.nickname, t);
   return (
     <li className={row.isMe ? "me" : undefined}>
       <span className="rank">{row.rank}</span>

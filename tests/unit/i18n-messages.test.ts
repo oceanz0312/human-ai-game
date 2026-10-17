@@ -25,6 +25,21 @@ test("every message id used in the app has an English translation", () => {
   expect(missing).toEqual([]);
 });
 
+test("no dead English keys: every catalog id appears somewhere in the source", () => {
+  const code = sources("src")
+    .filter((file) => !/[\\/]messages[\\/]en\.ts$/.test(file))
+    .map((file) => readFileSync(file, "utf8"))
+    .join("\n");
+  const dead = Object.keys(en).filter((id) => !code.includes(JSON.stringify(id)) && !code.includes(`'${id}'`) && !code.includes("`" + id + "`"));
+  expect(dead).toEqual([]);
+});
+
+test("plural forms pick one/other by the count", () => {
+  expect(translate("en", "本局已有 {n} 关比 AI 更快", { n: 1 })).toBe("Faster than the AI on 1 level this run");
+  expect(translate("en", "本局已有 {n} 关比 AI 更快", { n: 3 })).toBe("Faster than the AI on 3 levels this run");
+  expect(translate("en", "剩余 {lives} 次机会", { lives: 1 })).toBe("1 chance left");
+});
+
 test("interpolation and zh passthrough", () => {
   expect(translate("zh", "第 {n} 关", { n: 3 })).toBe("第 3 关");
   expect(translate("en", "第 {n} 关", { n: 3 })).toBe("Level 3");

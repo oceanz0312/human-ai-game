@@ -33,7 +33,7 @@ const en = {
   hub: {
       "title": "Human vs AI Games – Can You Beat the AI?",
       "description": "Play free browser games against a real AI model. Same puzzle, same start, real AI speed. Start with Spot the Difference – no signup.",
-      "eyebrowLive": "{n} game live",
+      "eyebrowLive": "{n} {n|game|games} live",
       "eyebrowSoon": "More in the works",
       "h1": [
         "Human vs AI",
@@ -81,7 +81,7 @@ const en = {
       "faq": [
         {
           "q": "Is the opponent really an AI?",
-          "a": "Yes. Every puzzle calls a real model live (currently gpt-6-luna). The speed you see is its real speed."
+          "a": "Yes. Every puzzle calls a real model live (currently Luna). The speed you see is its real speed."
         },
         {
           "q": "Do I need to sign up or pay?",
@@ -173,7 +173,7 @@ const en = {
       intro: "Short answers to common questions.",
       items: [
         { q: "Is the AI real?", a: "Yes. Every level sends the picture to a real AI model and shows its real answer time. Nothing is scripted." },
-        { q: "Which AI do I play against?", a: "Luna: OpenAI's Decisions API (gpt-6-luna). More opponents are coming soon. We are not affiliated with OpenAI." },
+        { q: "Which AI do I play against?", a: "Luna, powered by OpenAI's Decisions API. More opponents are coming soon. We are not affiliated with OpenAI." },
         { q: "Is it free?", a: "Yes, free with no signup. It runs in your phone or desktop browser. Everyone gets 3 runs a day; they come back at 00:00 UTC." },
         { q: "How does ranking work?", a: "By the highest level reached; ties share a rank." },
         { q: "Why did the AI go offline?", a: "If the AI can't answer in time the level still counts for you." },
