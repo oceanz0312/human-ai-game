@@ -5,7 +5,7 @@ import { advanceSession, reconcileElapsed, resolveHumanAnswer, resolveRace } fro
 import type { DecisionClient, DecisionResult, WorkerDecisionResponse } from "./decisions/contracts";
 import { signDecisionTicket, ticketExpiresAt } from "./decisions/ticket";
 import { GameError } from "./errors";
-import { getLevelImageSha256, type PrivateLevel } from "./levels/catalog";
+import type { AnyGamePlugin, CoreLevel } from "../core/game-plugin";
 import type { GameRepository, LeaderboardRepository, RoundRow, SessionRow } from "./repositories/game-repository";
 import type { ServerTiming } from "./server-timing";
 
@@ -16,9 +16,10 @@ export interface GameServiceDeps {
   now: () => number;
   randomId: () => string;
   randomPublicId: () => string;
-  getLevel: (level: number) => PrivateLevel;
-  toPublicLevel: (level: PrivateLevel) => RoundStartResponse["level"];
-  readLevelImage: (level: number) => Promise<string>;
+  /** The game being played: levels, judging, AI task. The service itself is game-agnostic. */
+  game: AnyGamePlugin;
+  /** Legacy browser-ticket dispatch only: content hash the Decisions Worker verifies. */
+  legacyLevelAssetSha256?: (level: number) => string;
   sleep?: (ms: number) => Promise<void>;
   /** How long a submission waits for a still-running AI before revealing "AI 仍在判断". */
   aiRevealWaitMs?: number;
@@ -74,6 +75,7 @@ export function createGameService(deps: GameServiceDeps) {
   const aiTimeoutMs = deps.aiTimeoutMs ?? 10_000;
   const aiStaleMs = aiTimeoutMs + 5_000;
   const maxSessionsPerHour = deps.maxSessionsPerHour ?? 40;
+  const game = deps.game;
   /** Analytics writes off the player's critical path when a defer hook exists; inline otherwise. */
   const trackLater = async (...args: Parameters<typeof track>) => {
     const work = track(...args);
@@ -155,7 +157,7 @@ export function createGameService(deps: GameServiceDeps) {
   }
 
   function toReveal(round: RoundRow): RoundReveal {
-    const level = deps.getLevel(round.level);
+    const level = game.getLevel(round.level);
     const human = round.humanStatus ? { status: round.humanStatus, choice: round.humanChoice, elapsedMs: round.humanElapsedMs ?? 0 } : null;
     const aiFinal = round.aiStatus === "complete" || round.aiStatus === "error";
     const winner =
@@ -167,9 +169,8 @@ export function createGameService(deps: GameServiceDeps) {
     return {
       id: round.id,
       level: round.level,
-      gridSize: level.gridSize,
-      imageUrl: level.imageUrl,
-      correctChoice: lockedIn ? level.correctChoice : null,
+      ...(game.revealFields(level) as { gridSize: RoundReveal["gridSize"]; imageUrl: string }),
+      correctChoice: lockedIn ? game.correctAnswer(level) : null,
       human,
       // The AI outcome stays hidden until the player has locked in an answer.
       ai: lockedIn
@@ -200,15 +201,15 @@ export function createGameService(deps: GameServiceDeps) {
   }
 
   async function persistAiAnswer(round: RoundRow, answer: DecisionResult | WorkerDecisionResponse, wallElapsedMs?: number) {
-    const level = deps.getLevel(round.level);
-    const complete = answer.status === "complete" && answer.choice !== null && level.choices.includes(answer.choice);
+    const level = game.getLevel(round.level);
+    const complete = answer.status === "complete" && answer.choice !== null && game.isValidAnswer(level, answer.choice);
     const elapsedMs = complete ? (wallElapsedMs ?? ("elapsedMs" in answer ? answer.elapsedMs : null) ?? answer.modelElapsedMs) : null;
     await deps.games.saveAiAnswer(
       round.id,
       {
         status: complete ? "complete" : "error",
         choice: complete ? answer.choice : null,
-        correct: complete ? answer.choice === level.correctChoice : null,
+        correct: complete && answer.choice !== null ? game.judge(level, answer.choice) : null,
         elapsedMs: complete ? elapsedMs : null,
         modelElapsedMs: answer.modelElapsedMs,
         confidence: complete ? answer.confidence : null,
@@ -224,7 +225,7 @@ export function createGameService(deps: GameServiceDeps) {
       level: round.level,
       metadata: {
         status: complete ? "complete" : "error",
-        correct: complete ? answer.choice === level.correctChoice : null,
+        correct: complete && answer.choice !== null ? game.judge(level, answer.choice) : null,
         elapsedMs,
         modelElapsedMs: answer.modelElapsedMs,
         errorCode: answer.errorCode,
@@ -232,11 +233,12 @@ export function createGameService(deps: GameServiceDeps) {
     });
   }
 
-  async function buildAiDispatch(round: RoundRow, level: PrivateLevel): Promise<AiDispatch | null> {
+  async function buildAiDispatch(round: RoundRow, level: CoreLevel): Promise<AiDispatch | null> {
     const mode = deps.decisionsDispatchMode ?? "off";
     if (mode === "fake") return { mode: "fake", url: `/api/rounds/${round.id}/ai-fake` };
     if (mode !== "worker" || !deps.decisionsWorkerPublicUrl || !deps.decisionsTicketSecret) return null;
-    const imageSha256 = getLevelImageSha256(round.level);
+    if (!deps.legacyLevelAssetSha256) return null;
+    const imageSha256 = deps.legacyLevelAssetSha256(round.level);
     const now = deps.now();
     const ticket = await signDecisionTicket(
       {
@@ -246,7 +248,7 @@ export function createGameService(deps: GameServiceDeps) {
         sessionId: round.sessionId,
         level: round.level,
         imageSha256,
-        choices: level.choices,
+        choices: game.choices(level),
         exp: ticketExpiresAt(now, level.limitMs),
         iat: now,
       },
@@ -256,15 +258,15 @@ export function createGameService(deps: GameServiceDeps) {
   }
 
   /** Runs the AI for a freshly shown round. The AI clock starts at the same server instant as the human's (shownAt). */
-  async function runServerAi(round: RoundRow, level: PrivateLevel, emit: (event: AiEvent) => void) {
+  async function runServerAi(round: RoundRow, level: CoreLevel, emit: (event: AiEvent) => void) {
     const shownAt = round.shownAt ?? deps.now();
     let answer: DecisionResult;
     try {
-      const imageDataUrl = await deps.readLevelImage(round.level);
+      const input = await game.buildDecisionInput(level);
       emit({ event: "image", at: deps.now() });
       const budgetMs = Math.max(1, level.limitMs - (deps.now() - shownAt));
       emit({ event: "sent", at: deps.now() });
-      answer = await deps.decisions.decide({ imageDataUrl, choices: level.choices }, AbortSignal.timeout(Math.min(budgetMs, aiTimeoutMs)));
+      answer = await deps.decisions.decide(input, AbortSignal.timeout(Math.min(budgetMs, aiTimeoutMs)));
     } catch {
       answer = { status: "error", choice: null, confidence: null, probabilities: {}, modelElapsedMs: 0, errorCode: "network_error", requestId: "none", elapsedMs: 0 };
     }
@@ -275,12 +277,12 @@ export function createGameService(deps: GameServiceDeps) {
       answer = { ...answer, status: "error", choice: null, confidence: null, probabilities: {}, errorCode: "ai_timeout", elapsedMs };
     }
     await persistAiAnswer(round, answer, elapsedMs);
-    const complete = answer.status === "complete" && answer.choice !== null && level.choices.includes(answer.choice);
+    const complete = answer.status === "complete" && answer.choice !== null && game.isValidAnswer(level, answer.choice);
     emit(complete ? { event: "answered", at: completedAt } : { event: "error", at: completedAt, code: answer.errorCode ?? "invalid_choice" });
   }
 
   /** A second /start for a round whose AI already runs elsewhere: report only the final outcome, from D1. */
-  async function watchAi(roundId: string, level: PrivateLevel, emit: (event: AiEvent) => void) {
+  async function watchAi(roundId: string, level: CoreLevel, emit: (event: AiEvent) => void) {
     const giveUpAt = deps.now() + level.limitMs + 5_000;
     for (;;) {
       let round = await deps.games.getRound(roundId);
@@ -296,7 +298,7 @@ export function createGameService(deps: GameServiceDeps) {
   async function beginRoundCore(roundId: string, playerId: string): Promise<{ begun: BeginRoundResponse; run: AiRun | null }> {
     const { round } = await loadOwnedRound(roundId, playerId);
     if (round.humanStatus) return { begun: { roundId: round.id, deadlineAt: round.deadlineAt, started: false, ai: null }, run: null };
-    const level = deps.getLevel(round.level);
+    const level = game.getLevel(round.level);
     const firstPaint = round.shownAt === null;
     const marked = await deps.games.markShown(round.id, deps.now(), level.limitMs);
     const mode = deps.decisionsDispatchMode ?? "server";
@@ -349,7 +351,13 @@ export function createGameService(deps: GameServiceDeps) {
       const recent = await deps.games.countSessionsSince(input.playerId, deps.now() - 60 * 60 * 1000);
       if (recent >= maxSessionsPerHour) throw new GameError("too_many_requests");
       if (input.nickname) await deps.games.setNickname(input.playerId, input.nickname);
-      const session = await deps.games.createSession({ id: deps.randomId(), playerId: input.playerId, now: deps.now() });
+      const session = await deps.games.createSession({
+        id: deps.randomId(),
+        playerId: input.playerId,
+        now: deps.now(),
+        levelSetVersion: game.levelSetVersion,
+        startingChances: game.startingChances,
+      });
       await track(input.replay ? "replay" : "game_start", { playerId: input.playerId, sessionId: session.id, level: 1 });
       return sessionSnapshot(session);
     },
@@ -376,7 +384,7 @@ export function createGameService(deps: GameServiceDeps) {
       const assembleStart = performance.now();
       const response: RoundStartResponse = {
         round: { id: round.id, level: round.level },
-        level: deps.toPublicLevel(deps.getLevel(round.level)),
+        level: game.toPublicLevel(game.getLevel(round.level)) as RoundStartResponse["level"],
         session: toSessionSnapshot(session, round),
       };
       timing?.mark("assemble", assembleStart, "build-json");
@@ -397,11 +405,10 @@ export function createGameService(deps: GameServiceDeps) {
       if (round.aiStatus === "complete" || round.aiStatus === "error") return;
       if (round.aiStatus === "running") return;
       if (!(await deps.games.claimAiRun(roundId, deps.now()))) return;
-      const level = deps.getLevel(round.level);
+      const level = game.getLevel(round.level);
       let answer: DecisionResult;
       try {
-        const imageDataUrl = await deps.readLevelImage(round.level);
-        answer = await deps.decisions.decide({ imageDataUrl, choices: level.choices }, AbortSignal.timeout(aiTimeoutMs));
+        answer = await deps.decisions.decide(await game.buildDecisionInput(level), AbortSignal.timeout(aiTimeoutMs));
       } catch {
         answer = { status: "error", choice: null, confidence: null, probabilities: {}, modelElapsedMs: 0, errorCode: "network_error", requestId: "none", elapsedMs: 0 };
       }
@@ -423,17 +430,17 @@ export function createGameService(deps: GameServiceDeps) {
 
     async submitRound(roundId: string, playerId: string, input: { choice: string | null; elapsedMs: number }): Promise<SubmitResponse> {
       const { round, session } = await loadOwnedRound(roundId, playerId);
-      const level = deps.getLevel(round.level);
+      const level = game.getLevel(round.level);
 
       if (!round.humanStatus) {
         if (round.shownAt === null) throw new GameError("round_not_started");
         if (session.status !== "active" || session.level !== round.level) throw new GameError("session_ended");
-        if (input.choice !== null && !level.choices.includes(input.choice)) throw new GameError("invalid_choice");
+        if (input.choice !== null && !game.isValidAnswer(level, input.choice)) throw new GameError("invalid_choice");
 
         const now = deps.now();
         const elapsedMs = reconcileElapsed({ clientElapsedMs: input.elapsedMs, serverElapsedMs: now - round.shownAt });
-        const human = resolveHumanAnswer({ choice: input.choice, correctChoice: level.correctChoice, elapsedMs, limitMs: level.limitMs });
-        const next = advanceSession({ level: round.level, lives: session.lives, humanStatus: human.status });
+        const human = resolveHumanAnswer({ choice: input.choice, judge: (choice) => game.judge(level, choice), elapsedMs, limitMs: level.limitMs });
+        const next = advanceSession({ level: round.level, lives: session.lives, humanStatus: human.status, totalLevels: game.totalLevels });
         const ended = next.ended;
         const settled = await deps.games.submitHumanAnswer({
           roundId,

@@ -16,9 +16,11 @@ export function reconcileElapsed(input: { clientElapsedMs: number; serverElapsed
   return Math.min(Math.max(client, lower), server);
 }
 
+/** Game-agnostic: the plugin judges the answer (`judge`), or a plain `correctChoice` equality is used. */
 export function resolveHumanAnswer(input: {
   choice: string | null;
-  correctChoice: string;
+  correctChoice?: string;
+  judge?: (choice: string) => boolean;
   elapsedMs: number;
   limitMs: number;
 }): { status: HumanStatus; correct: boolean; elapsedMs: number } {
@@ -26,7 +28,7 @@ export function resolveHumanAnswer(input: {
   if (input.choice === null || elapsedMs > input.limitMs) {
     return { status: "timeout", correct: false, elapsedMs: Math.min(elapsedMs, input.limitMs) };
   }
-  const correct = input.choice === input.correctChoice;
+  const correct = input.judge ? input.judge(input.choice) : input.choice === input.correctChoice;
   return { status: correct ? "correct" : "incorrect", correct, elapsedMs };
 }
 
@@ -46,10 +48,11 @@ export function resolveRace(input: {
   return { winner: fasterThanAi ? "human" : "ai", fasterThanAi };
 }
 
-export function advanceSession(input: { level: number; lives: number; humanStatus: HumanStatus }) {
+export function advanceSession(input: { level: number; lives: number; humanStatus: HumanStatus; totalLevels?: number }) {
+  const total = input.totalLevels ?? TOTAL_LEVELS;
   const lives = Math.max(0, input.humanStatus === "correct" ? input.lives : input.lives - 1);
-  const ended = lives === 0 || input.level >= TOTAL_LEVELS;
-  const cleared = input.level >= TOTAL_LEVELS && lives > 0;
+  const ended = lives === 0 || input.level >= total;
+  const cleared = input.level >= total && lives > 0;
   return { nextLevel: ended ? null : input.level + 1, lives, ended, cleared };
 }
 

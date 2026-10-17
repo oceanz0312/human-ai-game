@@ -7,7 +7,8 @@ import { createDirectOpenAiDecisionClient } from "./decisions/direct-openai-clie
 import { FakeDecisionClient } from "./decisions/fake";
 import type { Database } from "./db/client";
 import { createGameService, type GameService } from "./game-service";
-import { getPrivateLevel, PRIVATE_LEVELS_V1, readLevelImageDataUrl, toPublicLevel } from "./levels/catalog";
+import { getLevelImageSha256, PRIVATE_LEVELS_V1, readLevelImageDataUrl } from "./levels/catalog";
+import { createSpotTheDifferencePlugin } from "../games/spot-the-difference/server-plugin";
 import { createGameRepository, createLeaderboardRepository } from "./repositories/game-repository";
 
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
@@ -128,9 +129,8 @@ async function build(): Promise<Container> {
     now: () => Date.now(),
     randomId: () => randomUUID(),
     randomPublicId: () => randomBytes(16).toString("base64url"),
-    getLevel: getPrivateLevel,
-    toPublicLevel,
-    readLevelImage,
+    game: createSpotTheDifferencePlugin({ loadImageDataUrl: (level) => readLevelImage(level.level) }),
+    legacyLevelAssetSha256: getLevelImageSha256,
     decisionsWorkerPublicUrl: process.env.DECISIONS_WORKER_URL ?? null,
     decisionsTicketSecret: process.env.DECISIONS_WORKER_SHARED_SECRET ?? null,
     decisionsDispatchMode: dispatchMode,

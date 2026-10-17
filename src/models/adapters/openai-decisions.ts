@@ -30,7 +30,11 @@ export function buildDecisionsBodyFromTask(task: VisionChoiceTask, model: string
 }
 
 export function buildDecisionBody(input: DecisionInput, model: string) {
-  return buildDecisionsBodyFromTask(buildSpotTheDifferenceTask(input), model);
+  const task: VisionChoiceTask = input.task
+    ? { kind: "vision-single-choice", imageDataUrl: input.imageDataUrl, ...input.task }
+    : // Inputs without a task come from the original spot-the-difference wire format.
+      buildSpotTheDifferenceTask(input);
+  return buildDecisionsBodyFromTask(task, model);
 }
 
 interface ChoiceAnswer {
@@ -121,7 +125,7 @@ export async function requestOddCell(
     }
     const modelElapsedMs = elapsed();
     const answers = Array.isArray(body.answers) ? body.answers : [];
-    const answer = answers.find((item) => item && typeof item === "object" && ((item as { name?: unknown }).name === "odd_cell" || answers.length === 1)) as
+    const answer = answers.find((item) => item && typeof item === "object" && ((item as { name?: unknown }).name === (input.task?.name ?? "odd_cell") || answers.length === 1)) as
       | { type?: unknown }
       | undefined;
     if (!answer) {

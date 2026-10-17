@@ -3,16 +3,16 @@
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import type { AiEvent, PublicLevel, RoundReveal, SessionSnapshot } from "@/game/contracts";
-import { PUBLIC_LEVELS_V1 } from "@/levels/public-catalog.generated";
+import { spotTheDifferenceClient } from "@/games/spot-the-difference/client-plugin";
+import type { ClientGamePlugin } from "@/core/client-game";
+import { getGame } from "@/games/registry";
 import { aiStatusLabel, buildAiEventSteps } from "@/game/ai-activity";
-import { STARTING_LIVES } from "@/game/contracts";
 import { AiActivityPanel } from "./AiActivityPanel";
 import { AiDanmakuLane } from "./AiDanmakuLane";
 import { DetailsSheet } from "./DetailsSheet";
 import { danmakuFromActivitySteps } from "@/game/danmaku-messages";
 import { api, ApiError, haptic, track, withRetry } from "@/lib/api-client";
 import { pad2 } from "@/lib/format";
-import { GameBoard } from "./GameBoard";
 import { AiTerminal } from "./game/AiTerminal";
 import { GameHud } from "./game/GameHud";
 import { GameStage } from "./game/GameStage";
@@ -63,7 +63,11 @@ export function preloadImage(url: string): Promise<void> {
 
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
-export function GameScreen({ sessionId }: { sessionId: string }) {
+/**
+ * Core game screen: session/round lifecycle, server-initiated AI race, lock-in/waiting, HUD, AI terminal,
+ * danmaku and reveal. Game specifics (board, input, level assets, hint) come from the client plugin.
+ */
+export function GameScreen({ sessionId, game = spotTheDifferenceClient as unknown as ClientGamePlugin<PublicLevel> }: { sessionId: string; game?: ClientGamePlugin<PublicLevel> }) {
   const router = useRouter();
   const t = useT();
   const locale = useLocale();
@@ -137,7 +141,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
 
   const waitForAi = useCallback(
     async (roundId: string, settled: Awaited<ReturnType<typeof api.submitRound>>, previousLives: number | null) => {
-      const limitMs = settled.round.level ? (PUBLIC_LEVELS_V1[settled.round.level - 1]?.limitMs ?? 10_000) : 10_000;
+      const limitMs = game.publicLevel(settled.round.level)?.limitMs ?? 10_000;
       const giveUpAt = (startedAtRef.current ?? performance.now()) + limitMs + WAIT_SLACK_MS;
       let latest = settled;
       let lastPoll = performance.now();
@@ -159,7 +163,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
       if (!mountedRef.current || roundIdRef.current !== roundId) return;
       showReveal(latest.round, latest.session, previousLives);
     },
-    [showReveal],
+    [showReveal, game],
   );
 
   const sendSubmission = useCallback(async () => {
@@ -238,7 +242,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
       setLevel(response.level);
       setRemainingMs(response.level.limitMs);
 
-      const preload = preloadImage(response.level.imageUrl);
+      const preload = Promise.all(game.assetUrls(response.level).map((url) => preloadImage(url))).then(() => undefined);
       if (response.level.level === 1 && !countdownShownRef.current) {
         countdownShownRef.current = true;
         for (const value of [3, 2, 1]) {
@@ -249,8 +253,8 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
       }
       await preload;
       if (!mountedRef.current) return;
-      const next = PUBLIC_LEVELS_V1[response.level.level];
-      if (next) void preloadImage(next.imageUrl).catch(() => undefined);
+      const next = game.publicLevel(response.level.level + 1);
+      if (next) for (const url of game.assetUrls(next)) void preloadImage(url).catch(() => undefined);
       setImageReady(true);
       setPhase({ kind: "playing" });
       advancingRef.current = false;
@@ -267,7 +271,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
       }
       setPhase({ kind: "error", message: error instanceof ApiError && error.status === 404 ? t("找不到这局挑战。") : t("关卡加载失败，不会扣除机会。"), action: "reload" });
     }
-  }, [sessionId, goToResult, t]);
+  }, [sessionId, goToResult, t, game]);
 
   const boot = useCallback(async () => {
     try {
@@ -382,8 +386,8 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
     if (prefetchRef.current?.forRound === reveal.id) return;
     const promise = api.startNextRound(sessionId);
     prefetchRef.current = { forRound: reveal.id, promise };
-    void promise.then((next) => preloadImage(next.level.imageUrl)).catch(() => undefined);
-  }, [phase.kind, reveal, session, sessionId]);
+    void promise.then((next) => Promise.all(game.assetUrls(next.level).map((url) => preloadImage(url)))).catch(() => undefined);
+  }, [phase.kind, reveal, session, sessionId, game]);
 
   // A late AI answer is filled in without touching lives or level.
   useEffect(() => {
@@ -415,8 +419,9 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
   }, [phase.kind, reveal]);
 
   const displayLevel = level?.level ?? session?.level ?? 1;
-  const limit = level?.limitMs ?? PUBLIC_LEVELS_V1[displayLevel - 1]?.limitMs ?? 0;
-  const gridSize = level?.gridSize ?? PUBLIC_LEVELS_V1[displayLevel - 1]?.gridSize ?? 3;
+  const boardLevel = level ?? game.publicLevel(displayLevel);
+  const limit = boardLevel?.limitMs ?? 0;
+  const Board = game.Board;
   const crumb = `${t("大家来找茬")} / ${t("第 {n} 关", { n: pad2(displayLevel) })}`;
 
   if (phase.kind === "reveal" && reveal && session) {
@@ -448,15 +453,19 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
         <p className="inline-error">{phase.message}</p>
       </div>
     ) : (
-      <GameBoard
-        gridSize={gridSize}
-        imageUrl={imageReady && level ? level.imageUrl : null}
-        disabled={!interactive}
-        selected={selected}
-        loadingLabel={slowLoading ? t("正在加载关卡") : null}
-        onChoose={lockAnswer}
-        onImagePainted={onImagePainted}
-      />
+      boardLevel ? (
+        <Board
+          level={boardLevel}
+          ready={imageReady && level !== null}
+          disabled={!interactive}
+          selected={selected}
+          loadingLabel={slowLoading ? t("正在加载关卡") : null}
+          onChoose={lockAnswer}
+          onPainted={onImagePainted}
+        />
+      ) : (
+        <div className="board" data-testid="board" />
+      )
     );
 
   const foot =
@@ -471,7 +480,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
         >
           {phase.action === "resubmit" ? t("重试提交") : t("重新加载关卡")}
         </Button>
-        <Button variant="text" onClick={() => router.push(localePath(locale, "/spot-the-difference"))}>
+        <Button variant="text" onClick={() => router.push(localePath(locale, getGame(game.slug)?.landingPath ?? "/games"))}>
           {t("返回首页")}
         </Button>
       </div>
@@ -483,7 +492,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
           </span>
         ) : (
           <span className="game-hint">
-            ▸ {t("点击不同项")} · {gridSize}×{gridSize}
+            ▸ {game.hint(boardLevel, t)}
           </span>
         )}
         <Button variant="secondary" className="details-link mobile-only" onClick={() => setAiDetailsOpen(true)}>
@@ -496,7 +505,7 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
     <GameStage
       phase={phase.kind}
       topBar={<GameTopBar crumb={crumb} />}
-      hud={<GameHud level={displayLevel} chances={session?.lives ?? STARTING_LIVES} remainingMs={remaining} limitMs={limit} />}
+      hud={<GameHud level={displayLevel} chances={session?.lives ?? game.startingChances} remainingMs={remaining} limitMs={limit} />}
       lane={<AiDanmakuLane messages={danmakuMessages} paused={aiDetailsOpen} />}
       board={board}
       overlay={

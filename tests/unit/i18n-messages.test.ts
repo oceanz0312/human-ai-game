@@ -1,7 +1,10 @@
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import path from "node:path";
-import en from "@/i18n/messages/en";
-import { translate } from "@/i18n/messages";
+import commonEn from "@/i18n/messages/en";
+import { catalogFor, translate } from "@/i18n/messages";
+import { gameMessageCatalogs } from "@/games/messages";
+
+const en = catalogFor("en")!;
 
 function sources(dir: string): string[] {
   return readdirSync(dir).flatMap((name) => {
@@ -29,4 +32,14 @@ test("interpolation and zh passthrough", () => {
 
 test("English catalog has no CJK characters", () => {
   for (const [id, value] of Object.entries(en)) expect(value, id).not.toMatch(/\p{Script=Han}/u);
+});
+
+test("message namespaces: common and per-game catalogs never overlap", () => {
+  const seen = new Map<string, string>(Object.keys(commonEn).map((id) => [id, "common"]));
+  for (const catalog of gameMessageCatalogs) {
+    for (const id of Object.keys(catalog.en ?? {})) {
+      expect(seen.get(id), `${id} in ${catalog.game}`).toBeUndefined();
+      seen.set(id, catalog.game);
+    }
+  }
 });
