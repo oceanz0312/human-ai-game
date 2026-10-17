@@ -70,7 +70,7 @@ export interface AiEvent {
 /** NDJSON lines streamed by `POST /api/rounds/:id/start` when the server runs the AI. */
 export type RoundStartLine = { type: "begin"; begin: BeginRoundResponse; serverNow: number } | { type: "ai"; ai: AiEvent };
 
-/** Legacy: where the browser should trigger AI (visible in DevTools Network). Only used with AI_DISPATCH=browser. */
+/** Legacy browser ticket dispatch. The client no longer runs it (T4); kept for the service-level tests and the Decisions Worker contract. */
 export type AiDispatch =
   | { mode: "worker"; url: string; ticket: string; issuedAt: number }
   | { mode: "fake"; url: string };

@@ -124,7 +124,7 @@ export function LevelReveal({ round, fasterThanAiCount, ended, onNext, browserAi
       extra={
         <DetailsSheet open={detailsOpen} title={t("AI 详情")} onClose={() => setDetailsOpen(false)}>
           {round.correctChoice !== null ? <AiRevealInsights round={round} /> : null}
-          {browserAiActivity ? <AiActivityPanel progress={null} snapshot={browserAiActivity} title={t("决策时间线")} /> : null}
+          {browserAiActivity ? <AiActivityPanel snapshot={browserAiActivity} title={t("决策时间线")} /> : null}
         </DetailsSheet>
       }
     />

@@ -1,4 +1,5 @@
 import "server-only";
+import { waitUntil } from "./runtime";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import type { DecisionClient } from "./decisions/contracts";
 import { createCloudflareDecisionClient, createUnconfiguredDecisionClient } from "./decisions/client";
@@ -61,15 +62,10 @@ async function cloudflareBindings(): Promise<CloudflareBindings | null> {
   }
 }
 
-function resolveDecisionsDispatchMode(): "server" | "worker" | "fake" | "off" {
-  // Default: the game service runs the AI itself at first paint. AI_DISPATCH=browser restores the old ticket flow.
-  if (process.env.AI_DISPATCH !== "browser") return "server";
-  const url = process.env.DECISIONS_WORKER_URL;
-  const secret = process.env.DECISIONS_WORKER_SHARED_SECRET;
-  const mode = process.env.DECISIONS_MODE || (url ? "worker" : process.env.NODE_ENV === "production" ? "off" : "fake");
-  if (mode === "worker" && url && secret) return "worker";
-  if (mode === "fake") return "fake";
-  return "off";
+function resolveDecisionsDispatchMode(): "server" | "off" {
+  // The game service always runs the AI itself at first paint (browser ticket dispatch was removed in T4;
+  // roll back with a wrangler version rollback). AI_DISPATCH=off keeps the AI offline.
+  return process.env.AI_DISPATCH === "off" ? "off" : "server";
 }
 
 function selectDecisionClient(decisionsBinding?: Fetcher): DecisionClient {
@@ -138,6 +134,7 @@ async function build(): Promise<Container> {
     decisionsWorkerPublicUrl: process.env.DECISIONS_WORKER_URL ?? null,
     decisionsTicketSecret: process.env.DECISIONS_WORKER_SHARED_SECRET ?? null,
     decisionsDispatchMode: dispatchMode,
+    defer: (work) => void waitUntil(work),
   });
   return { service, ready };
 }
