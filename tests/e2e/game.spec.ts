@@ -47,7 +47,7 @@ test("@layout a full clear run follows the approved mobile layout on every view"
 
   await page.waitForURL(/\/result\//);
   await expect(page.getByTestId("reached-level")).toHaveText("20");
-  await expect(page.getByText("挑战完成")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "挑战完成" })).toBeVisible();
   await expect(page.getByRole("button", { name: "生成战绩海报" })).toBeVisible();
   await expect(page.getByRole("button", { name: "再玩一次" })).toBeVisible();
   await expect(page.locator(".board-rows .me")).toContainText("第 20 关");

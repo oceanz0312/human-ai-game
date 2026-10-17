@@ -5,6 +5,7 @@ import { useState } from "react";
 import { api, ApiError, track } from "@/lib/api-client";
 import { LOCALE_COOKIE, type Locale } from "@/i18n/config";
 import { useT } from "@/i18n/client";
+import { Button } from "@/components/ui/8bit";
 
 export function StartButton({
   label,
@@ -47,9 +48,9 @@ export function StartButton({
           {error}
         </p>
       ) : null}
-      <button type="button" className={replay ? "text-action" : "primary-action"} onClick={start} disabled={busy && !replay}>
+      <Button variant={replay ? "text" : "primary"} onClick={start} disabled={busy && !replay}>
         {busy ? (busyLabel ?? t("正在开始")) : (label ?? t("开始挑战"))}
-      </button>
+      </Button>
     </>
   );
 }

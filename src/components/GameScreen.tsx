@@ -21,6 +21,7 @@ import { GameTopBar } from "./game/GameTopBar";
 import { LevelReveal } from "./LevelReveal";
 import { useLocale, useT } from "@/i18n/client";
 import { localePath } from "@/i18n/config";
+import { Badge, Button } from "@/components/ui/8bit";
 
 const SLOW_LOADING_MS = 800;
 const AI_POLL_MS = 500;
@@ -417,28 +418,27 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
   const foot =
     phase.kind === "error" ? (
       <div className="game-foot-actions">
-        <button
-          type="button"
-          className="primary-action"
+        <Button
+          variant="primary"
           onClick={() => {
             if (phase.action === "resubmit") void sendSubmission();
             else void boot();
           }}
         >
           {phase.action === "resubmit" ? t("重试提交") : t("重新加载关卡")}
-        </button>
-        <button type="button" className="text-action" onClick={() => router.push(localePath(locale, "/spot-the-difference"))}>
+        </Button>
+        <Button variant="text" onClick={() => router.push(localePath(locale, "/spot-the-difference"))}>
           {t("返回首页")}
-        </button>
+        </Button>
       </div>
     ) : (
       <>
         <span className="game-hint">
           ▸ {t("点击不同项")} · {gridSize}×{gridSize}
         </span>
-        <button type="button" className="secondary-action details-link mobile-only" onClick={() => setAiDetailsOpen(true)}>
+        <Button variant="secondary" className="details-link mobile-only" onClick={() => setAiDetailsOpen(true)}>
           {t("AI 详情")}
-        </button>
+        </Button>
       </>
     );
 
@@ -461,11 +461,11 @@ export function GameScreen({ sessionId }: { sessionId: string }) {
         <>
           <div className="vs-card" data-testid="vs-status">
             <div className="vs-row">
-              <span className="badge badge-human">{t("你")}</span>
+              <Badge variant="human">{t("你")}</Badge>
               <span className="vs-state">{humanNow}</span>
             </div>
             <div className="vs-row">
-              <span className="badge badge-ai">AI</span>
+              <Badge variant="ai">AI</Badge>
               <span className="vs-state">{aiNow?.label ?? t("准备 AI 请求")}</span>
             </div>
           </div>

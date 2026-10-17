@@ -6,6 +6,7 @@ import "@/styles/base.css";
 import "@/styles/shell.css";
 import "@/styles/game.css";
 import "@/styles/site.css";
+import "@/styles/ui.css";
 import { fontVariables } from "@/lib/fonts";
 import { htmlLang, isLocale, locales } from "@/i18n/config";
 import { SITE_NAME, SITE_URL } from "@/config/site";

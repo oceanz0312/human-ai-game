@@ -7,6 +7,7 @@ import { track } from "@/lib/api-client";
 import { copyText } from "@/lib/clipboard";
 import { renderPoster } from "@/lib/poster";
 import { useLocale, useT } from "@/i18n/client";
+import { Button } from "@/components/ui/8bit";
 
 const noopSubscribe = () => () => undefined;
 
@@ -78,9 +79,9 @@ export function ShareActions({ result, shareUrl }: ShareActionsProps) {
 
   return (
     <>
-      <button type="button" className="primary-action" onClick={generate}>
+      <Button variant="primary" onClick={generate}>
         {t("生成战绩海报")}
-      </button>
+      </Button>
       {open ? (
         <div className="poster-view" role="dialog" aria-modal="true" aria-label={t("战绩海报")}>
           <main className="poster-shell">
@@ -103,22 +104,22 @@ export function ShareActions({ result, shareUrl }: ShareActionsProps) {
             </p>
             <div className="bottom-actions poster-actions">
               {canSystemShare ? (
-                <button type="button" className="primary-action" onClick={share}>
+                <Button variant="primary" onClick={share}>
                   {t("分享战绩")}
-                </button>
+                </Button>
               ) : poster ? (
-                <a className="primary-action link-action" href={poster.url} download="human-ai.png" onClick={onSave}>
+                <Button variant="primary" className="link-action" href={poster.url} download="human-ai.png" onClick={onSave}>
                   {t("保存海报")}
-                </a>
+                </Button>
               ) : null}
               {canSystemShare && poster ? (
-                <a className="text-action" href={poster.url} download="human-ai.png" onClick={onSave}>
+                <Button variant="text" href={poster.url} download="human-ai.png" onClick={onSave}>
                   {t("保存海报")}
-                </a>
+                </Button>
               ) : null}
-              <button type="button" className="text-action" onClick={copy}>
+              <Button variant="text" onClick={copy}>
                 {t("复制链接")}
-              </button>
+              </Button>
             </div>
           </main>
         </div>

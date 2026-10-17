@@ -5,6 +5,7 @@ import "@/styles/base.css";
 import "@/styles/shell.css";
 import "@/styles/game.css";
 import "@/styles/site.css";
+import "@/styles/ui.css";
 import { fontVariables } from "@/lib/fonts";
 import { htmlLang } from "@/i18n/config";
 import { I18nProvider } from "@/i18n/client";

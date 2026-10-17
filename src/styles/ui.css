@@ -1,0 +1,112 @@
+/*
+ * 8-bit component layer (8bitcn-ui look, MIT), loaded after the site CSS.
+ * `.px-notch` draws a notched pixel frame inside the element's own box, so swapping it onto an
+ * existing control never changes layout: the corners are cut with clip-path and the frame is two
+ * pseudo-element bars (top/bottom, left/right), exactly like 8bitcn's border-y + border-x overlay.
+ */
+.px-notch:not(:where(.x)) {
+  --px-bw: var(--bw);
+  --px-frame: var(--c-ink);
+  position: relative;
+  isolation: isolate;
+  border-color: transparent;
+  border-radius: 0;
+  clip-path: polygon(
+    var(--px-bw) 0,
+    calc(100% - var(--px-bw)) 0,
+    calc(100% - var(--px-bw)) var(--px-bw),
+    100% var(--px-bw),
+    100% calc(100% - var(--px-bw)),
+    calc(100% - var(--px-bw)) calc(100% - var(--px-bw)),
+    calc(100% - var(--px-bw)) 100%,
+    var(--px-bw) 100%,
+    var(--px-bw) calc(100% - var(--px-bw)),
+    0 calc(100% - var(--px-bw)),
+    0 var(--px-bw),
+    var(--px-bw) var(--px-bw)
+  );
+}
+
+.px-notch::before,
+.px-notch::after {
+  content: "";
+  position: absolute;
+  z-index: 1;
+  pointer-events: none;
+  border: 0 solid var(--px-frame);
+}
+
+/* the frame sits over the (transparent) border area: offsets are relative to the padding box */
+.px-notch::before {
+  inset: calc(-1 * var(--px-bw)) 0;
+  border-width: var(--px-bw) 0;
+}
+
+.px-notch::after {
+  inset: 0 calc(-1 * var(--px-bw));
+  border-width: 0 var(--px-bw);
+}
+
+.px-notch-sm:not(:where(.x)) {
+  --px-bw: var(--bw-sm);
+}
+
+/* ---------- Button ---------- */
+.px-btn.px-notch:not(:where(.x)) {
+  /* 8bitcn inner shade instead of an outer drop shadow (an outer shadow would be clipped) */
+  box-shadow: inset 0 calc(-1 * var(--bw)) 0 0 rgb(26 28 44 / 0.28);
+  transition: transform 60ms steps(1, end);
+}
+
+.px-btn.secondary-action.px-notch:not(:where(.x)) {
+  box-shadow: inset 0 calc(-1 * var(--bw)) 0 0 rgb(26 28 44 / 0.12);
+}
+
+.px-btn.px-notch:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: inset 0 var(--bw) 0 0 rgb(26 28 44 / 0.28);
+}
+
+/* outline would be clipped: recolour the frame instead */
+.px-btn.px-notch:focus-visible {
+  outline: none;
+}
+
+.px-btn.px-notch:focus-visible::before,
+.px-btn.px-notch:focus-visible::after {
+  --px-frame: var(--c-ai);
+  border-color: var(--c-ai);
+}
+
+.px-btn:disabled {
+  cursor: not-allowed;
+}
+
+/* ---------- Badge / Kbd ---------- */
+.badge.px-notch:not(:where(.x)) {
+  padding-inline: 10px;
+}
+
+.kbd.px-notch:not(:where(.x)) {
+  --px-frame: currentColor;
+}
+
+/* ---------- Progress ---------- */
+.px-progress {
+  display: flex;
+  gap: 2px;
+  height: 10px;
+}
+
+.px-progress > i {
+  flex: 1;
+  background: var(--c-line);
+}
+
+.px-progress > i.on {
+  background: var(--c-ink);
+}
+
+.px-notch:disabled {
+  --px-frame: var(--c-line);
+}

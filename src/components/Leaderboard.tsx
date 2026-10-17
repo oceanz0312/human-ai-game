@@ -5,6 +5,7 @@ import type { LeaderboardRow } from "@/game/contracts";
 import { api, ApiError } from "@/lib/api-client";
 import { DetailsSheet } from "./DetailsSheet";
 import { useLocale, useT } from "@/i18n/client";
+import { Button } from "@/components/ui/8bit";
 
 function Row({ row }: { row: LeaderboardRow }) {
   const t = useT();
@@ -108,9 +109,9 @@ export function Leaderboard({
         compact ? (
           <>
             <LeaderboardList rows={compactRows.filter((row) => row.nickname !== "···")} />
-            <button type="button" className="text-action details-link" onClick={() => setSheetOpen(true)}>
+            <Button variant="text" className="details-link" onClick={() => setSheetOpen(true)}>
               {t("完整排行与昵称")}
-            </button>
+            </Button>
           </>
         ) : (
           <>
@@ -135,9 +136,9 @@ export function Leaderboard({
             {t("昵称")}
           </label>
           <input id="nickname" maxLength={24} placeholder={t("昵称（可选）")} value={nickname} onChange={(event) => setNickname(event.target.value)} />
-          <button type="submit" className="secondary-action" disabled={saving || !nickname.trim()}>
+          <Button type="submit" variant="secondary" disabled={saving || !nickname.trim()}>
             {t("保存")}
-          </button>
+          </Button>
         </form>
       ) : null}
       {!compact && note ? (
@@ -162,9 +163,9 @@ export function Leaderboard({
                 value={nickname}
                 onChange={(event) => setNickname(event.target.value)}
               />
-              <button type="submit" className="secondary-action" disabled={saving || !nickname.trim()}>
+              <Button type="submit" variant="secondary" disabled={saving || !nickname.trim()}>
                 {t("保存")}
-              </button>
+              </Button>
             </form>
           ) : null}
           {note ? (

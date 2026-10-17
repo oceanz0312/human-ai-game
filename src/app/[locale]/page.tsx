@@ -7,6 +7,7 @@ import { isLocale, localePath, type Locale } from "@/i18n/config";
 import { getPages } from "@/i18n/pages";
 import { pageMetadata } from "@/lib/page-meta";
 import { faqLd, itemListLd, JsonLd, organizationLd, websiteLd } from "@/seo/jsonld";
+import { Badge, Button } from "@/components/ui/8bit";
 
 type Props = { params: Promise<{ locale: string }> };
 
@@ -50,8 +51,8 @@ export default async function HomePage({ params }: Props) {
       <section className="container hub-hero">
         <div className="hub-hero-copy">
           <div className="badges">
-            <span className="badge badge-ok">● {fill(hub.eyebrowLive, { n: games.length })}</span>
-            {plannedGames.length ? <span className="badge">{hub.eyebrowSoon}</span> : null}
+            <Badge variant="ok">● {fill(hub.eyebrowLive, { n: games.length })}</Badge>
+            {plannedGames.length ? <Badge>{hub.eyebrowSoon}</Badge> : null}
           </div>
           <h1 className="hub-title">
             <span className="hub-title-vs">
@@ -67,13 +68,13 @@ export default async function HomePage({ params }: Props) {
           <p className="hub-lede">{hub.lede}</p>
           <div className="hub-ctas">
             {first ? (
-              <Link className="primary-action btn-lg" href={localePath(locale, first.landingPath)} data-testid="hub-play">
+              <Button variant="primary" size="lg" href={localePath(locale, first.landingPath)} data-testid="hub-play">
                 {fill(hub.playCta, { game: firstName })} ▶
-              </Link>
+              </Button>
             ) : null}
-            <Link className="secondary-action btn-lg" href="#games">
+            <Button variant="secondary" size="lg" href="#games">
               {hub.allGames}
-            </Link>
+            </Button>
           </div>
           <ul className="hub-facts">
             {hub.facts.map((fact) => (
