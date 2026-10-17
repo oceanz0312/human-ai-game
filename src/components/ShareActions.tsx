@@ -2,17 +2,17 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type { ResultView } from "@/game/contracts";
-import { shareHeadline } from "@/game/reveal-copy";
 import { track } from "@/lib/api-client";
 import { copyText } from "@/lib/clipboard";
 import { renderPoster } from "@/lib/poster";
+import { shareCta, shareLine } from "@/lib/share-copy";
 import { useLocale, useT } from "@/i18n/client";
 import { Button } from "@/components/ui/8bit";
 
 const noopSubscribe = () => () => undefined;
 
 interface ShareActionsProps {
-  result: Pick<ResultView, "publicId" | "reachedLevel" | "fasterThanAiCount" | "cleared">;
+  result: Pick<ResultView, "publicId" | "reachedLevel" | "fasterThanAiCount" | "cleared" | "played" | "humanCorrect" | "aiCorrect">;
   shareUrl: string;
 }
 
@@ -29,7 +29,7 @@ export function ShareActions({ result, shareUrl }: ShareActionsProps) {
   const t = useT();
   const locale = useLocale();
   const shortUrl = shareUrl.replace(/^https?:\/\//, "");
-  const title = shareHeadline(result, locale);
+  const title = shareLine(result, locale);
 
   useEffect(
     () => () => {
@@ -54,7 +54,7 @@ export function ShareActions({ result, shareUrl }: ShareActionsProps) {
   }
 
   async function share() {
-    const text = `${title}${t("。同样的 20 关，你能走到哪里？")}`;
+    const text = `${title}${locale === "zh" ? "。" : ". "}${shareCta(locale)}`;
     try {
       const file = poster ? new File([poster.blob], "human-ai.png", { type: "image/png" }) : null;
       if (file && navigator.canShare?.({ files: [file] })) {
