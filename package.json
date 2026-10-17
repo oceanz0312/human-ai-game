@@ -27,7 +27,9 @@
     "levels:generate": "tsx scripts/generate-levels.ts",
     "levels:validate": "tsx scripts/validate-levels.ts",
     "db:generate": "drizzle-kit generate",
-    "db:migrate": "tsx scripts/migrate.ts"
+    "db:migrate": "tsx scripts/migrate.ts",
+    "og:generate": "node scripts/generate-og.mjs",
+    "share:samples": "node scripts/render-share-samples.mjs"
   },
   "dependencies": {
     "@libsql/client": "0.18.0",

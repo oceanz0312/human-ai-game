@@ -32,7 +32,7 @@ test("a finished run generates a poster and a shareable landing page", async ({ 
   const friendPage = await friend.newPage();
   await friendPage.goto(`/share/${publicId}`);
   await expect(friendPage.getByTestId("reached-level")).toHaveText("03");
-  await expect(friendPage.getByText("Same 20 levels — how far can you get?")).toBeVisible();
+  await expect(friendPage.getByText("Same levels. Out-spot the AI?")).toBeVisible();
   await friendPage.goto(`/result/${publicId}`);
   await friendPage.waitForURL(/\/share\//);
   await friendPage.getByRole("button", { name: "Start" }).click();

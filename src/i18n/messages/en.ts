@@ -1,7 +1,6 @@
 /** English catalog for the game app. Keys are the original Chinese message ids (see ../messages.ts). */
 const en: Record<string, string> = {
   " · 用掉 1 次机会": " · 1 chance used",
-  "20 关挑战": "20-level challenge",
   "AI 不可用 · 地区限制": "AI unavailable · region blocked",
   "AI 仍在判断": "AI still deciding",
   "AI 决策过程": "How the AI decided",
@@ -22,7 +21,6 @@ const en: Record<string, string> = {
   "Worker 已响应（异常）": "Worker responded (error)",
   "{row} 行 {col} 列": "row {row}, col {col}",
   "{who} 到达了": "{who} reached",
-  "。同样的 20 关，你能走到哪里？": ". Same 20 levels — how far can you get?",
   下一关: "Next level",
   个人最佳: "Personal best",
   你: "You",
@@ -56,8 +54,6 @@ const en: Record<string, string> = {
   双方都没找到: "Nobody found it",
   "发送至 Worker": "Sending to Worker",
   "只按最高到达关卡排名，同关并列。": "Ranked by highest level reached; ties share a rank.",
-  "同样的 20 关，": "Same 20 levels —",
-  "同样的 20 关，你能走到哪里？": "Same 20 levels — how far can you get?",
   地区限制: "Region",
   "复制失败，请手动复制地址栏链接": "Copy failed — copy the address bar link instead",
   复制链接: "Copy link",

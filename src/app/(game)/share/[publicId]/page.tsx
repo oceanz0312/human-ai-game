@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { StartButton } from "@/components/StartButton";
-import { shareHeadline } from "@/game/reveal-copy";
+import { shareCopy, shareCta, shareLine } from "@/lib/share-copy";
 import { ResultSummary } from "@/components/ResultSummary";
 import { SiteShell } from "@/components/site/SiteShell";
 import { getGameService } from "@/server/container";
@@ -20,14 +20,13 @@ export async function generateMetadata({ params }: { params: Promise<{ publicId:
   const result = await load((await params).publicId);
   if (!result) return { title: "HUMAN VS AI" };
   const locale = await getCookieLocale();
-  const t = translator(locale);
-  const title = `${shareHeadline(result, locale)} · HUMAN VS AI`;
+  const title = `${shareLine(result, locale)} · HUMAN VS AI`;
   return {
     metadataBase: new URL(await publicBaseUrl()),
     robots: { index: false, follow: true },
     title,
-    description: t("同样的 20 关，你能走到哪里？"),
-    openGraph: { title, description: t("同样的 20 关，你能走到哪里？") },
+    description: shareCta(locale),
+    openGraph: { title, description: shareCta(locale) },
   };
 }
 
@@ -44,7 +43,7 @@ export default async function ShareLandingPage({ params }: { params: Promise<{ p
         <section className="card result-card share-landing" aria-labelledby="share-title">
           <div className="topline">
             <span className="brand">HUMAN VS AI</span>
-            <span className="eyebrow">{t("20 关挑战")}</span>
+            <span className="eyebrow">{shareCopy(locale).game}</span>
           </div>
           <h1 className="eyebrow share-who" id="share-title">
             {t("{who} 到达了", { who })}
@@ -55,7 +54,7 @@ export default async function ShareLandingPage({ params }: { params: Promise<{ p
             label={result.cleared ? t("已通关") : t("到达关卡")}
           />
           <div className="bottom-actions">
-            <p className="body-text share-copy">{t("同样的 20 关，你能走到哪里？")}</p>
+            <p className="body-text share-copy">{shareCta(locale)}</p>
             <StartButton fromShare locale={locale} />
           </div>
         </section>
