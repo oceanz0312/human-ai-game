@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { answer, next, pickOpponent, startGame } from "./helpers";
+import { answer, assertFxInBoard, assertOneScreen, next, pickOpponent, startGame } from "./helpers";
 
 test("@viewport feel kit: 3-2-1 FIGHT, mute toggle, banners, combo and the result grid", async ({ page }) => {
   await page.goto("/zh/spot-the-difference");
@@ -21,6 +21,10 @@ test("@viewport feel kit: 3-2-1 FIGHT, mute toggle, banners, combo and the resul
 
   await answer(page, 2, "correct");
   await expect(page.getByTestId("streak")).toContainText("×2");
+  await expect(page.getByTestId("result-banner")).toBeVisible({ timeout: 15_000 });
+  await page.waitForTimeout(1600); // banner docked
+  expect(await assertFxInBoard(page)).toBeGreaterThanOrEqual(2);
+  await assertOneScreen(page);
   for (let n = 3; n <= 5; n += 1) {
     await next(page);
     await answer(page, n, "wrong");

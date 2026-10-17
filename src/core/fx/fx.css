@@ -21,7 +21,7 @@
 @keyframes fx-blink { 50% { opacity: 0.35; } }
 
 /* Result banner: stamped across the board, then shrinks to a corner tag. */
-.fx-banner { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 6; animation: fx-banner-dock 1500ms steps(12) forwards; }
+.fx-banner { position: absolute; inset: 0; display: grid; place-items: center; pointer-events: none; z-index: 6; padding: 40px; box-sizing: border-box; overflow: hidden; animation: fx-banner-dock 1500ms steps(12) forwards; }
 .fx-banner span { padding: var(--s2) var(--s4); border: var(--bw) solid var(--c-ink); box-shadow: var(--sh); font-family: var(--f-display-latin); font-size: var(--fs-px-2); line-height: 1; transform: rotate(-8deg); white-space: nowrap; }
 .fx-banner-win span { background: var(--c-hi); color: var(--c-ink); }
 .fx-banner-lose span { background: var(--c-ai); color: var(--c-ink); }
@@ -54,3 +54,8 @@
 .result-grid { display: grid; gap: var(--s1); justify-items: start; margin: var(--s2) 0; }
 .result-grid-squares { margin: 0; font-size: 20px; line-height: 1.15; letter-spacing: 1px; white-space: pre; }
 .result-grid-legend { font-size: var(--fs-1, 12px); margin: 0; }
+
+/* Reveal FX badges (COMBO / STREAK / K.O.): pinned to the board stage's top-left, clipped to it. */
+.fx-board-badges { position: absolute; top: var(--s2); left: var(--s2); z-index: 7; display: flex; flex-wrap: wrap; gap: var(--s1); max-width: calc(100% - 2 * var(--s2)); pointer-events: none; }
+.fx-board-badges:empty { display: none; }
+.fx-board-badges > * { margin: 0; max-width: 100%; white-space: nowrap; overflow: hidden; text-overflow: clip; }
