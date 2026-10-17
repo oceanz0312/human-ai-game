@@ -998,6 +998,10 @@
   }
   .hud-value {
     font-size: var(--fs-px-2);
+    white-space: nowrap;
+  }
+  .hud-timer {
+    white-space: nowrap;
   }
   .hud-timer .value {
     font-size: var(--fs-px-3);
@@ -1126,5 +1130,15 @@
   /* The verdict, race and 下一关 matter most on short phones; the full timeline stays one tap away in AI 详情. */
   .game-stage[data-phase="reveal"] .game-side-body > .ai-terminal {
     display: none;
+  }
+}
+
+/* phones: the level / timer / chances row must fit 343px+ in one line */
+@media (max-width: 767px) {
+  .hud-card .hud-value {
+    font-size: var(--fs-px-1);
+  }
+  .hud-card .hud-timer .value {
+    font-size: var(--fs-px-2);
   }
 }

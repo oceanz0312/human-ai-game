@@ -41,6 +41,18 @@ test.describe("@viewport pixel type system", () => {
     await waitForPlayable(page, 1);
     const play = await pixelReport(page);
     expect(play.bad, "play: off-grid pixel text").toEqual([]);
+    // HUD row: every value stays on one line, and the stacked layout hides the timer bar
+    for (const selector of [".game-hud .level", ".hud-timer .value"]) {
+      const { height, size } = await page.locator(selector).evaluate((el) => {
+        const range = document.createRange();
+        range.selectNodeContents(el);
+        return { height: range.getBoundingClientRect().height, size: parseFloat(getComputedStyle(el).fontSize) };
+      });
+      expect(height, `${selector} on one line`).toBeLessThan(size * 1.8);
+    }
+    const viewport = page.viewportSize()!;
+    if (viewport.width < 768 || viewport.height > viewport.width) await expect(page.locator(".hud-segments")).toBeHidden();
+    else await expect(page.locator(".hud-segments")).toBeVisible();
     await expect(page.locator(".board").first()).toBeVisible();
     await answer(page, 1, "correct");
     await page.waitForTimeout(300);
