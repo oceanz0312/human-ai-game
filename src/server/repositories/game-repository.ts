@@ -1,4 +1,5 @@
-import { and, desc, eq, gt, gte, isNull, lt, sql } from "drizzle-orm";
+import { and, desc, eq, gt, gte, inArray, isNull, lt, sql } from "drizzle-orm";
+import { alias } from "drizzle-orm/sqlite-core";
 import type { HumanStatus, Winner } from "../../game/contracts";
 import { LEVEL_SET_VERSION, STARTING_LIVES } from "../../game/contracts";
 import { resolveRace } from "../../game/rules";
@@ -333,6 +334,51 @@ export function createGameRepository(db: Database) {
       return row ?? null;
     },
 
+    /**
+     * Everything a result / share page needs in ONE database round trip (D1 batch): the result row with its session,
+     * nickname, the player's best and global rank for that best, plus the run's settled rounds. Every statement keys
+     * off `publicId`, so none waits for another. Equivalent to getResultByPublicId + getBest + getRankForLevel +
+     * sessionAccuracy + sessionOutcomes (see tests/integration/result-bundle.test.ts).
+     */
+    async getResultBundle(publicId: string) {
+      const [heads, roundRows] = await db.batch([
+        db
+          .select({
+            result: results,
+            session: sessions,
+            nickname: players.nickname,
+            bestLevel: bests.bestLevel,
+            rank: sql<number>`1 + (SELECT count(*) FROM bests AS higher WHERE higher.level_set_version = ${results.levelSetVersion} AND higher.best_level > coalesce(${bests.bestLevel}, ${results.reachedLevel}))`,
+          })
+          .from(results)
+          .innerJoin(sessions, eq(sessions.id, results.sessionId))
+          .innerJoin(players, eq(players.id, results.playerId))
+          .leftJoin(bests, and(eq(bests.playerId, results.playerId), eq(bests.levelSetVersion, results.levelSetVersion)))
+          .where(eq(results.publicId, publicId)),
+        db
+          .select({ level: rounds.level, humanStatus: rounds.humanStatus, winner: rounds.winner, aiStatus: rounds.aiStatus, aiCorrect: rounds.aiCorrect })
+          .from(rounds)
+          .where(inArray(rounds.sessionId, db.select({ id: results.sessionId }).from(results).where(eq(results.publicId, publicId))))
+          .orderBy(rounds.level),
+      ]);
+      const head = heads[0];
+      if (!head) return null;
+      const settled = roundRows.filter((row) => row.humanStatus !== null);
+      return {
+        result: head.result,
+        session: head.session,
+        nickname: head.nickname,
+        bestLevel: head.bestLevel ?? head.result.reachedLevel,
+        rank: Number(head.rank),
+        accuracy: {
+          played: settled.length,
+          humanCorrect: settled.filter((row) => row.humanStatus === "correct").length,
+          aiCorrect: settled.filter((row) => Boolean(row.aiCorrect)).length,
+        },
+        outcomes: settled.map(({ level, humanStatus, winner, aiStatus }) => ({ level, humanStatus, winner, aiStatus })),
+      };
+    },
+
     /** Settled rounds of one run and how many each side got right (drives the accuracy framing on results). */
     async sessionAccuracy(sessionId: string) {
       const [row] = await db
@@ -497,19 +543,18 @@ export function createLeaderboardRepository(db: Database) {
     },
 
     /** Index of the player inside the stable display order, used to show surrounding rows. */
+    /** Index of the player's row in the board order (one query: the player's own best is a self-join). */
     async getDisplayIndex(playerId: string, version = LEVEL_SET_VERSION) {
-      const best = await this.getBest(playerId, version);
-      if (!best) return null;
+      const me = alias(bests, "me");
       const [row] = await db
-        .select({ before: sql<number>`count(*)` })
-        .from(bests)
-        .where(
-          and(
-            eq(bests.levelSetVersion, version),
-            sql`(${bests.bestLevel} > ${best.bestLevel} OR (${bests.bestLevel} = ${best.bestLevel} AND (${bests.achievedAt} < ${best.achievedAt} OR (${bests.achievedAt} = ${best.achievedAt} AND ${bests.playerId} < ${playerId}))))`,
-          ),
-        );
-      return Number(row?.before ?? 0);
+        .select({
+          // Literal "me" columns: drizzle leaves column refs unqualified on a single-table select, which the subquery
+          // would resolve against "other".
+          before: sql<number>`(SELECT count(*) FROM bests AS other WHERE other.level_set_version = me.level_set_version AND (other.best_level > me.best_level OR (other.best_level = me.best_level AND (other.achieved_at < me.achieved_at OR (other.achieved_at = me.achieved_at AND other.player_id < me.player_id)))))`,
+        })
+        .from(me)
+        .where(and(eq(me.playerId, playerId), eq(me.levelSetVersion, version)));
+      return row ? Number(row.before) : null;
     },
   };
 }

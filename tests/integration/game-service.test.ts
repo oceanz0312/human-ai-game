@@ -405,3 +405,85 @@ test("server mode: a repeated /start does not run the AI twice and reports the f
     s.cleanup();
   }
 });
+
+describe("one-round-trip result lookup (perf PR-C)", () => {
+  async function playRun(playerId: string, answers: Answer[], replay = false) {
+    ctx.advance(2 * 60 * 60 * 1000);
+    const session = await ctx.service.createSession({ playerId, replay });
+    let last: Awaited<ReturnType<typeof ctx.playRound>> | null = null;
+    for (const answer of answers) {
+      last = await ctx.playRound(session.id, playerId, answer, { elapsedMs: 300 });
+      if (last.session.status === "ended") break;
+    }
+    return last!.session.publicId!;
+  }
+
+  async function withLegacy<T>(work: () => Promise<T>) {
+    process.env.RESULT_BUNDLE = "off";
+    try {
+      return await work();
+    } finally {
+      delete process.env.RESULT_BUNDLE;
+    }
+  }
+
+  test("the batched bundle returns exactly what the sequential lookups return", async () => {
+    // Level 2 errors for the AI (a void cell) so outcomes cover human / ai / none / void.
+    ctx = await setup({ ai: (level) => (level === 2 ? { errorCode: "upstream_error" } : level % 3 === 0 ? { choice: "zz" } : { choice: getPrivateLevel(level).correctChoice }) });
+    const ids: string[] = [];
+    const runs: string[] = [];
+    for (let i = 0; i < 4; i += 1) ids.push(await ctx.player());
+    runs.push(await playRun(ids[0], ["correct", "correct", "correct", "wrong", "correct", "wrong", "timeout"]));
+    runs.push(await playRun(ids[1], ["wrong", "correct", "wrong", "wrong"]));
+    runs.push(await playRun(ids[2], ["correct", "correct", "correct", "correct", "wrong", "wrong", "wrong"]));
+    // A weaker replay keeps the earlier best (bestLevel > reachedLevel) and shares that best's rank.
+    runs.push(await playRun(ids[0], ["wrong", "wrong", "wrong"], true));
+    runs.push(await playRun(ids[3], ["timeout", "timeout", "timeout"]));
+    for (const publicId of runs) {
+      const bundled = await ctx.service.getResultWithOwner(publicId);
+      const legacy = await withLegacy(() => ctx.service.getResultWithOwner(publicId));
+      expect(bundled, publicId).toEqual(legacy);
+      expect(bundled!.view.outcomes!.length).toBe(bundled!.view.played);
+    }
+    const replayView = (await ctx.service.getResultWithOwner(runs[3]))!.view;
+    expect(replayView.bestLevel).toBeGreaterThan(replayView.reachedLevel);
+    const kinds = new Set<string>();
+    for (const publicId of runs) for (const outcome of (await ctx.service.getResult(publicId))!.outcomes ?? []) kinds.add(outcome);
+    expect(kinds.size).toBeGreaterThanOrEqual(2);
+    expect(await ctx.service.getResultWithOwner("a".repeat(22))).toBeNull();
+    expect((await ctx.service.getResultWithOwner(runs[1]))!.ownerId).toBe(ids[1]);
+  });
+
+  test("the viewer's 'around' rows match a brute-force board order", async () => {
+    ctx = await setup();
+    const ids: string[] = [];
+    const reachedPlan = [6, 3, 5, 3, 7, 4, 3, 6, 5, 4];
+    for (const reached of reachedPlan) {
+      const playerId = await ctx.player();
+      ids.push(playerId);
+      const answers: Answer[] = [];
+      for (let level = 1; level <= reached; level += 1) answers.push(level > reached - 3 ? "wrong" : "correct");
+      await playRun(playerId, answers);
+    }
+    const full = await ctx.service.getLeaderboard({ viewerPlayerId: null, limit: 100 });
+    const ordered = await ctx.leaderboard.list({ limit: 100, version: "v1" });
+    for (const viewer of ids) {
+      const board = await ctx.service.getLeaderboard({ viewerPlayerId: viewer, limit: 3 });
+      // SQL position (one self-join query) equals the brute-force position in the ordered board.
+      const position = await ctx.leaderboard.getDisplayIndex(viewer, "v1");
+      expect(position).toBe(ordered.findIndex((row) => row.playerId === viewer));
+      const meInTop = board.top.some((row) => row.isMe);
+      if (meInTop) {
+        expect(board.around).toEqual([]);
+        continue;
+      }
+      // The "around" window is the viewer's neighbour above, the viewer, and the one below, in board order.
+      expect(board.around.filter((row) => row.isMe)).toHaveLength(1);
+      const meRow = board.around.find((row) => row.isMe)!;
+      const expected = full.top.slice(Math.max(0, position! - 1), Math.max(0, position! - 1) + 3).map((row) => [row.rank, row.reachedLevel]);
+      expect(board.around.map((row) => [row.rank, row.reachedLevel])).toEqual(expected);
+      expect(full.top[position!].reachedLevel).toBe(meRow.reachedLevel);
+    }
+    expect(await ctx.leaderboard.getDisplayIndex(await ctx.player(), "v1")).toBeNull();
+  });
+});
