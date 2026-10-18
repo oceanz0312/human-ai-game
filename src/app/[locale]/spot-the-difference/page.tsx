@@ -56,7 +56,7 @@ export default async function Page({ params }: Props) {
         { href: "/games/spot-the-difference/leaderboard", label: nav.leaderboard },
         { href: "/find-the-difference", label: nav.find },
         { href: "/human-vs-ai", label: nav.humanVsAi },
-        { href: "/ai-opponents/luna", label: nav.opponents },
+        { href: "/how-to-play", label: nav.howToPlay },
       ]}
     >
       <h2>{copy.howTitle}</h2>

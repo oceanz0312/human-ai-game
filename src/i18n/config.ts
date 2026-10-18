@@ -1,6 +1,9 @@
 /** Locale registry. English is the default and lives at the root with no prefix; others live under /<locale>. */
-export const locales = ["en", "zh"] as const;
-export type Locale = (typeof locales)[number];
+/** Every locale the code still carries (zh catalogs stay for a later relaunch). */
+export const allLocales = ["en", "zh"] as const;
+export type Locale = (typeof allLocales)[number];
+/** Public locales. English only (SEO plan 2026-10-18): /zh/* is a permanent redirect to the English URL. */
+export const locales: readonly Locale[] = ["en"];
 export const defaultLocale: Locale = "en";
 export const LOCALE_COOKIE = "hv_locale";
 

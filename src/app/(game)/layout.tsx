@@ -8,12 +8,13 @@ import "@/styles/game.css";
 import "@/styles/site.css";
 import "@/styles/ui.css";
 import { fontVariables } from "@/lib/fonts";
+import { SITE_NAME } from "@/config/site";
 import { htmlLang } from "@/i18n/config";
 import { I18nProvider } from "@/i18n/client";
 import { Analytics } from "@/components/site/Analytics";
 import { getCookieLocale } from "@/i18n/server";
 
-export const metadata: Metadata = { title: "HUMAN VS AI" };
+export const metadata: Metadata = { title: SITE_NAME };
 
 export const viewport: Viewport = {
   width: "device-width",

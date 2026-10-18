@@ -45,7 +45,7 @@ const en = {
       "facts": [
         "AI opponent on every level",
         "No signup · plays in your browser",
-        "English / 中文"
+        "Free · English"
       ],
       "vsYou": "You",
       "vsYouLabel": "Human player",
@@ -96,7 +96,7 @@ const en = {
           "a": "New games appear on this page as soon as they ship. Cards marked “in the works” are tentative."
         }
       ],
-      "itemListName": "Human vs AI games"
+      "itemListName": "Spot the difference puzzles"
     },
   ui: {
     footerGames: "Games",
@@ -108,7 +108,7 @@ const en = {
     comingSoon: "Coming soon",
     moreGames: "More games",
     inTheWorks: "In the works",
-    footerTagline: "Human vs AI games: play against AI opponents.",
+    footerTagline: "Free spot the difference puzzles vs AI.",
     related: "Related",
     exit: "Exit",
   },
@@ -124,21 +124,21 @@ const en = {
       intro: "Twenty puzzles, one odd cell in each. You and the AI see the same picture at the same moment — whoever spots the difference first wins the level. Free, no signup, made for phones.",
     },
     findTheDifference: {
-      title: "Find the Difference: Quick Puzzles vs AI | HUMAN VS AI",
+      title: "Find the Difference: Quick Puzzles vs AI | Spot The Difference Game",
       description: "Find the difference in seconds. Grids start at 3×3 and jump to 9×9; the clock gets shorter every level. Tips, rules and the hardest levels.",
       eyebrow: "Find the difference",
       h1: "Find the Difference",
       intro: "Grids start at 3×3 and jump to 9×9 by level 6, while the timer shrinks. Scan rows, not cells, and trust your first odd shape. Can you find the difference before the AI does?",
     },
     humanVsAi: {
-      title: "Human vs AI: Can You Beat the AI at a Puzzle?",
+      title: "Human vs AI Mode: Spot the Difference Against AI | Spot The Difference Game",
       description: "Human vs AI, live: race an AI opponent on the same visual puzzle. See its answer time, confidence and mistakes after every level.",
       eyebrow: "Human vs AI",
       h1: "Human vs AI",
       intro: "Luna AI is an in-game simulated opponent tuned to play like a sharp human: quick on small grids, slower and shakier on 9×9. After each level you see its answer time, confidence and the cells it doubted. Humans still win plenty of levels — the AI is fast, not perfect.",
     },
     games: {
-      title: "Human vs AI Games | HUMAN VS AI",
+      title: "Human vs AI Games | Spot The Difference Game",
       description: "Browser games where you play against the AI. Start with spot the difference; more human vs AI games are coming.",
       eyebrow: "Games",
       h1: "Human vs AI Games",
@@ -146,14 +146,14 @@ const en = {
       comingSoon: "More games coming soon",
     },
     play: {
-      title: "Play Spot the Difference | HUMAN VS AI",
+      title: "Play Spot the Difference | Spot The Difference Game",
       description: "Start a spot the difference run against the AI.",
       eyebrow: "Ready",
       h1: "Race the AI",
       intro: "20 levels. Tap the one cell that's different before the AI does.",
     },
     howToPlay: {
-      title: "How to Play Spot the Difference vs AI | HUMAN VS AI",
+      title: "How to Play Spot the Difference vs AI | Spot The Difference Game",
       description: "How to play: tap the one different cell, beat the clock and the AI. Rules, scoring and tips in 30 seconds.",
       eyebrow: "How to play",
       h1: "How to Play",
@@ -166,7 +166,7 @@ const en = {
       ],
     },
     faq: {
-      title: "Spot the Difference vs AI — FAQ | HUMAN VS AI",
+      title: "Spot the Difference vs AI — FAQ | Spot The Difference Game",
       description: "Answers about the human vs AI spot the difference game: is the AI a real model, is it free and how ranking works.",
       eyebrow: "FAQ",
       h1: "FAQ",
@@ -180,22 +180,22 @@ const en = {
       ],
     },
     about: {
-      title: "About HUMAN VS AI",
-      description: "HUMAN VS AI is a small platform of browser games where people race AI opponents. Simple, fast, free.",
+      title: "About Spot The Difference Game",
+      description: "Spot The Difference Game is a free browser puzzle site where you race an AI opponent. Simple, fast, free.",
       eyebrow: "About",
-      h1: "About HUMAN VS AI",
+      h1: "About Spot The Difference Game",
       intro: "We build quick browser games that put people and AI opponents on the same puzzle at the same moment. We show the AI's speed and mistakes so you can see where humans still win. Independent project; not affiliated with any AI provider.",
     },
     privacy: {
-      title: "Privacy | HUMAN VS AI",
-      description: "What HUMAN VS AI stores: an anonymous player id cookie, your runs and an optional nickname.",
+      title: "Privacy | Spot The Difference Game",
+      description: "What Spot The Difference Game stores: an anonymous player id cookie, your runs and an optional nickname.",
       eyebrow: "Legal",
       h1: "Privacy",
-      intro: "We store an anonymous player cookie, your runs and an optional nickname to run the game and leaderboard. We don't sell data. Level images are sent to the AI provider to get its answer; no personal data is included. To enforce the 3-runs-a-day limit your browser keeps a random ID in local storage and we store only a one-way hash of it — no fingerprinting, no IP. Clearing site data resets the ID.",
+      intro: "We store an anonymous player cookie, your runs and an optional nickname to run the game and leaderboard. We don't sell data. The AI opponent is simulated inside the game, so no images or play data are sent to any AI provider. To enforce the 3-runs-a-day limit your browser keeps a random ID in local storage and we store only a one-way hash of it — no fingerprinting, no IP. Clearing site data resets the ID.",
     },
     terms: {
-      title: "Terms | HUMAN VS AI",
-      description: "Terms of use for HUMAN VS AI games.",
+      title: "Terms | Spot The Difference Game",
+      description: "Terms of use for Spot The Difference Game games.",
       eyebrow: "Legal",
       h1: "Terms",
       intro: "Play for fun and fair. Automated play, score manipulation or abuse of the service may lead to removal from the leaderboard. The game is provided as is, without warranty.",
@@ -207,7 +207,7 @@ const en = {
       tiers: {
         easy: {
           name: "Easy",
-          title: "Spot the Difference Level {n} – Easy Odd One Out, {secs}s | HUMAN VS AI",
+          title: "Spot the Difference Level {n} – Easy Odd One Out, {secs}s | Spot The Difference Game",
           description: "Free spot the difference level {n}: find the odd one out among {cells} pictures in {secs} seconds while the AI races you. A quick warm-up before the hard 9×9 levels.",
           h1: "Spot the Difference Level {n}: Find the Odd One Out",
           intro: "Level {n} is a {grid}×{grid} warm-up: {cells} cells, exactly one is different, and you have {secs} seconds. The AI sees the same picture at the same moment, so tap the odd one out first.",
@@ -215,7 +215,7 @@ const en = {
         },
         hard: {
           name: "Hard",
-          title: "Hard Spot the Difference Level {n} (9×9, {secs}s Timer) | HUMAN VS AI",
+          title: "Hard Spot the Difference Level {n} (9×9, {secs}s Timer) | Spot The Difference Game",
           description: "Hard spot the difference level {n}: find the one different cell among {cells} in {secs} seconds, before the AI does. Free online find-the-difference game, no download.",
           h1: "Hard Spot the Difference: Level {n}",
           intro: "From level 6 the grid jumps to {grid}×{grid}: {cells} nearly identical cells and {secs} seconds to find the difference. It is a spot the difference puzzle with a timer, and the AI is scanning the same image.",
@@ -223,7 +223,7 @@ const en = {
         },
         expert: {
           name: "Expert",
-          title: "Expert Spot the Difference Level {n}: {secs}s to Beat the AI | HUMAN VS AI",
+          title: "Expert Spot the Difference Level {n}: {secs}s to Beat the AI | Spot The Difference Game",
           description: "Expert spot the difference level {n}: {cells} cells and only {secs} seconds. Can you find the difference faster than the AI? A free, hard spot the difference game for adults.",
           h1: "Expert Spot the Difference: Level {n}",
           intro: "Level {n} gives you {secs} seconds for {cells} cells, a little less every level until 3 seconds at level 20. This is where most humans start losing to the AI.",
@@ -241,7 +241,7 @@ const en = {
       all: "All levels",
     },
     leaderboard: {
-      title: "Spot the Difference Leaderboard vs AI | HUMAN VS AI",
+      title: "Spot the Difference Leaderboard vs AI | Spot The Difference Game",
       description: "Top players in the human vs AI spot the difference game, ranked by highest level reached.",
       eyebrow: "Leaderboard",
       h1: "Leaderboard",
@@ -250,18 +250,18 @@ const en = {
       level: "Level {n}",
     },
     aiOpponents: {
-      title: "AI Opponents | HUMAN VS AI",
-      description: "The AI opponents you play against on HUMAN VS AI.",
+      title: "AI Opponents | Spot The Difference Game",
+      description: "The AI opponents you play against on Spot The Difference Game.",
       eyebrow: "AI opponents",
       h1: "AI Opponents",
       intro: "Only models that are actually wired into a game are listed here.",
     },
     opponent: {
-      title: "Play Against {model} | HUMAN VS AI",
+      title: "Play Against {model} | Spot The Difference Game",
       description: "Race {model} ({provider} {api}) at spot the difference. Answer times and mistakes shown after every level.",
       eyebrow: "AI opponent",
       h1: "Human vs {model}",
-      intro: "Your opponent is {model}, an in-game simulated AI. It returns one final answer per level, and we show its timing. HUMAN VS AI is independent and not affiliated with {provider}.",
+      intro: "Your opponent is {model}, an in-game simulated AI. It returns one final answer per level, and we show its timing. Spot The Difference Game is independent and not affiliated with {provider}.",
     },
   },
 };

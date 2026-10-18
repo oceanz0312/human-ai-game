@@ -26,7 +26,7 @@ export function renderShareOg(result: ShareStats | null) {
   const stats = result ?? { reachedLevel: 1, fasterThanAiCount: 0, cleared: false, played: 0, humanCorrect: 0, aiCorrect: 0 };
   const c = shareCopy("en");
   const outcome = shareOutcome(stats);
-  const [l1, l2] = result ? posterHeadline(stats, "en") : ["HUMAN VS AI", "PLAY NOW"];
+  const [l1, l2] = result ? posterHeadline(stats, "en") : ["Spot The Difference Game", "PLAY NOW"];
   const tiles = result ? posterStats(stats, "en") : [];
   const human = accuracy(stats.humanCorrect, stats.played);
   const ai = accuracy(stats.aiCorrect, stats.played);
@@ -36,7 +36,7 @@ export function renderShareOg(result: ShareStats | null) {
     (
       <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: P.paper, color: P.ink, padding: "40px 56px", fontFamily: font }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", height: 72, padding: "0 24px", background: P.ink, color: "#fff", boxShadow: `12px 12px 0 ${P.ink}` }}>
-          <span style={{ fontSize: 32 }}>HUMAN VS AI</span>
+          <span style={{ fontSize: 32 }}>Spot The Difference Game</span>
           <div style={{ display: "flex", gap: 12 }}>
             {[P.human, P.hi, P.ai].map((bg) => (
               <div key={bg} style={{ width: 24, height: 24, background: bg }} />

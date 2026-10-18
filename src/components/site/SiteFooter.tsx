@@ -21,8 +21,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
       links: [
         { href: "/how-to-play", label: nav.howToPlay },
         { href: "/human-vs-ai", label: nav.humanVsAi },
-        { href: "/ai-opponents", label: nav.opponents },
-        { href: "/faq", label: nav.faq },
+            { href: "/faq", label: nav.faq },
       ],
     },
     {
@@ -38,7 +37,7 @@ export function SiteFooter({ locale }: { locale: Locale }) {
     <footer className="site-footer">
       <div className="container site-footer-grid">
         <div className="site-footer-brand">
-          <p className="site-footer-name">HUMAN VS AI</p>
+          <p className="site-footer-name">Spot The Difference Game</p>
           <p>{ui.footerTagline}</p>
         </div>
         {columns.map((column) => (

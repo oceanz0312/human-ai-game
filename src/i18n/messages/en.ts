@@ -61,7 +61,7 @@ const en: Record<string, string> = {
   开始挑战: "Start",
   "我到达了第 {n} 关": "I reached level {n}",
   "我有 {n} 关比 AI 更快": "I beat the AI on {n} {n|level|levels}",
-  "我通关了 HUMAN VS AI": "I cleared HUMAN VS AI",
+  "我通关了 HUMAN VS AI": "I cleared Spot The Difference Game",
   战绩海报: "Result poster",
   "找不到这局挑战。": "This run can't be found.",
   "挑战太频繁了，请稍后再试。": "Too many runs — try again shortly.",

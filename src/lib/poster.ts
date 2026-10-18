@@ -128,8 +128,8 @@ export async function renderPoster(input: PosterInput) {
   // brand bar (window title bar)
   box(ctx, pad, pad, inner - 18, 120, P.ink, 0, 18);
   ctx.fillStyle = P.surface;
-  ctx.font = `48px ${families.latin}`;
-  ctx.fillText("HUMAN VS AI", pad + 36, pad + 64);
+  ctx.font = `36px ${families.latin}`;
+  ctx.fillText("Spot The Difference Game", pad + 36, pad + 64);
   [P.human, P.hi, P.ai].forEach((fill, i) => {
     const s = 36;
     const bx = pad + inner - 18 - 36 - (3 - i) * (s + 12) + 12;

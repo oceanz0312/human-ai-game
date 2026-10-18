@@ -11,10 +11,12 @@ export const models: ModelEntry[] = [
   {
     id: "luna",
     slug: "luna",
-    publicName: "Luna",
-    provider: "OpenAI",
-    api: "Decisions API",
-    upstreamModel: "gpt-6-luna",
+    publicName: "Luna AI",
+    // In-game simulated opponent (AI_MODE=simulated, the default). The OpenAI Decisions adapter stays wired for
+    // AI_MODE=live; restore provider/api/upstreamModel copy if live play is switched back on.
+    provider: "Spot The Difference Game",
+    api: "In-game simulated AI",
+    upstreamModel: "simulated",
     status: "live",
     adapter: "openai-decisions",
     capabilities: { vision: true, singleChoice: true, probabilities: true },

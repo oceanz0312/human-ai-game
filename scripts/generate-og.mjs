@@ -13,11 +13,11 @@ const b64 = (file) => readFileSync(path.join(root, file)).toString("base64");
 
 const copy = {
   en: {
-    home: { kind: "platform", title: "Human vs AI Games", sub: "Browser games against a real AI" },
-    "spot-the-difference": { kind: "game", title: "Spot the Difference", sub: "Race a real AI to the odd tile" },
-    "find-the-difference": { kind: "game", title: "Find the Difference", sub: "3×3 to 9×9 grids vs a real AI" },
-    "human-vs-ai": { kind: "platform", title: "Human vs AI", sub: "Real AI, real speed, no fake bots" },
-    default: { kind: "platform", title: "HUMAN VS AI", sub: "Browser games vs a real AI" },
+    home: { kind: "game", title: "Spot the Difference", sub: "Find the odd one before the AI" },
+    "spot-the-difference": { kind: "game", title: "Spot the Difference", sub: "Find the odd one before the AI" },
+    "find-the-difference": { kind: "game", title: "Find the Difference", sub: "Free puzzles vs an AI opponent" },
+    "human-vs-ai": { kind: "game", title: "Human vs AI", sub: "Spot the difference against AI" },
+    default: { kind: "game", title: "Spot The Difference Game", sub: "Free online puzzles vs AI" },
   },
   zh: {
     home: { kind: "platform", title: "人类 VS AI 小游戏", sub: "和真实 AI 同场对战的网页游戏" },
@@ -80,7 +80,7 @@ const art = (kind, u) =>
 const html = (locale, { kind, title, sub }) => {
   const u = ui[locale];
   return `<!doctype html><html><head><style>${css}</style></head><body class="${locale}"><div class="og">
-  <div class="bar"><span class="brand">HUMAN VS AI</span><span class="dots"><i style="background:#ff004d"></i><i style="background:#ffec27"></i><i style="background:#29adff"></i></span></div>
+  <div class="bar"><span class="brand">SPOT THE DIFFERENCE GAME</span><span class="dots"><i style="background:#ff004d"></i><i style="background:#ffec27"></i><i style="background:#29adff"></i></span></div>
   <div class="main"><div class="copy"><span class="chip">${u.tag}</span><div class="title${/^[\x20-\x7e]+$/.test(title) ? " latin" : ""}">${title}</div><div class="sub">${sub}</div></div>
   <div class="art">${art(kind, u)}</div></div></div></body></html>`;
 };

@@ -13,7 +13,7 @@ export function ResultGrid({ outcomes, title, url }: { outcomes: LevelOutcome[];
   if (!outcomes.length) return null;
   const legend = t("🟥 你赢 · 🟦 AI 赢 · ⬛ 都没对 · ⬜ AI 未作答");
   async function copy() {
-    setCopied(await copyText(resultGridText({ title: "HUMAN VS AI", summary: title, outcomes, url })));
+    setCopied(await copyText(resultGridText({ title: "Spot The Difference Game", summary: title, outcomes, url })));
   }
   return (
     <div className="result-grid" data-testid="result-grid">
