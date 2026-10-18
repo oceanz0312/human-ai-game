@@ -11,6 +11,7 @@ import { createGameService, type GameService } from "./game-service";
 import { getLevelImageSha256, PRIVATE_LEVELS_V1, readLevelImageDataUrl } from "./levels/catalog";
 import { createSpotTheDifferencePlugin } from "../games/spot-the-difference/server-plugin";
 import { createGameRepository, createLeaderboardRepository } from "./repositories/game-repository";
+import { createWorkersEdgeCache } from "./edge-cache";
 
 const hash = (value: string) => createHash("sha256").update(value).digest("hex");
 
@@ -136,6 +137,7 @@ async function build(): Promise<Container> {
   const service = createGameService({
     games: createGameRepository(db),
     leaderboard: createLeaderboardRepository(db),
+    edgeCache: cf ? createWorkersEdgeCache() : null,
     decisions: selectDecisionClient(cf?.DECISIONS),
     simulateAi: resolveAiMode() === "simulated",
     now: () => Date.now(),

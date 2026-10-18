@@ -23,7 +23,7 @@ export const metadata: Metadata = { robots: { index: false } };
 async function ResultLeaderboard({ viewer, nickname }: { viewer: string | null; nickname: string | null }) {
   let initialData = null;
   try {
-    const board = await (await getGameService()).getLeaderboard({ viewerPlayerId: viewer, limit: 10 });
+    const board = await (await getGameService()).getLeaderboard({ viewerPlayerId: viewer, limit: 10, fresh: true });
     initialData = { top: board.top, around: board.around };
   } catch {
     // Fall back to the client fetch.

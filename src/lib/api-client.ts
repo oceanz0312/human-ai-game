@@ -35,7 +35,8 @@ export const api = {
   submitRound: (roundId: string, body: { choice: string | null; elapsedMs: number }) => post<SubmitResponse>(`/api/rounds/${roundId}/submit`, body),
   getRound: (roundId: string) => jsonRequest<SubmitResponse>(`/api/rounds/${roundId}`),
   getResult: (publicId: string) => jsonRequest<ResultView>(`/api/results/${publicId}`),
-  getLeaderboard: () => jsonRequest<{ version: string; top: LeaderboardRow[]; around: LeaderboardRow[] }>("/api/leaderboard?version=v1&limit=10"),
+  getLeaderboard: (fresh = false) =>
+    jsonRequest<{ version: string; top: LeaderboardRow[]; around: LeaderboardRow[] }>(`/api/leaderboard?version=v1&limit=10${fresh ? "&fresh=1" : ""}`),
   setNickname: (nickname: string) => post<{ nickname: string }>("/api/players/me", { nickname }),
 };
 

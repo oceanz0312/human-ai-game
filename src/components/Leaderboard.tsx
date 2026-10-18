@@ -60,7 +60,7 @@ export function Leaderboard({
 
   const load = useCallback(async () => {
     try {
-      setData(await api.getLeaderboard());
+      setData(await api.getLeaderboard(true));
       setFailed(false);
     } catch {
       setFailed(true);
@@ -72,7 +72,7 @@ export function Leaderboard({
     if (skipInitialFetch) return;
     let cancelled = false;
     api
-      .getLeaderboard()
+      .getLeaderboard(true)
       .then((value) => {
         if (!cancelled) setData(value);
       })
