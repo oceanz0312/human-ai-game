@@ -18,6 +18,8 @@
     { "binding": "DB", "database_name": "human-ai", "database_id": "2cb1e22d-8042-4045-b5eb-e8b1131e6925", "migrations_dir": "drizzle" }
   ],
   "vars": {
+    // simulated = in-game AI opponent, no model calls (SEO plan 2026-10-18). Set "live" to re-enable the Decisions chain below.
+    "AI_MODE": "simulated",
     "DECISIONS_MODE": "worker",
     "DECISIONS_WORKER_URL": "https://human-ai-decisions.zdychanges.workers.dev",
     "PUBLIC_BASE_URL": "https://human-ai.zdychanges.workers.dev",

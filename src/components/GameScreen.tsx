@@ -559,7 +559,7 @@ export function GameScreen({ sessionId, game = spotTheDifferenceClient as unknow
               <span className="vs-state" data-testid="ai-status">{aiNowLabel}</span>
             </div>
           </div>
-          <AiTerminal title={t("AI 终端 · {model}", { model: "Luna" })} steps={terminalSteps} live footer={t("真实调用 · 真实速度 · 揭晓前不显示答案")} />
+          <AiTerminal title={t("AI 终端 · {model}", { model: "Luna AI" })} steps={terminalSteps} live footer={t("游戏内模拟 AI · 揭晓前不显示答案")} />
         </>
       }
       extra={
