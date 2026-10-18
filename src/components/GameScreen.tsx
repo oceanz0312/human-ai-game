@@ -111,11 +111,14 @@ export function GameScreen({ sessionId, game = spotTheDifferenceClient as unknow
 
   /** Presence cue timers of the current round (client-side "AI got the picture" / scan start). */
   const presenceTimersRef = useRef<number[]>([]);
+  /** True until the local scan cue fires: a server "sent" that arrives earlier waits for it (cue order stays fixed). */
+  const scanPendingRef = useRef(false);
   const [presenceNow, setPresenceNow] = useState(0);
 
   const clearPresence = useCallback(() => {
     for (const timer of presenceTimersRef.current) window.clearTimeout(timer);
     presenceTimersRef.current = [];
+    scanPendingRef.current = false;
   }, []);
 
   const appendAiEvent = useCallback((roundId: string, event: AiEvent) => {
@@ -132,6 +135,8 @@ export function GameScreen({ sessionId, game = spotTheDifferenceClient as unknow
   const pushAiEvent = useCallback(
     (roundId: string, event: AiEvent) => {
       if (aiRoundRef.current !== roundId) return;
+      // "got the picture" is shown for the whole pre-scan window even when the server is faster than the cue.
+      if (event.event === "sent" && scanPendingRef.current) return;
       if (event.event === "answered" || event.event === "error") {
         clearPresence();
         appendAiEvent(roundId, { event: "image", at: event.at });
@@ -149,8 +154,10 @@ export function GameScreen({ sessionId, game = spotTheDifferenceClient as unknow
       const band = presenceBand(levelNumber);
       const { min, max } = AI_PRESENCE.gotPictureMs;
       const local = (event: AiEvent["event"]) => () => {
+        if (event === "sent") scanPendingRef.current = false;
         if (appendAiEvent(roundId, { event, at: Date.now() })) setAiEvents(aiEventsRef.current);
       };
+      scanPendingRef.current = true;
       presenceTimersRef.current = [
         window.setTimeout(local("image"), min + Math.random() * (max - min)),
         window.setTimeout(local("sent"), band.scanStartMs),
@@ -518,7 +525,8 @@ export function GameScreen({ sessionId, game = spotTheDifferenceClient as unknow
   const remaining = remainingMs ?? limit;
   const interactive = phase.kind === "playing" && painted && !locked;
   const slowLoading = phase.kind === "loading" && slowEpoch === loadEpoch;
-  const scanKey = painted && !aiFinal && level ? scanCaptionAt(level.level, presenceNow) : null;
+  const scanStarted = aiEvents.some((event) => event.event === "sent");
+  const scanKey = painted && !aiFinal && scanStarted && level ? scanCaptionAt(level.level, Math.max(presenceNow, presenceBand(level.level).scanStartMs)) : null;
   const scanCaption = scanKey ? t(scanKey) : null;
   const terminalSteps = buildAiEventSteps(aiEvents, { locale, waitingMs: phase.kind === "waiting" ? waitingMs : null, scanCaption });
   // Danmaku stays quiet: built without the ticking "已用 x.xs" detail so a running counter never spawns lines.

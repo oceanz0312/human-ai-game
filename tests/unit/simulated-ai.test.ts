@@ -66,11 +66,15 @@ describe("simulated AI v2 (band curve)", () => {
     }
   });
 
-  it("gets harder across bands: more accurate and faster", () => {
+  it("the warm-up band is the slowest and least accurate, the last band the fastest and most accurate", () => {
     const bands = FORMAL_DIFFICULTY.bands;
-    for (let i = 1; i < bands.length; i++) {
-      expect(bands[i].accuracy).toBeGreaterThanOrEqual(bands[i - 1].accuracy);
-      expect(bands[i].medianMs).toBeLessThan(bands[i - 1].medianMs);
+    const first = bands[0];
+    const last = bands[bands.length - 1];
+    for (const band of bands) {
+      expect(band.accuracy).toBeGreaterThanOrEqual(first.accuracy);
+      expect(band.accuracy).toBeLessThanOrEqual(last.accuracy);
+      expect(band.medianMs).toBeLessThanOrEqual(first.medianMs);
+      expect(band.medianMs).toBeGreaterThanOrEqual(last.medianMs);
     }
     // Hard band answers like a fast vision model: median well under a second, with JEV-like snaps.
     const hard = Array.from({ length: 4000 }, (_, i) => plan(15, `h${i}`).thinkMs).sort((a, b) => a - b);

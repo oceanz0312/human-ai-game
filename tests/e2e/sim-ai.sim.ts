@@ -18,7 +18,9 @@ test("simulated AI: immediate presence, server-timed sealed answer, honest revea
   const gotPicture = cueLatency(probe, t("AI 看到了图片"));
   const answered = cueLatency(probe, t("AI 已作答 🔒"));
   test.info().annotations.push({ type: "got-picture-ms", description: String(Math.round(gotPicture ?? -1)) });
+  console.log(`[presence] got-picture-ms=${Math.round(gotPicture ?? -1)}`);
   test.info().annotations.push({ type: "answered-ms", description: String(Math.round(answered ?? -1)) });
+  console.log(`[presence] answered-ms=${Math.round(answered ?? -1)}`);
   expect(gotPicture!).toBeLessThanOrEqual(300);
   // Level 1 band: floor 800 ms, never instant.
   expect(answered!).toBeGreaterThan(700);

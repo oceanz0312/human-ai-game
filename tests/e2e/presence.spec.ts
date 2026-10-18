@@ -15,6 +15,7 @@ test("AI presence: 'AI got the picture' within 300 ms of the board, then a scan 
   const probe = await readPresence(page);
   const gotPicture = cueLatency(probe, t("AI 看到了图片"));
   test.info().annotations.push({ type: "got-picture-ms", description: String(Math.round(gotPicture ?? -1)) });
+  console.log(`[presence] got-picture-ms=${Math.round(gotPicture ?? -1)}`);
   expect(gotPicture, JSON.stringify(probe)).not.toBeNull();
   expect(gotPicture!).toBeLessThanOrEqual(300);
   const texts = probe.statuses.map((s) => s.text);
