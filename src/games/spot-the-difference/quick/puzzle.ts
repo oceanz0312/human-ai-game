@@ -1,4 +1,4 @@
-import { seededRandom } from "@/models/adapters/simulated";
+import { seededRandom } from "@/models/adapters/sim-sampler";
 import { spritesFor, type QuickTheme, type Sprite } from "./sprites";
 
 export interface QuickPuzzle {

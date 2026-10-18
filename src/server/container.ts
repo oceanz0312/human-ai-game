@@ -1,4 +1,6 @@
 import "server-only";
+import { resolveFormalDifficulty, resolveSimAiCurve } from "@/config/ai-difficulty";
+import { simSeed } from "./sim-seed";
 import { waitUntil } from "./runtime";
 import { readPlayLimitConfig } from "../core/limits/config";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
@@ -155,6 +157,11 @@ async function build(): Promise<Container> {
     replica,
     decisions: selectDecisionClient(cf?.DECISIONS),
     simulateAi: resolveAiMode() === "simulated",
+    simulatedAi: {
+      curve: resolveSimAiCurve(process.env.SIM_AI_CURVE),
+      difficulty: resolveFormalDifficulty(process.env.SIM_AI_DIFFICULTY_JSON),
+      seed: simSeed,
+    },
     now: () => Date.now(),
     randomId: () => randomUUID(),
     randomPublicId: () => randomBytes(16).toString("base64url"),

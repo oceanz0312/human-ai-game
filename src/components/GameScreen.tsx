@@ -10,6 +10,7 @@ import { playSfx, unlockAudio } from "@/core/fx/sfx";
 import { StreakCounter } from "@/core/fx/Banners";
 import { streaks, type LevelOutcome } from "@/core/fx/result-grid";
 import { aiStatusLabel, buildAiEventSteps } from "@/game/ai-activity";
+import { AI_PRESENCE, presenceBand, scanCaptionAt } from "@/config/ai-presence";
 import { AiActivityPanel } from "./AiActivityPanel";
 import { AiDanmakuLane } from "./AiDanmakuLane";
 import { DetailsSheet } from "./DetailsSheet";
@@ -108,19 +109,70 @@ export function GameScreen({ sessionId, game = spotTheDifferenceClient as unknow
   const historyRef = useRef<Map<string, { humanCorrect: boolean; winner: LevelOutcome }>>(new Map());
   const [streak, setStreak] = useState({ combo: 0, streak: 0 });
 
-  const pushAiEvent = useCallback((roundId: string, event: AiEvent) => {
-    if (aiRoundRef.current !== roundId) return;
-    if (aiEventsRef.current.some((existing) => existing.event === event.event)) return;
-    aiEventsRef.current = [...aiEventsRef.current, event];
-    setAiEvents(aiEventsRef.current);
+  /** Presence cue timers of the current round (client-side "AI got the picture" / scan start). */
+  const presenceTimersRef = useRef<number[]>([]);
+  /** True until the local scan cue fires: a server "sent" that arrives earlier waits for it (cue order stays fixed). */
+  const scanPendingRef = useRef(false);
+  const [presenceNow, setPresenceNow] = useState(0);
+
+  const clearPresence = useCallback(() => {
+    for (const timer of presenceTimersRef.current) window.clearTimeout(timer);
+    presenceTimersRef.current = [];
+    scanPendingRef.current = false;
   }, []);
+
+  const appendAiEvent = useCallback((roundId: string, event: AiEvent) => {
+    if (aiRoundRef.current !== roundId) return false;
+    if (aiEventsRef.current.some((existing) => existing.event === event.event)) return false;
+    aiEventsRef.current = [...aiEventsRef.current, event];
+    return true;
+  }, []);
+
+  /**
+   * Server AI events (real). A final answer/error that beats the local presence cues fills in the missing
+   * "got the picture" / "analyzing" lines first so the timeline never skips a step.
+   */
+  const pushAiEvent = useCallback(
+    (roundId: string, event: AiEvent) => {
+      if (aiRoundRef.current !== roundId) return;
+      // "got the picture" is shown for the whole pre-scan window even when the server is faster than the cue.
+      if (event.event === "sent" && scanPendingRef.current) return;
+      if (event.event === "answered" || event.event === "error") {
+        clearPresence();
+        appendAiEvent(roundId, { event: "image", at: event.at });
+        appendAiEvent(roundId, { event: "sent", at: event.at });
+      }
+      if (appendAiEvent(roundId, event)) setAiEvents(aiEventsRef.current);
+    },
+    [appendAiEvent, clearPresence],
+  );
+
+  /** Local presence cues (cosmetic; timings from AI_PRESENCE, independent of the AI's answer and answer time). */
+  const startPresence = useCallback(
+    (roundId: string, levelNumber: number) => {
+      clearPresence();
+      const band = presenceBand(levelNumber);
+      const { min, max } = AI_PRESENCE.gotPictureMs;
+      const local = (event: AiEvent["event"]) => () => {
+        if (event === "sent") scanPendingRef.current = false;
+        if (appendAiEvent(roundId, { event, at: Date.now() })) setAiEvents(aiEventsRef.current);
+      };
+      scanPendingRef.current = true;
+      presenceTimersRef.current = [
+        window.setTimeout(local("image"), min + Math.random() * (max - min)),
+        window.setTimeout(local("sent"), band.scanStartMs),
+      ];
+    },
+    [appendAiEvent, clearPresence],
+  );
 
   useEffect(() => {
     mountedRef.current = true;
     return () => {
       mountedRef.current = false;
+      clearPresence();
     };
-  }, []);
+  }, [clearPresence]);
 
   useEffect(() => {
     livesRef.current = session?.lives ?? null;
@@ -236,6 +288,7 @@ export function GameScreen({ sessionId, game = spotTheDifferenceClient as unknow
     setImageReady(false);
     setPainted(false);
     setRemainingMs(null);
+    clearPresence();
     aiEventsRef.current = [];
     aiRoundRef.current = null;
     setAiEvents([]);
@@ -290,7 +343,7 @@ export function GameScreen({ sessionId, game = spotTheDifferenceClient as unknow
       }
       setPhase({ kind: "error", message: error instanceof ApiError && error.status === 404 ? t("找不到这局挑战。") : t("关卡加载失败，不会扣除机会。"), action: "reload" });
     }
-  }, [sessionId, goToResult, t, game]);
+  }, [sessionId, goToResult, t, game, clearPresence]);
 
   const boot = useCallback(async () => {
     try {
@@ -336,11 +389,22 @@ export function GameScreen({ sessionId, game = spotTheDifferenceClient as unknow
     setPainted(true);
     const roundId = roundIdRef.current;
     aiRoundRef.current = roundId;
+    if (level) startPresence(roundId, level.level);
     const begin = withRetry(() => api.beginRoundStream(roundId, (event) => pushAiEvent(roundId, event)), 3);
     // The submission only needs the round to be marked shown; it never waits for the AI.
     beginRef.current = begin;
     void begin.catch(() => undefined);
-  }, [pushAiEvent]);
+  }, [pushAiEvent, startPresence, level]);
+
+  // Scan-caption clock: ticks only while the AI is still working on the shown board.
+  const aiFinal = aiEvents.some((event) => event.event === "answered" || event.event === "error");
+  useEffect(() => {
+    if (!painted || aiFinal) return;
+    const tick = () => setPresenceNow(startedAtRef.current === null ? 0 : performance.now() - startedAtRef.current);
+    tick();
+    const timer = window.setInterval(tick, 100);
+    return () => window.clearInterval(timer);
+  }, [painted, aiFinal]);
 
   // Absolute-deadline countdown; backgrounding the page does not pause it.
   useEffect(() => {
@@ -461,11 +525,14 @@ export function GameScreen({ sessionId, game = spotTheDifferenceClient as unknow
   const remaining = remainingMs ?? limit;
   const interactive = phase.kind === "playing" && painted && !locked;
   const slowLoading = phase.kind === "loading" && slowEpoch === loadEpoch;
-  const terminalSteps = buildAiEventSteps(aiEvents, { locale, waitingMs: phase.kind === "waiting" ? waitingMs : null });
+  const scanStarted = aiEvents.some((event) => event.event === "sent");
+  const scanKey = painted && !aiFinal && scanStarted && level ? scanCaptionAt(level.level, Math.max(presenceNow, presenceBand(level.level).scanStartMs)) : null;
+  const scanCaption = scanKey ? t(scanKey) : null;
+  const terminalSteps = buildAiEventSteps(aiEvents, { locale, waitingMs: phase.kind === "waiting" ? waitingMs : null, scanCaption });
   // Danmaku stays quiet: built without the ticking "已用 x.xs" detail so a running counter never spawns lines.
   const danmakuMessages = danmakuFromActivitySteps(buildAiEventSteps(aiEvents, { locale }), true, locale);
   const waiting = phase.kind === "waiting";
-  const aiNowLabel = aiStatusLabel(aiEvents, { locale, locked, waitingMs: waiting ? waitingMs : null });
+  const aiNowLabel = aiStatusLabel(aiEvents, { locale, locked, waitingMs: waiting ? waitingMs : null, scanCaption });
   const humanNow = waiting ? t("你已锁定") : locked || phase.kind === "submitting" ? t("答案已锁定") : interactive ? t("作答中…") : t("准备中");
 
   const board =

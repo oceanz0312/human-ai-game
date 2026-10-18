@@ -319,7 +319,8 @@ test("level stats aggregate settled rounds without exposing answers", async () =
   await ctx.playRound(session.id, playerId, "wrong");
   const stats = await ctx.service.getLevelStats();
   const one = stats.find((row) => row.level === 1)!;
-  expect(one).toMatchObject({ level: 1, samples: 1, humanCorrect: 1, aiAnswered: 1, aiCorrect: 1, fastestHumanMs: 900 });
+  // AI figures count only rounds against the current simulated curve (sim-v2); these used the scripted fake AI.
+  expect(one).toMatchObject({ level: 1, samples: 1, humanCorrect: 1, aiSamples: 0, humanWins: 0, aiAnswered: 0, aiCorrect: 0, fastestHumanMs: 900 });
   expect(stats.find((row) => row.level === 2)).toMatchObject({ samples: 1, humanCorrect: 0, fastestHumanMs: null });
   expect(JSON.stringify(stats)).not.toMatch(/r\dc\d/);
 });
@@ -486,4 +487,90 @@ describe("one-round-trip result lookup (perf PR-C)", () => {
     }
     expect(await ctx.leaderboard.getDisplayIndex(await ctx.player(), "v1")).toBeNull();
   });
+});
+
+async function setupSimulated(opts: { curve?: "v1" | "v2"; seed?: (roundId: string) => string } = {}) {
+  const { db, cleanup } = await createTestDatabase();
+  let clock = 1_000_000;
+  let imageReads = 0;
+  const service = createGameService({
+    games: createGameRepository(db),
+    leaderboard: createLeaderboardRepository(db),
+    decisions: new FakeDecisionClient(() => ({ choice: "r1c1" })),
+    simulateAi: true,
+    simulatedAi: { curve: opts.curve, seed: opts.seed },
+    now: () => clock,
+    randomId: () => randomUUID(),
+    randomPublicId: () => randomUUID().replace(/-/g, "").slice(0, 22),
+    game: createSpotTheDifferencePlugin({
+      loadImageDataUrl: async (level) => {
+        imageReads += 1;
+        return `level-${level.level}`;
+      },
+    }),
+    legacyLevelAssetSha256: getLevelImageSha256,
+    sleep: async (ms) => {
+      clock += ms;
+    },
+  });
+  const playerId = (await service.ensurePlayer(null)).id;
+  const session = await service.createSession({ playerId });
+  return { service, playerId, session, cleanup, db, advance: (ms: number) => (clock += ms), imageReads: () => imageReads };
+}
+
+test("simulated mode: no image read, events stream at once, AI time is the planned time from shownAt, tagged sim-v2", async () => {
+  const s = await setupSimulated({ seed: (id) => `hmac-${id}` });
+  try {
+    const started = await s.service.startNextRound(s.session.id, s.playerId);
+    const { run } = await s.service.beginRoundLive(started.round.id, s.playerId);
+    await run!.done;
+    expect(run!.events.map((event) => event.event)).toEqual(["image", "sent", "answered"]);
+    expect(run!.events[0].at).toBe(run!.events[1].at);
+    expect(s.imageReads()).toBe(0);
+    const hidden = await s.service.getRound(started.round.id, s.playerId);
+    expect(hidden.round.ai.choice).toBeNull();
+    expect(hidden.round.ai.elapsedMs).toBeNull();
+    const level = getPrivateLevel(1);
+    const submitted = await s.service.submitRound(started.round.id, s.playerId, { choice: level.correctChoice, elapsedMs: 100 });
+    const ai = submitted.round.ai;
+    expect(ai.status).toBe("complete");
+    // Recorded AI time == planned think time (no server overhead added on top).
+    expect(ai.elapsedMs).toBe(ai.modelElapsedMs);
+    expect(ai.elapsedMs!).toBeGreaterThanOrEqual(800);
+    const stats = await s.service.getLevelStats();
+    expect(stats.find((row) => row.level === 1)).toMatchObject({ samples: 1, aiSamples: 1, aiAnswered: 1 });
+  } finally {
+    s.cleanup();
+  }
+});
+
+test("simulated mode: the outcome depends on the secret seed, not on the round id alone", async () => {
+  const outcomes = new Set<string>();
+  for (const secret of ["a", "b", "c", "d", "e", "f"]) {
+    const s = await setupSimulated({ seed: (id) => `${secret}-${id}` });
+    try {
+      const started = await s.service.startNextRound(s.session.id, s.playerId);
+      const { run } = await s.service.beginRoundLive(started.round.id, s.playerId);
+      await run!.done;
+      const submitted = await s.service.submitRound(started.round.id, s.playerId, { choice: null, elapsedMs: 8000 });
+      outcomes.add(String(submitted.round.ai.modelElapsedMs));
+    } finally {
+      s.cleanup();
+    }
+  }
+  expect(outcomes.size).toBeGreaterThan(1);
+});
+
+test("simulated mode: SIM_AI_CURVE=v1 keeps the old curve and the old request id tag", async () => {
+  const s = await setupSimulated({ curve: "v1" });
+  try {
+    const started = await s.service.startNextRound(s.session.id, s.playerId);
+    const { run } = await s.service.beginRoundLive(started.round.id, s.playerId);
+    await run!.done;
+    await s.service.submitRound(started.round.id, s.playerId, { choice: null, elapsedMs: 8000 });
+    const stats = await s.service.getLevelStats();
+    expect(stats.find((row) => row.level === 1)).toMatchObject({ samples: 1, aiSamples: 0 });
+  } finally {
+    s.cleanup();
+  }
 });

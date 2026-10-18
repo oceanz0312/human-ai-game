@@ -17,6 +17,14 @@ function sign(value: string) {
   return createHmac("sha256", signingSecret()).update(value).digest("base64url");
 }
 
+/**
+ * A purpose-bound key derived from RESULT_SIGNING_SECRET (HMAC(secret, label)): lets other features sign/seed
+ * without a new secret and without ever exposing the signing secret itself.
+ */
+export function derivedKey(label: string) {
+  return createHmac("sha256", signingSecret()).update(`derive|${label}`).digest();
+}
+
 /** The anonymous player's recovery credential: `<playerId>.<hmac>`, kept in an httpOnly cookie. */
 export function encodePlayerToken(playerId: string) {
   return `${playerId}.${sign(playerId)}`;

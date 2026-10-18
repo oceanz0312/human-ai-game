@@ -30,12 +30,13 @@ export function formatActivityClock(ms: number) {
 }
 
 /**
- * Humanized AI timeline from real server events. One line per real event; nothing is simulated. During play it never
+ * Humanized AI timeline. "got the picture" / "analyzing" may come first from local presence cues (src/config/ai-presence.ts,
+ * answer-independent); "answered"/"error" only ever come from the server. During play it never
  * shows the AI's cell or its time (the answer and time stay sealed until the player locks in).
  */
 export function buildAiEventSteps(
   events: AiEvent[],
-  opts: { locale?: Locale; reveal?: RoundReveal | null; waitingMs?: number | null } = {},
+  opts: { locale?: Locale; reveal?: RoundReveal | null; waitingMs?: number | null; scanCaption?: string | null } = {},
 ): AiActivityStep[] {
   const t = translator(opts.locale ?? FALLBACK_MESSAGE_LOCALE);
   const steps: AiActivityStep[] = [];
@@ -46,7 +47,8 @@ export function buildAiEventSteps(
   if (sent) {
     steps.push({
       id: "analyze",
-      label: final ? t("AI 开始分析") : t("AI 正在分析…"),
+      // While the AI works, the line shows the rotating presence caption (cosmetic, answer-independent).
+      label: final ? t("AI 开始分析") : (opts.scanCaption ?? t("AI 正在分析…")),
       timestamp: sent.at,
       detail: !final && opts.waitingMs != null ? t("已用 {s}", { s: seconds(opts.waitingMs) }) : null,
       state: final ? "done" : "active",
@@ -73,15 +75,15 @@ export function buildAiEventSteps(
 }
 
 /** Short AI state for the VS card. */
-export function aiStatusLabel(events: AiEvent[], opts: { locale?: Locale; locked?: boolean; waitingMs?: number | null } = {}) {
+export function aiStatusLabel(events: AiEvent[], opts: { locale?: Locale; locked?: boolean; waitingMs?: number | null; scanCaption?: string | null } = {}) {
   const t = translator(opts.locale ?? FALLBACK_MESSAGE_LOCALE);
   const final = events.find((event) => event.event === "answered" || event.event === "error");
   if (final?.event === "answered") return t("AI 已作答 🔒");
   if (final?.event === "error") return aiErrorTagFromCode(final.code ?? null, opts.locale);
   if (events.some((event) => event.event === "sent")) {
-    return opts.locked && opts.waitingMs != null ? t("AI 还在分析 {s}", { s: seconds(opts.waitingMs) }) : t("AI 正在分析");
+    return opts.locked && opts.waitingMs != null ? t("AI 还在分析 {s}", { s: seconds(opts.waitingMs) }) : (opts.scanCaption ?? t("AI 正在分析"));
   }
-  if (events.some((event) => event.event === "image")) return t("AI 在看图");
+  if (events.some((event) => event.event === "image")) return t("AI 看到了图片");
   return t("准备中");
 }
 
