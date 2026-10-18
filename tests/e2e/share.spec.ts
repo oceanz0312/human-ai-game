@@ -34,8 +34,13 @@ test("a finished run generates a poster and a shareable landing page", async ({ 
   await friendPage.goto(`/share/${publicId}`);
   await expect(friendPage.getByTestId("reached-level")).toHaveText("03");
   await expect(friendPage.getByText("Same levels. Out-spot the AI?")).toBeVisible();
-  await friendPage.goto(`/result/${publicId}`);
-  await friendPage.waitForURL(/\/share\//);
+  // A non-owner opening the /result link sees the share view in place (no redirect round trip).
+  const resultResponse = await friendPage.goto(`/result/${publicId}`);
+  expect(resultResponse?.status()).toBe(200);
+  expect(new URL(friendPage.url()).pathname).toBe(`/result/${publicId}`);
+  expect(resultResponse?.request().redirectedFrom()).toBeNull();
+  await expect(friendPage.getByTestId("reached-level")).toHaveText("03");
+  await expect(friendPage.getByText("Same levels. Out-spot the AI?")).toBeVisible();
   await friendPage.getByRole("button", { name: "Start" }).click();
   await pickOpponent(friendPage);
   await friend.close();

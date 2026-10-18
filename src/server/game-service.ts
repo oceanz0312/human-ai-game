@@ -347,6 +347,54 @@ export function createGameService(deps: GameServiceDeps) {
     return { begun: { roundId: marked.id, deadlineAt: marked.deadlineAt, started: firstPaint, ai }, run: null };
   }
 
+  async function resultWithOwner(publicId: string): Promise<{ view: ResultView; ownerId: string } | null> {
+    const toOutcome = (round: { aiStatus: string | null; winner: string | null }) =>
+      (round.aiStatus === "error" ? "void" : (round.winner ?? "none")) as "human" | "ai" | "none" | "void";
+    if (process.env.RESULT_BUNDLE !== "off") {
+      const bundle = await deps.games.getResultBundle(publicId);
+      if (!bundle) return null;
+      return {
+        ownerId: bundle.result.playerId,
+        view: {
+          played: bundle.accuracy.played,
+          humanCorrect: bundle.accuracy.humanCorrect,
+          aiCorrect: bundle.accuracy.aiCorrect,
+          publicId: bundle.result.publicId,
+          nickname: bundle.nickname,
+          reachedLevel: bundle.result.reachedLevel,
+          fasterThanAiCount: bundle.session.fasterThanAiCount,
+          cleared: bundle.result.cleared,
+          outcomes: bundle.outcomes.map(toOutcome),
+          rank: bundle.rank,
+          bestLevel: bundle.bestLevel,
+          endedAt: bundle.result.createdAt,
+        },
+      };
+    }
+    const row = await deps.games.getResultByPublicId(publicId);
+    if (!row) return null;
+    const best = await deps.leaderboard.getBest(row.result.playerId, row.result.levelSetVersion);
+    const bestLevel = best?.bestLevel ?? row.result.reachedLevel;
+    const [accuracy, settled] = await Promise.all([deps.games.sessionAccuracy(row.session.id), deps.games.sessionOutcomes?.(row.session.id) ?? []]);
+    return {
+      ownerId: row.result.playerId,
+      view: {
+        played: accuracy.played,
+        humanCorrect: accuracy.humanCorrect,
+        aiCorrect: accuracy.aiCorrect,
+        publicId: row.result.publicId,
+        nickname: row.nickname,
+        reachedLevel: row.result.reachedLevel,
+        fasterThanAiCount: row.session.fasterThanAiCount,
+        cleared: row.result.cleared,
+        outcomes: settled.map(toOutcome),
+        rank: await deps.leaderboard.getRankForLevel(bestLevel, row.result.levelSetVersion),
+        bestLevel,
+        endedAt: row.result.createdAt,
+      },
+    };
+  }
+
   return {
     /** Marks the round shown and, in server mode, starts the AI at that same instant; returns a live event run. */
     beginRoundLive: beginRoundCore,
@@ -565,27 +613,14 @@ export function createGameService(deps: GameServiceDeps) {
       return { round: toReveal(current), session: await sessionSnapshot((await deps.games.getSession(session.id)) ?? session) };
     },
 
+    /**
+     * The result view plus the run's owner. Default path: one D1 batch (getResultBundle). RESULT_BUNDLE=off falls back
+     * to the original sequential queries (kept as a kill switch; same output, see tests/integration/result-bundle.test.ts).
+     */
+    getResultWithOwner: resultWithOwner,
+
     async getResult(publicId: string): Promise<ResultView | null> {
-      const row = await deps.games.getResultByPublicId(publicId);
-      if (!row) return null;
-      const best = await deps.leaderboard.getBest(row.result.playerId, row.result.levelSetVersion);
-      const bestLevel = best?.bestLevel ?? row.result.reachedLevel;
-      const [accuracy, settled] = await Promise.all([deps.games.sessionAccuracy(row.session.id), deps.games.sessionOutcomes?.(row.session.id) ?? []]);
-      const outcomes = settled.map((round) => (round.aiStatus === "error" ? "void" : (round.winner ?? "none")) as "human" | "ai" | "none" | "void");
-      return {
-        played: accuracy.played,
-        humanCorrect: accuracy.humanCorrect,
-        aiCorrect: accuracy.aiCorrect,
-        publicId: row.result.publicId,
-        nickname: row.nickname,
-        reachedLevel: row.result.reachedLevel,
-        fasterThanAiCount: row.session.fasterThanAiCount,
-        cleared: row.result.cleared,
-        outcomes,
-        rank: await deps.leaderboard.getRankForLevel(bestLevel, row.result.levelSetVersion),
-        bestLevel,
-        endedAt: row.result.createdAt,
-      };
+      return (await resultWithOwner(publicId))?.view ?? null;
     },
 
     /** The plugin's level-set version (leaderboards are per version). */
@@ -602,7 +637,12 @@ export function createGameService(deps: GameServiceDeps) {
 
     async getLeaderboard(input: { viewerPlayerId: string | null; limit: number }) {
       const version = deps.game.levelSetVersion;
-      const top = await deps.leaderboard.list({ limit: input.limit, version });
+      // Top rows and the viewer's position are independent: fetch them concurrently (2 round trips at most, was 4).
+      const viewer = input.viewerPlayerId;
+      const [top, viewerIndex] = await Promise.all([
+        deps.leaderboard.list({ limit: input.limit, version }),
+        viewer ? deps.leaderboard.getDisplayIndex(viewer, version) : Promise.resolve(null),
+      ]);
       const toRow = (row: { playerId: string; nickname: string | null; reachedLevel: number; rank: number }): LeaderboardRow => ({
         rank: row.rank,
         nickname: row.nickname ?? `玩家 ${row.playerId.slice(0, 4).toUpperCase()}`,
@@ -610,9 +650,8 @@ export function createGameService(deps: GameServiceDeps) {
         isMe: row.playerId === input.viewerPlayerId,
       });
       let around: LeaderboardRow[] = [];
-      if (input.viewerPlayerId && !top.some((row) => row.playerId === input.viewerPlayerId)) {
-        const index = await deps.leaderboard.getDisplayIndex(input.viewerPlayerId, version);
-        if (index !== null) around = (await deps.leaderboard.list({ limit: 3, offset: Math.max(0, index - 1), version })).map(toRow);
+      if (viewer && viewerIndex !== null && !top.some((row) => row.playerId === viewer)) {
+        around = (await deps.leaderboard.list({ limit: 3, offset: Math.max(0, viewerIndex - 1), version })).map(toRow);
       }
       return { version, top: top.map(toRow), around };
     },

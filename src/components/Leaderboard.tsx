@@ -33,17 +33,25 @@ function LeaderboardList({ rows }: { rows: LeaderboardRow[] }) {
   );
 }
 
+type BoardData = { top: LeaderboardRow[]; around: LeaderboardRow[] };
+
 export function Leaderboard({
   editable,
   initialNickname,
   compact = false,
+  initialData = null,
+  deferInitialLoad = false,
 }: {
   editable: boolean;
   initialNickname: string | null;
   compact?: boolean;
+  /** Board rendered on the server with the page (skips the first client fetch). */
+  initialData?: BoardData | null;
+  /** Streaming placeholder: the server is still sending the board, so don't fetch it from the browser. */
+  deferInitialLoad?: boolean;
 }) {
   const t = useT();
-  const [data, setData] = useState<{ top: LeaderboardRow[]; around: LeaderboardRow[] } | null>(null);
+  const [data, setData] = useState<BoardData | null>(initialData);
   const [failed, setFailed] = useState(false);
   const [nickname, setNickname] = useState(initialNickname ?? "");
   const [saving, setSaving] = useState(false);
@@ -59,7 +67,9 @@ export function Leaderboard({
     }
   }, []);
 
+  const skipInitialFetch = initialData !== null || deferInitialLoad;
   useEffect(() => {
+    if (skipInitialFetch) return;
     let cancelled = false;
     api
       .getLeaderboard()
@@ -72,7 +82,7 @@ export function Leaderboard({
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [skipInitialFetch]);
 
   const compactRows = useMemo(() => {
     if (!data) return [];
