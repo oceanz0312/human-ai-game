@@ -1,35 +1,39 @@
 import Link from "next/link";
-import { localePath, type Locale } from "@/i18n/config";
-import { getPages } from "@/i18n/pages";
-import { gameLeaderboardPath, liveGames } from "@/games/registry";
+import type { Locale } from "@/i18n/config";
+import { SITE_NAME } from "@/config/site";
 
-/** Registry-driven footer: a new live game shows up in the Games column automatically. */
-export function SiteFooter({ locale }: { locale: Locale }) {
-  const { nav, ui, gameCopy } = getPages(locale);
-  const games = liveGames();
+/** Footer: keyword pages + site pages. No link to the hidden platform hub (/games). */
+export function SiteFooter(_props: { locale?: Locale }) {
   const columns = [
     {
-      title: ui.footerGames,
+      title: "Puzzles",
       links: [
-        ...games.map((game) => ({ href: game.landingPath, label: gameCopy[game.slug]?.name ?? game.slug })),
-        { href: "/games", label: nav.games },
-        ...(games[0] ? [{ href: gameLeaderboardPath(games[0]), label: nav.leaderboard }] : []),
+        { href: "/", label: "Spot the difference" },
+        { href: "/spot-the-difference-game", label: "Spot the difference game" },
+        { href: "/find-the-difference", label: "Find the difference" },
+        { href: "/pictures", label: "Spot the difference pictures" },
+        { href: "/printable", label: "Printable puzzles" },
+        { href: "/christmas", label: "Christmas puzzles" },
       ],
     },
     {
-      title: ui.footerLearn,
+      title: "Levels",
       links: [
-        { href: "/how-to-play", label: nav.howToPlay },
-        { href: "/human-vs-ai", label: nav.humanVsAi },
-            { href: "/faq", label: nav.faq },
+        { href: "/easy", label: "Easy" },
+        { href: "/hard", label: "Hard" },
+        { href: "/for-kids", label: "For kids" },
+        { href: "/games/spot-the-difference/leaderboard", label: "Leaderboard" },
+        { href: "/how-to-play", label: "How to play" },
+        { href: "/human-vs-ai", label: "Human vs AI mode" },
       ],
     },
     {
-      title: ui.footerSite,
+      title: "Site",
       links: [
-        { href: "/about", label: nav.about },
-        { href: "/privacy", label: nav.privacy },
-        { href: "/terms", label: nav.terms },
+        { href: "/faq", label: "FAQ" },
+        { href: "/about", label: "About" },
+        { href: "/privacy", label: "Privacy" },
+        { href: "/terms", label: "Terms" },
       ],
     },
   ];
@@ -37,14 +41,15 @@ export function SiteFooter({ locale }: { locale: Locale }) {
     <footer className="site-footer">
       <div className="container site-footer-grid">
         <div className="site-footer-brand">
-          <p className="site-footer-name">Spot The Difference Game</p>
-          <p>{ui.footerTagline}</p>
+          <p className="site-footer-name">{SITE_NAME}</p>
+          <p>Free spot the difference puzzles in your browser. Find the odd picture before the AI does.</p>
+          <p className="site-footer-copy">© {new Date().getUTCFullYear()} {SITE_NAME}</p>
         </div>
         {columns.map((column) => (
           <nav key={column.title} aria-label={column.title}>
             <h2 className="site-footer-title">{column.title}</h2>
             {column.links.map((link) => (
-              <Link key={link.href} href={localePath(locale, link.href)}>
+              <Link key={link.href} href={link.href}>
                 {link.label}
               </Link>
             ))}

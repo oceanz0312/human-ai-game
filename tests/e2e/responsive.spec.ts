@@ -68,7 +68,7 @@ test.describe("@viewport web-first responsive", () => {
     await waitForPlayable(page, 2);
   });
 
-  for (const path of ["/zh", "/", "/zh/spot-the-difference", "/games", "/zh/faq", "/games/spot-the-difference/leaderboard"]) {
+  for (const path of ["/", "/spot-the-difference-game", "/printable", "/games", "/faq", "/games/spot-the-difference/leaderboard"]) {
     test(`${path} has no sideways scroll or life wording`, async ({ page }) => {
       const response = await page.goto(path);
       expect(response?.status()).toBe(200);

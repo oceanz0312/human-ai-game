@@ -1,42 +1,46 @@
 import { expect, test } from "@playwright/test";
 import { pickOpponent } from "./helpers";
+import { START } from "./t";
 
 test("English is served at the root without a prefix", async ({ page }) => {
   const response = await page.goto("/");
   expect(response?.status()).toBe(200);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await expect(page.getByRole("button", { name: "Start" })).toBeVisible();
+  await expect(page.getByRole("button", { name: START })).toBeVisible();
 });
 
-test("Chinese is served under /zh", async ({ page }) => {
-  await page.goto("/zh");
-  await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
-  await expect(page.getByRole("button", { name: "开始挑战" })).toBeVisible();
-});
-
-test("/en and trailing slashes redirect permanently", async ({ request }) => {
-  for (const [from, to] of [["/en", "/"], ["/en/faq", "/faq"], ["/zh/", "/zh"]]) {
+test("English only: /zh, /en and retired URLs redirect permanently to their English page", async ({ request }) => {
+  const cases: [string, string][] = [
+    ["/zh", "/"],
+    ["/zh/faq", "/faq"],
+    ["/zh/how-to-play", "/how-to-play"],
+    ["/zh/spot-the-difference", "/"],
+    ["/zh/games/spot-the-difference/levels/3", "/games/spot-the-difference/levels/3"],
+    ["/zh/ai-opponents/luna", "/human-vs-ai"],
+    ["/en", "/"],
+    ["/en/faq", "/faq"],
+    ["/spot-the-difference", "/"],
+    ["/games/spot-the-difference", "/"],
+    ["/ai-opponents", "/human-vs-ai"],
+    ["/ai-opponents/luna", "/human-vs-ai"],
+  ];
+  for (const [from, to] of cases) {
     const response = await request.get(from, { maxRedirects: 0 });
-    expect(response.status(), from).toBe(308);
+    expect([301, 308], from).toContain(response.status());
     expect(new URL(response.headers()["location"], "http://x").pathname, from).toBe(to);
   }
+  // Following the chain always ends on a 200 English page.
+  for (const from of [...cases.map(([path]) => path), "/zh/"]) expect((await request.get(from)).status(), from).toBe(200);
 });
 
-test("unknown paths are 404 in both locales", async ({ request }) => {
+test("unknown paths are 404", async ({ request }) => {
   expect((await request.get("/definitely-missing")).status()).toBe(404);
-  expect((await request.get("/zh/definitely-missing")).status()).toBe(404);
 });
 
-test("the chosen locale carries over to the session pages", async ({ page }) => {
-  await page.goto("/zh");
-  await page.getByRole("button", { name: "开始挑战" }).click();
-  await pickOpponent(page);
-  await expect(page.locator("html")).toHaveAttribute("lang", "zh-CN");
-});
-
-test("the English game flow is fully localized", async ({ page }) => {
-  await page.goto("/");
-  await page.getByRole("button", { name: "Start" }).click();
+test("session pages are English even with an old zh cookie", async ({ page }) => {
+  await page.context().addCookies([{ name: "hv_locale", value: "zh", url: "http://127.0.0.1:3100" }]);
+  await page.goto("/spot-the-difference-game");
+  await page.getByRole("button", { name: START }).click();
   await pickOpponent(page);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
   await expect(page.getByRole("button", { name: "Row 1, column 1" })).toBeEnabled({ timeout: 30_000 });

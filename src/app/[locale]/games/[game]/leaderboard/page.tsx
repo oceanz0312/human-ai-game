@@ -51,7 +51,7 @@ export default async function LeaderboardPage({ params, searchParams }: Props) {
       eyebrow={copy.eyebrow}
       h1={copy.h1}
       intro={copy.intro}
-      crumbs={[{ name: nav.games, path: "/games" }, { name: gameCopy[game.slug]?.name ?? nav.spot, path: game.landingPath }, { name: copy.h1, path: PATH }]}
+      crumbs={[{ name: copy.h1, path: PATH }]}
       action={<StartButton label={nav.play} locale={locale} />}
       links={[{ href: game.landingPath, label: nav.spot }, { href: "/human-vs-ai", label: nav.humanVsAi }]}
     >

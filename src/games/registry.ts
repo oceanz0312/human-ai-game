@@ -23,7 +23,7 @@ export interface GameEntry {
 export const games: GameEntry[] = [
   {
     slug: "spot-the-difference",
-    landingPath: "/spot-the-difference",
+    landingPath: "/",
     basePath: "/games/spot-the-difference",
     status: "live",
     levels: 20,

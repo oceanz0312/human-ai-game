@@ -26,7 +26,7 @@ export default async function Page({ params }: Props) {
       h1={copy.h1}
       intro={copy.intro}
       action={<StartButton label={nav.play} locale={locale} />}
-      links={[{ href: "/spot-the-difference", label: nav.spot }, { href: "/faq", label: nav.faq }, { href: "/human-vs-ai", label: nav.humanVsAi }, { href: "/find-the-difference", label: nav.find }]}
+      links={[{ href: "/", label: nav.spot }, { href: "/faq", label: nav.faq }, { href: "/human-vs-ai", label: nav.humanVsAi }, { href: "/find-the-difference", label: nav.find }]}
     >
       <ol className="info-steps">
         {copy.steps.map((step) => (

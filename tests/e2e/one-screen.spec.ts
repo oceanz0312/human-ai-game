@@ -1,12 +1,13 @@
 import { expect, test } from "@playwright/test";
 import { answer, assertDanmakuOffBoard, assertNoHorizontalOverflow, assertOneScreen, assertRevealNextBelowBoard, boardSize, startGame, waitForPlayable } from "./helpers";
+import { rx, t, START } from "./t";
 
 test.describe("@layout one-screen zero scroll", () => {
-  test("game landing first screen shows the race animation and Start", async ({ page }) => {
-    await page.goto("/zh/spot-the-difference");
+  test("home first screen shows a playable board and its Play button", async ({ page }) => {
+    await page.goto("/");
     await assertNoHorizontalOverflow(page);
-    await expect(page.getByTestId("home-race")).toBeVisible();
-    const start = await page.getByRole("button", { name: "开始挑战" }).boundingBox();
+    await expect(page.getByTestId("quick-board")).toBeVisible();
+    const start = await page.getByTestId("quick-start").boundingBox();
     expect(start!.y + start!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
     await expect(page.locator("body")).not.toContainText(/命/);
   });
@@ -18,7 +19,7 @@ test.describe("@layout one-screen zero scroll", () => {
     await assertOneScreen(page);
     await expect(page.getByTestId("ai-danmaku")).toBeVisible();
     await expect(page.locator(".heatmap-cell")).toHaveCount(0);
-    await expect(page.getByText(/AI 最看好|置信度/)).toHaveCount(0);
+    await expect(page.getByText(new RegExp(`${rx("AI 最看好")}|${rx("置信度")}`))).toHaveCount(0);
     await assertDanmakuOffBoard(page);
   });
 
@@ -28,16 +29,18 @@ test.describe("@layout one-screen zero scroll", () => {
     const play = await boardSize(page);
     await answer(page, 1, "correct");
     await assertOneScreen(page);
+    // Measure after finite FX animations (hit shake, banner dock) settle; they transform, never reflow.
+    await page.waitForFunction(() => document.getAnimations().every((a) => a.playState !== "running" || a.effect?.getTiming().iterations === Infinity), null, { timeout: 5_000 });
     const reveal = await boardSize(page);
     expect(Math.abs(play!.width - reveal!.width), "board width stable").toBeLessThanOrEqual(2);
     expect(Math.abs(play!.height - reveal!.height), "board height stable").toBeLessThanOrEqual(2);
-    expect(Math.abs(play!.x - reveal!.x) + Math.abs(play!.y - reveal!.y), "board position stable").toBeLessThanOrEqual(2);
+    expect(Math.abs(play!.x - reveal!.x) + Math.abs(play!.y - reveal!.y), `board position stable ${JSON.stringify({ play, reveal })}`).toBeLessThanOrEqual(2);
     await assertRevealNextBelowBoard(page);
     for (let i = 0; i < 4; i += 1) {
       await assertDanmakuOffBoard(page);
       await page.waitForTimeout(500);
     }
-    const details = page.getByRole("button", { name: "AI 详情" });
+    const details = page.getByRole("button", { name: t("AI 详情") });
     if (await details.isVisible()) {
       await details.click();
       await expect(page.getByRole("dialog")).toBeVisible();
@@ -50,7 +53,7 @@ test.describe("@layout one-screen zero scroll", () => {
     await startGame(page);
     for (let n = 1; n <= 3; n += 1) {
       await answer(page, n, "wrong");
-      await page.getByRole("button", { name: /^(下一关|查看结果)/ }).click();
+      await page.getByRole("button", { name: new RegExp(`^(${rx("下一关")}|${rx("查看结果")})`) }).click();
     }
     await page.waitForURL(/\/result\//);
     await assertNoHorizontalOverflow(page);
@@ -63,10 +66,10 @@ test.describe("@layout one-screen zero scroll", () => {
     await startGame(page);
     for (let n = 1; n <= 3; n += 1) {
       await answer(page, n, "wrong");
-      await page.getByRole("button", { name: /^(下一关|查看结果)/ }).click();
+      await page.getByRole("button", { name: new RegExp(`^(${rx("下一关")}|${rx("查看结果")})`) }).click();
     }
     await page.waitForURL(/\/result\//);
-    await page.getByRole("button", { name: "生成战绩海报" }).click();
+    await page.getByRole("button", { name: t("生成战绩海报") }).click();
     await expect(page.locator(".poster-shell")).toBeVisible();
     await assertNoHorizontalOverflow(page);
   });

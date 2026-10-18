@@ -1,9 +1,10 @@
 import { expect, test } from "@playwright/test";
 import { answer, assertFxInBoard, assertOneScreen, next, pickOpponent, startGame } from "./helpers";
+import { t, START } from "./t";
 
 test("@viewport feel kit: 3-2-1 FIGHT, mute toggle, banners, combo and the result grid", async ({ page }) => {
-  await page.goto("/zh/spot-the-difference");
-  await page.getByRole("button", { name: "开始挑战" }).click();
+  await page.goto("/spot-the-difference-game");
+  await page.getByRole("button", { name: START }).click();
   await pickOpponent(page);
   await expect(page.locator(".fx-fight")).toHaveText("FIGHT!", { timeout: 6_000 });
 

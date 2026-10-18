@@ -1,31 +1,32 @@
 import { expect, type Page, type TestInfo } from "@playwright/test";
 import { LEVELS_V1 } from "../../src/server/levels/spec";
+import { rx, t, START } from "./t";
 
 export const level = (n: number) => LEVELS_V1[n - 1];
 const pad2 = (n: number) => String(n).padStart(2, "0");
 
 export function cellName(choice: string) {
   const [, row, column] = /^r(\d)c(\d)$/.exec(choice) ?? [];
-  return `第 ${row} 行第 ${column} 列`;
+  return t("第 {row} 行第 {col} 列", { row, col: column });
 }
 
 /** The opponent-select step (always shown, even with one live opponent). */
 export async function pickOpponent(page: Page) {
   await expect(page.getByTestId("opponent-select")).toBeVisible();
-  await page.getByRole("button", { name: /开始对战|Fight/ }).click();
+  await page.getByRole("button", { name: /^Fight/ }).click();
   await page.waitForURL(/\/play\//);
 }
 
 export async function startGame(page: Page) {
-  await page.goto("/zh/spot-the-difference");
-  await page.getByRole("button", { name: "开始挑战" }).click();
+  await page.goto("/spot-the-difference-game");
+  await page.getByRole("button", { name: START }).click();
   await pickOpponent(page);
 }
 
 export async function waitForPlayable(page: Page, n: number) {
   await expect(page.locator('.game-stage[data-phase="reveal"]')).toHaveCount(0, { timeout: 20_000 });
   await expect(page.locator(".game-hud .level")).toHaveText(`${pad2(n)} / 20`, { timeout: 30_000 });
-  await expect(page.getByRole("button", { name: "第 1 行第 1 列" })).toBeEnabled({ timeout: 20_000 });
+  await expect(page.getByRole("button", { name: "Row 1, column 1" })).toBeEnabled({ timeout: 20_000 });
 }
 
 export async function answer(page: Page, n: number, kind: "correct" | "wrong") {
@@ -33,12 +34,12 @@ export async function answer(page: Page, n: number, kind: "correct" | "wrong") {
   const spec = level(n);
   const choice = kind === "correct" ? spec.correctChoice : spec.choices.find((c) => c !== spec.correctChoice)!;
   await page.getByRole("button", { name: cellName(choice) }).click();
-  await expect(page.getByText("答案揭晓")).toBeVisible();
+  await expect(page.locator('.game-stage[data-phase="reveal"]')).toBeVisible();
 }
 
 export async function next(page: Page) {
   const revealNext = page.getByTestId("reveal-next");
-  const button = (await revealNext.count()) > 0 ? revealNext : page.getByRole("button", { name: /^(下一关|查看结果)/ });
+  const button = (await revealNext.count()) > 0 ? revealNext : page.getByRole("button", { name: new RegExp(`^(${rx("下一关")}|${rx("查看结果")})`) });
   await expect(button).toBeVisible({ timeout: 10_000 });
   await button.click();
   await page.waitForFunction(
@@ -91,7 +92,7 @@ export async function assertNoHorizontalOverflow(page: Page) {
 /** Copy rules: chances, never lives. */
 export async function assertNoForbiddenWords(page: Page) {
   const text = await page.evaluate(() => document.body.innerText);
-  expect(text, "no 命/条 life wording").not.toMatch(/命|\d\s*条|lives\b/i);
+  expect(text, t("no 命/条 life wording")).not.toMatch(/命|\d\s*条|lives\b/i);
 }
 
 export async function boardSize(page: Page) {
@@ -211,19 +212,21 @@ export function recordForeignRequests(page: Page) {
 /** Locale-neutral content routes (one-screen + SEO checks). */
 export const CONTENT_PATHS = [
   "/",
-  "/spot-the-difference",
+  "/spot-the-difference-game",
   "/find-the-difference",
-  "/human-vs-ai",
-  "/games",
+  "/easy",
+  "/hard",
+  "/for-kids",
+  "/christmas",
+  "/pictures",
+  "/printable",
   "/how-to-play",
+  "/human-vs-ai",
   "/faq",
   "/about",
   "/privacy",
   "/terms",
-  "/ai-opponents",
-  "/ai-opponents/luna",
   "/games/spot-the-difference/leaderboard",
-  "/games/spot-the-difference/play",
 ];
 
 /** Reveal FX overlays (banner, COMBO/STREAK, K.O.) stay inside the board stage and never cross the sidebar. */

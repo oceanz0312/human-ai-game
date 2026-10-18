@@ -12,7 +12,8 @@ const PATH = "/games";
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const locale = await resolveLocaleParam(params);
-  return pageMetadata(locale, PATH, getPages(locale).pages.games);
+  // Hidden platform hub: direct URL works, bots are told not to index or follow (plus X-Robots-Tag + robots.txt).
+  return { ...pageMetadata(locale, PATH, getPages(locale).pages.games), robots: { index: false, follow: false } };
 }
 
 /** Game index: registry-driven, same cards as the home hub. */
@@ -31,6 +32,7 @@ export default async function GamesPage({ params }: Props) {
       ld={[itemListLd(locale, hub.itemListName, games.map((game) => ({ name: gameCopy[game.slug]?.name ?? game.slug, path: game.landingPath })))]}
       links={[
         { href: "/human-vs-ai", label: nav.humanVsAi },
+        
         { href: "/about", label: nav.about },
       ]}
     >
