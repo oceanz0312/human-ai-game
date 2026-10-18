@@ -15,7 +15,7 @@ export default defineConfig({
   workers: 1,
   reporter: [["list"]],
   use: {
-    baseURL: process.env.LIVE_BASE_URL || "https://human-ai.zdychanges.workers.dev",
+    baseURL: process.env.LIVE_BASE_URL || "https://spotthedifferencegame.com",
     browserName: "chromium",
     channel: "chrome",
     extraHTTPHeaders: { "x-play-limit-bypass": process.env.LIVE_BYPASS || "" },

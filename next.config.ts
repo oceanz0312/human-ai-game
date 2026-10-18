@@ -9,7 +9,12 @@ const nextConfig: NextConfig = {
   trailingSlash: false,
   async redirects() {
     // The default locale has no prefix: /en and /en/* are permanent (308) redirects to the unprefixed URL.
+    const canonicalHost = "spotthedifferencegame.com";
     return [
+      // Host canonicalisation: www and the old workers.dev origin 301 to the apex (API stays reachable on workers.dev
+      // for the Decisions Worker's internal proxy calls when AI_MODE=live).
+      { source: "/:path*", has: [{ type: "host", value: `www.${canonicalHost}` }], destination: `https://${canonicalHost}/:path*`, statusCode: 301 },
+      { source: "/:path((?!api/).*)", has: [{ type: "host", value: "human-ai.zdychanges.workers.dev" }], destination: `https://${canonicalHost}/:path`, statusCode: 301 },
       { source: "/en", destination: "/", permanent: true },
       { source: "/en/:path*", destination: "/:path*", permanent: true },
       // English only: every /zh URL goes to its English equivalent (old /zh paths are mapped first).
@@ -18,12 +23,12 @@ const nextConfig: NextConfig = {
       { source: "/zh/ai-opponents/:path*", destination: "/human-vs-ai", permanent: true },
       { source: "/zh", destination: "/", permanent: true },
       { source: "/zh/:path*", destination: "/:path*", permanent: true },
-      // Platform-only opponent pages fold into the human vs AI feature page.
-      { source: "/ai-opponents", destination: "/human-vs-ai", permanent: true },
-      { source: "/ai-opponents/:path*", destination: "/human-vs-ai", permanent: true },
       // One word, one page: "spot the difference" is the home page.
       { source: "/spot-the-difference", destination: "/", permanent: true },
       { source: "/games/spot-the-difference", destination: "/", permanent: true },
+      // Platform-only opponent pages fold into the human vs AI feature page.
+      { source: "/ai-opponents", destination: "/human-vs-ai", permanent: true },
+      { source: "/ai-opponents/:path*", destination: "/human-vs-ai", permanent: true },
       { source: "/play-online", destination: "/spot-the-difference-game", permanent: true },
     ];
   },
@@ -48,6 +53,9 @@ const nextConfig: NextConfig = {
           { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
         ],
       },
+      // Platform hub stays reachable by URL but invisible to bots (see HIDDEN_HUB_PATHS in src/config/site.ts).
+      { source: "/games", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
+      { source: "/en/games", headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }] },
     ];
   },
 };
