@@ -253,3 +253,18 @@ html:has(.game-stage) body {
     display: none;
   }
 }
+
+/* Small phones: the long brand must never push the menu button off-screen. */
+.nav-menu {
+  flex-shrink: 0;
+}
+
+@media (max-width: 479px) {
+  .site-logo {
+    min-width: 0;
+    gap: 8px;
+    letter-spacing: 0;
+    white-space: normal;
+    line-height: 1.5;
+  }
+}
