@@ -426,29 +426,37 @@ export function createGameRepository(db: Database) {
 
 export interface LevelStatsRow {
   level: number;
+  /** All settled rounds (human metrics, indexability). */
   samples: number;
-  humanWins: number;
   humanCorrect: number;
+  fastestHumanMs: number | null;
+  /** Rounds played against the current simulated-AI curve (sim-v2): the AI-related figures below count only these. */
+  aiSamples: number;
+  humanWins: number;
   aiAnswered: number;
   aiCorrect: number;
   aiAvgMs: number | null;
-  fastestHumanMs: number | null;
 }
+
+/** Rounds against the current simulated-AI curve; older curves/live-model rounds are excluded from AI stats. */
+export const CURRENT_AI_REQUEST_PREFIX = "sim:sim-v2:";
 
 export function createLeaderboardRepository(db: Database) {
   return {
     /** Aggregate public per-level stats from settled rounds (no answers, no player ids). */
     async levelStats(version = LEVEL_SET_VERSION): Promise<LevelStatsRow[]> {
+      const current = sql`(${rounds.aiRequestId} like ${`${CURRENT_AI_REQUEST_PREFIX}%`})`;
       const rows = await db
         .select({
           level: rounds.level,
           samples: sql<number>`count(*)`,
-          humanWins: sql<number>`sum(case when ${rounds.winner} = 'human' then 1 else 0 end)`,
           humanCorrect: sql<number>`sum(case when ${rounds.humanStatus} = 'correct' then 1 else 0 end)`,
-          aiAnswered: sql<number>`sum(case when ${rounds.aiStatus} = 'complete' then 1 else 0 end)`,
-          aiCorrect: sql<number>`sum(case when ${rounds.aiCorrect} = 1 then 1 else 0 end)`,
-          aiAvgMs: sql<number | null>`avg(case when ${rounds.aiStatus} = 'complete' then ${rounds.aiElapsedMs} end)`,
           fastestHumanMs: sql<number | null>`min(case when ${rounds.humanStatus} = 'correct' then ${rounds.humanElapsedMs} end)`,
+          aiSamples: sql<number>`sum(case when ${current} then 1 else 0 end)`,
+          humanWins: sql<number>`sum(case when ${current} and ${rounds.winner} = 'human' then 1 else 0 end)`,
+          aiAnswered: sql<number>`sum(case when ${current} and ${rounds.aiStatus} = 'complete' then 1 else 0 end)`,
+          aiCorrect: sql<number>`sum(case when ${current} and ${rounds.aiCorrect} = 1 then 1 else 0 end)`,
+          aiAvgMs: sql<number | null>`avg(case when ${current} and ${rounds.aiStatus} = 'complete' then ${rounds.aiElapsedMs} end)`,
         })
         .from(rounds)
         .innerJoin(sessions, eq(sessions.id, rounds.sessionId))
@@ -457,12 +465,13 @@ export function createLeaderboardRepository(db: Database) {
       return rows.map((row) => ({
         level: Number(row.level),
         samples: Number(row.samples),
-        humanWins: Number(row.humanWins ?? 0),
         humanCorrect: Number(row.humanCorrect ?? 0),
+        fastestHumanMs: row.fastestHumanMs == null ? null : Number(row.fastestHumanMs),
+        aiSamples: Number(row.aiSamples ?? 0),
+        humanWins: Number(row.humanWins ?? 0),
         aiAnswered: Number(row.aiAnswered ?? 0),
         aiCorrect: Number(row.aiCorrect ?? 0),
         aiAvgMs: row.aiAvgMs == null ? null : Math.round(Number(row.aiAvgMs)),
-        fastestHumanMs: row.fastestHumanMs == null ? null : Number(row.fastestHumanMs),
       }));
     },
 

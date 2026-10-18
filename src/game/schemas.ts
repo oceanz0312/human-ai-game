@@ -29,6 +29,7 @@ export const ANALYTICS_EVENTS = [
   "poster_generated",
   "share_completed",
   "share_landing_started",
+  "quick_round",
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];

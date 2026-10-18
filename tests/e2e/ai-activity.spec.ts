@@ -41,7 +41,7 @@ test("a quick tap keeps the board with a real AI counter, then reveals once the 
   await waitForPlayable(page, 1);
   await page.getByRole("button", { name: "Row 1, column 1" }).click();
   const waiting = page.getByTestId("ai-waiting");
-  await expect(waiting).toContainText(new RegExp(`${rx("你已锁定")} · (${rx("AI 还在分析 {s}", { s: "XX" }).replace("XX", "\\d+\\.\\d+s")}|${rx("AI 正在分析")}|${rx("AI 在看图")})`));
+  await expect(waiting).toContainText(new RegExp(`${rx("你已锁定")} · (${rx("AI 还在分析 {s}", { s: "XX" }).replace("XX", "\\d+\\.\\d+s")}|${rx("AI 正在分析")}|${rx("AI 看到了图片")})`));
   await expect(page.getByTestId("board")).toBeVisible();
   await expect(page.locator('.game-stage[data-phase="reveal"]')).toBeVisible({ timeout: 10_000 });
   await expect(page.getByTestId("ai-timeline")).toContainText(new RegExp(`${rx("AI 给出答案")} · \\d\\.\\d\\ds`));

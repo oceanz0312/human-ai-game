@@ -25,6 +25,9 @@
   "vars": {
     // simulated = in-game AI opponent, no model calls (SEO plan 2026-10-18). Set "live" to re-enable the Decisions chain below.
     "AI_MODE": "simulated",
+    // Simulated-AI difficulty curve (src/config/ai-difficulty.ts). "v1" = pre-2026-10-18 curve (kill switch).
+    // Optional SIM_AI_DIFFICULTY_JSON overrides the v2 numbers without a code change (invalid JSON → defaults).
+    "SIM_AI_CURVE": "v2",
     "DECISIONS_MODE": "worker",
     "DECISIONS_WORKER_URL": "https://human-ai-decisions.zdychanges.workers.dev",
     "PUBLIC_BASE_URL": "https://spotthedifferencegame.com",

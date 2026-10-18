@@ -1,7 +1,9 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { planSimulatedAnswer } from "@/models/adapters/simulated";
+import { QUICK_PRESENCE } from "@/config/ai-presence";
+import { track } from "@/lib/api-client";
+import { planQuickAnswer } from "./quick-ai";
 import { makePuzzle, QUICK_MODES, type QuickModeKey } from "./puzzle";
 import { SpriteDefs, SpriteUse } from "./PixelSprite";
 import "./quick.css";
@@ -38,15 +40,27 @@ export function QuickBoard({ mode: modeKey, seed, title, cta }: { mode: QuickMod
   const cells = puzzle.grid * puzzle.grid;
   const ai = useMemo(
     () =>
-      planSimulatedAnswer(
-        { level: Math.min(20, mode.aiLevel + round * 2), totalLevels: 20, limitMs, correctChoice: String(puzzle.oddIndex), seed: `${series}|${round}|ai` },
-        Array.from({ length: cells }, (_, i) => String(i)),
-      ),
-    [mode.aiLevel, round, limitMs, puzzle.oddIndex, series, cells],
+      planQuickAnswer({
+        mode: modeKey,
+        round,
+        limitMs,
+        correctChoice: String(puzzle.oddIndex),
+        choices: Array.from({ length: cells }, (_, i) => String(i)),
+        seed: `${series}|${round}|ai`,
+      }),
+    [modeKey, round, limitMs, puzzle.oddIndex, series, cells],
   );
   const prefix = `q-${modeKey}-${round}`;
   const elapsed = phase === "playing" ? now - startedAt : 0;
   const aiLocked = phase === "playing" && elapsed >= ai.thinkMs;
+  // Presence cues: cosmetic, a pure function of elapsed time (never of the AI's answer or answer time).
+  const aiCaption = aiLocked
+    ? "Luna AI locked in its answer — hurry!"
+    : elapsed < QUICK_PRESENCE.gotPictureMs
+      ? "\u00a0"
+      : elapsed < QUICK_PRESENCE.scanStartMs
+        ? "Luna AI got the picture"
+        : QUICK_PRESENCE.captions[Math.floor((elapsed - QUICK_PRESENCE.scanStartMs) / QUICK_PRESENCE.captionEveryMs) % QUICK_PRESENCE.captions.length];
   const result = results[round];
 
   const finish = useCallback(
@@ -63,8 +77,12 @@ export function QuickBoard({ mode: modeKey, seed, title, cta }: { mode: QuickMod
         return next;
       });
       setPhase("reveal");
+      // Anonymous pacing data to calibrate QUICK_AI (no ids beyond the usual player cookie).
+      track("quick_round", {
+        metadata: { mode: modeKey, round: round + 1, grid: puzzle.grid, you, youMs: youMs === null ? null : Math.round(youMs), aiCorrect: ai.correct, aiMs: ai.thinkMs, winner, curve: "quick-v2" },
+      });
     },
-    [ai, puzzle.oddIndex, round],
+    [ai, puzzle.oddIndex, puzzle.grid, round, modeKey],
   );
 
   useEffect(() => {
@@ -73,7 +91,7 @@ export function QuickBoard({ mode: modeKey, seed, title, cta }: { mode: QuickMod
       const t = performance.now();
       setNow(t);
       if (t - startRef.current >= limitMs) finish(null);
-    }, 100);
+    }, 50);
     return () => window.clearInterval(id);
   }, [phase, limitMs, finish]);
 
@@ -159,7 +177,7 @@ export function QuickBoard({ mode: modeKey, seed, title, cta }: { mode: QuickMod
       </div>
       <div className="quick-caption" data-testid="quick-caption" aria-live="polite">
         {phase === "ready" ? "Tap Play, then tap the odd one out." : null}
-        {phase === "playing" ? (aiLocked ? "Luna AI locked in its answer — hurry!" : "Luna AI is scanning the grid…") : null}
+        {phase === "playing" ? <span data-testid="quick-ai-status">{aiCaption}</span> : null}
         {phase === "reveal" && result ? (
           <>
             <b data-testid="quick-result">{result.winner === "you" ? "You win!" : result.winner === "ai" ? "AI wins" : "No winner"}</b>{" "}

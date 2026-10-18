@@ -8,7 +8,8 @@ import { GameError } from "./errors";
 import type { AnyGamePlugin, CoreLevel } from "../core/game-plugin";
 import { nextUtcMidnight, PLAY_LIMIT_DEFAULTS, scopeKey, utcDay, type PlayLimitConfig, type PlayLimitStatus } from "../core/limits/config";
 import { decisionClientForModel } from "../models/adapters";
-import { createSimulatedDecisionClient } from "../models/adapters/simulated";
+import { createSimulatedDecisionClient, planSimulatedAnswer, planSimulatedAnswerV1 } from "../models/adapters/simulated";
+import { bandForLevel, FORMAL_DIFFICULTY, SIM_AI_VERSION, type FormalDifficulty, type SimAiCurve } from "../config/ai-difficulty";
 import { getModel, resolveModelId } from "../models/registry";
 import type { GameRepository, LeaderboardRepository, RoundRow, SessionRow } from "./repositories/game-repository";
 import type { ServerTiming } from "./server-timing";
@@ -27,6 +28,8 @@ export interface GameServiceDeps {
   decisions: DecisionClient;
   /** AI_MODE=simulated (production default): the opponent is the in-game simulated AI, no model calls. */
   simulateAi?: boolean;
+  /** Simulated AI tuning: curve (SIM_AI_CURVE), difficulty config (defaults + SIM_AI_DIFFICULTY_JSON), seed derivation. */
+  simulatedAi?: { curve?: SimAiCurve; difficulty?: FormalDifficulty; seed?: (roundId: string) => string };
   now: () => number;
   randomId: () => string;
   randomPublicId: () => string;
@@ -279,15 +282,40 @@ export function createGameService(deps: GameServiceDeps) {
   }
 
   /** Runs the AI for a freshly shown round. The AI clock starts at the same server instant as the human's (shownAt). */
+  function simulatedClient(round: RoundRow, level: CoreLevel, shownAt: number) {
+    const curve = deps.simulatedAi?.curve ?? "v2";
+    const difficulty = deps.simulatedAi?.difficulty ?? FORMAL_DIFFICULTY;
+    const simRound = {
+      level: level.level,
+      totalLevels: game.totalLevels,
+      limitMs: level.limitMs,
+      correctChoice: game.correctAnswer(level),
+      seed: deps.simulatedAi?.seed ? deps.simulatedAi.seed(round.id) : round.id,
+      // The stored request id tags the curve: level stats and analyses count sim-v2 rounds only.
+      requestId: curve === "v2" ? `sim:${SIM_AI_VERSION}:${round.id}` : `sim:${round.id}`,
+    };
+    const plan =
+      curve === "v1"
+        ? (choices: string[]) => planSimulatedAnswerV1(simRound, choices)
+        : (choices: string[]) => planSimulatedAnswer(simRound, choices, bandForLevel(difficulty, level.level), difficulty.maxFractionOfLimit);
+    const injectedSleep = deps.sleep;
+    const sleepFor = injectedSleep
+      ? async (ms: number, signal: AbortSignal) => {
+          await injectedSleep(ms);
+          return !signal.aborted;
+        }
+      : undefined;
+    return createSimulatedDecisionClient(simRound, { plan, shownAt, now: deps.now, sleep: sleepFor });
+  }
+
   async function runServerAi(round: RoundRow, level: CoreLevel, emit: (event: AiEvent) => void, modelId: string) {
-    // Only live models reach a real client; anything else gets a scaffold that never calls out.
-    const decisions = deps.simulateAi
-      ? createSimulatedDecisionClient({ level: level.level, totalLevels: game.totalLevels, limitMs: level.limitMs, correctChoice: game.correctAnswer(level), seed: round.id })
-      : decisionClientForModel(modelId, deps.decisions);
     const shownAt = round.shownAt ?? deps.now();
+    // Only live models reach a real client; anything else gets a scaffold that never calls out.
+    const decisions = deps.simulateAi ? simulatedClient(round, level, shownAt) : decisionClientForModel(modelId, deps.decisions);
     let answer: DecisionResult;
     try {
-      const input = await game.buildDecisionInput(level);
+      // The simulated AI never looks at pixels: skip the image read so "AI got the picture" streams right away.
+      const input = deps.simulateAi ? { imageDataUrl: "", choices: game.choices(level) } : await game.buildDecisionInput(level);
       emit({ event: "image", at: deps.now() });
       const budgetMs = Math.max(1, level.limitMs - (deps.now() - shownAt));
       emit({ event: "sent", at: deps.now() });
@@ -674,7 +702,7 @@ export function createGameService(deps: GameServiceDeps) {
 
     async getLevelStats() {
       const version = deps.game.levelSetVersion;
-      return cached(deps.edgeCache, `level-stats/${version}`, EDGE_TTL.levelStats, () => reader().leaderboard.levelStats(version));
+      return cached(deps.edgeCache, `level-stats/${version}/${SIM_AI_VERSION}`, EDGE_TTL.levelStats, () => reader().leaderboard.levelStats(version));
     },
 
     /** `fresh` skips the shared top-of-board cache (the viewer just played or renamed and must see it). */
