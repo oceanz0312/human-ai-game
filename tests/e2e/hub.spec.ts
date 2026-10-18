@@ -109,3 +109,16 @@ test.describe("@viewport keyword pages", () => {
     await expect(page.getByRole("button", { name: START })).toBeVisible();
   });
 });
+
+test("@viewport header controls stay fully on-screen (long brand wraps on small phones)", async ({ page }) => {
+  await page.goto("/");
+  const width = page.viewportSize()!.width;
+  for (const selector of [".nav-menu > summary", ".site-header .nav-cta"]) {
+    const el = page.locator(selector);
+    if (!(await el.isVisible())) continue;
+    const box = (await el.boundingBox())!;
+    expect(box.x + box.width, selector).toBeLessThanOrEqual(width);
+  }
+  const logo = page.locator(".site-logo");
+  expect(await logo.evaluate((node) => node.scrollWidth <= node.clientWidth)).toBe(true);
+});
