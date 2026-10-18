@@ -1,17 +1,17 @@
-import { z } from "zod";
+import * as z from "zod/mini";
 import { decisionRequestSchema } from "./contracts";
 
 /** Short-lived, single-use ticket authorizing one browser → Decisions Worker call for a round. */
 export const decisionTicketPayloadSchema = z.object({
   v: z.literal(1),
-  jti: z.string().uuid(),
-  roundId: z.string().min(8),
-  sessionId: z.string().min(8),
-  level: z.number().int().min(1).max(20),
-  imageSha256: z.string().regex(/^[a-f0-9]{64}$/),
+  jti: z.uuid(),
+  roundId: z.string().check(z.minLength(8)),
+  sessionId: z.string().check(z.minLength(8)),
+  level: z.int().check(z.minimum(1), z.maximum(20)),
+  imageSha256: z.string().check(z.regex(/^[a-f0-9]{64}$/)),
   choices: decisionRequestSchema.shape.choices,
-  exp: z.number().int().positive(),
-  iat: z.number().int().positive(),
+  exp: z.int().check(z.positive()),
+  iat: z.int().check(z.positive()),
 });
 
 export type DecisionTicketPayload = z.infer<typeof decisionTicketPayloadSchema>;

@@ -1,20 +1,20 @@
-import { z } from "zod";
+import * as z from "zod/mini";
 
 export const startSessionSchema = z.object({
-  nickname: z.string().trim().min(1).max(24).optional(),
+  nickname: z.optional(z.string().check(z.trim(), z.minLength(1), z.maxLength(24))),
   /** Opponent model id/slug from the registry (resolved server-side to a live model). */
-  ai: z.string().regex(/^[a-z0-9-]{1,32}$/).optional(),
+  ai: z.optional(z.string().check(z.regex(/^[a-z0-9-]{1,32}$/))),
   /** Random per-browser player key (crypto.randomUUID in localStorage) for the daily play limit; stored hashed. */
-  pk: z.string().uuid(),
+  pk: z.uuid(),
 });
 
 export const submitRoundSchema = z.object({
   /** Opaque, game-defined answer id; the game plugin validates it. */
-  choice: z.string().regex(/^[A-Za-z0-9_-]{1,64}$/).nullable(),
-  elapsedMs: z.number().int().min(0).max(60_000),
+  choice: z.nullable(z.string().check(z.regex(/^[A-Za-z0-9_-]{1,64}$/))),
+  elapsedMs: z.int().check(z.minimum(0), z.maximum(60_000)),
 });
 
-export const nicknameSchema = z.object({ nickname: z.string().trim().min(1).max(24) });
+export const nicknameSchema = z.object({ nickname: z.string().check(z.trim(), z.minLength(1), z.maxLength(24)) });
 
 export const ANALYTICS_EVENTS = [
   "game_start",
@@ -35,11 +35,10 @@ export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];
 
 export const analyticsEventSchema = z.object({
   name: z.enum(ANALYTICS_EVENTS),
-  sessionId: z.string().uuid().nullable().optional(),
-  level: z.number().int().min(1).max(500).nullable().optional(),
-  clientTs: z.number().int().positive(),
+  sessionId: z.optional(z.nullable(z.uuid())),
+  level: z.optional(z.nullable(z.int().check(z.minimum(1), z.maximum(500)))),
+  clientTs: z.int().check(z.positive()),
   metadata: z
-    .record(z.string().max(40), z.union([z.string().max(200), z.number(), z.boolean(), z.null()]))
-    .optional()
-    .refine((value) => value === undefined || JSON.stringify(value).length <= 2048, "metadata too large"),
+    .optional(z.record(z.string().check(z.maxLength(40)), z.union([z.string().check(z.maxLength(200)), z.number(), z.boolean(), z.null()])))
+    .check(z.refine((value) => value === undefined || JSON.stringify(value).length <= 2048, "metadata too large")),
 });

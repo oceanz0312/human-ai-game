@@ -1,10 +1,10 @@
-import { z } from "zod";
+import * as z from "zod/mini";
 import { startSessionSchema } from "@/game/schemas";
 import { GameError } from "@/server/errors";
 import { allowIp, handle, json, readJson, requirePlayer } from "@/server/http";
 import { playLimitContext } from "@/server/play-limit";
 
-const bodySchema = startSessionSchema.extend({ replay: z.boolean().optional() });
+const bodySchema = z.extend(startSessionSchema, { replay: z.optional(z.boolean()) });
 
 export async function POST(request: Request) {
   return handle(async (service) => {
