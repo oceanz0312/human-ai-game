@@ -16,6 +16,10 @@ export const loadLevelStats = cache(async function loadLevelStats(): Promise<Map
   }
 });
 
+/** AI figures (win %, AI time, AI accuracy) need this many current-curve rounds before they are shown (else "—"). */
+export const MIN_AI_SAMPLES = 20;
+export const hasAiStats = (row: LevelStatsRow | undefined) => (row?.aiSamples ?? 0) >= MIN_AI_SAMPLES;
+
 export const isIndexableLevel = (row: LevelStatsRow | undefined) => (row?.samples ?? 0) >= MIN_INDEXABLE_SAMPLES;
 export const percent = (part: number, whole: number) => (whole > 0 ? `${Math.round((part / whole) * 100)}%` : "—");
 export const seconds = (ms: number | null) => (ms == null ? "—" : `${(ms / 1000).toFixed(2)}s`);
