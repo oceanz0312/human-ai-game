@@ -7,7 +7,7 @@ import { createCloudflareDecisionClient, createUnconfiguredDecisionClient } from
 import { createDirectOpenAiDecisionClient } from "./decisions/direct-openai-client";
 import { FakeDecisionClient } from "./decisions/fake";
 import type { Database } from "./db/client";
-import { createGameService, type GameService } from "./game-service";
+import { createGameService, type GameService, type GameServiceDeps } from "./game-service";
 import { getLevelImageSha256, PRIVATE_LEVELS_V1, readLevelImageDataUrl } from "./levels/catalog";
 import { createSpotTheDifferencePlugin } from "../games/spot-the-difference/server-plugin";
 import { createGameRepository, createLeaderboardRepository } from "./repositories/game-repository";
@@ -45,8 +45,13 @@ interface Fetcher {
 }
 
 /** Bindings declared in the root wrangler.jsonc when the game runs on Cloudflare Workers. */
+interface D1Binding {
+  /** D1 Sessions API (read replication). Missing on older runtimes; then everything reads the primary. */
+  withSession?: (constraint?: "first-unconstrained" | "first-primary" | string) => unknown;
+}
+
 interface CloudflareBindings {
-  DB: unknown;
+  DB: D1Binding;
   ASSETS: Fetcher;
   /** Service binding to the Decisions Worker; Workers cannot fetch another workers.dev Worker on the same account. */
   DECISIONS?: Fetcher;
@@ -134,10 +139,20 @@ async function build(): Promise<Container> {
     return cached;
   };
   const dispatchMode = resolveDecisionsDispatchMode();
+  let replica: GameServiceDeps["replica"] = null;
+  if (cf && typeof cf.DB.withSession === "function") {
+    const { createD1Database } = await import("./db/d1");
+    const binding = cf.DB;
+    replica = () => {
+      const replicaDb = createD1Database(binding.withSession!("first-unconstrained"));
+      return { games: createGameRepository(replicaDb), leaderboard: createLeaderboardRepository(replicaDb) };
+    };
+  }
   const service = createGameService({
     games: createGameRepository(db),
     leaderboard: createLeaderboardRepository(db),
     edgeCache: cf ? createWorkersEdgeCache() : null,
+    replica,
     decisions: selectDecisionClient(cf?.DECISIONS),
     simulateAi: resolveAiMode() === "simulated",
     now: () => Date.now(),
