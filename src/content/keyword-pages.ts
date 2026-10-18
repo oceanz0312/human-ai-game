@@ -24,9 +24,44 @@ export interface KeywordPageContent {
   nav: string;
 }
 
+/** Shared closing for every keyword-page AI FAQ (20-level curve; keep in sync with sim-v2). */
+const AI_FAQ_CORE =
+  "It starts slow on the first levels, gets faster as the grids grow, and from level 15 it gets brutal. Beat it by being quicker, or by catching the levels it gets wrong.";
+
+/** Default AI FAQ (home / game / find). Question kept for FAQ schema tests. */
 export const AI_FAQ = {
   q: "Can I play spot the difference against AI?",
-  a: "Yes. Every puzzle here is a race against Luna AI, our in-game simulated opponent. You both see the same pictures at the same moment and whoever finds the odd one first wins. It plays with human-like speed and still makes mistakes on the big grids.",
+  a: `Yes. Every puzzle here is a race against Luna AI, our in-game simulated opponent. You both see the same pictures at the same moment and whoever finds the odd one first wins. ${AI_FAQ_CORE}`,
+};
+
+/** Easy page: early-level / gentle AI (quick mode aiLevel 3). */
+const AI_FAQ_EASY = {
+  q: "Can I beat the AI on easy spot the difference?",
+  a: `Yes. Easy mode matches the early levels of the full game — small grids and a gentler Luna AI — so you will beat it more often than not. ${AI_FAQ_CORE}`,
+};
+
+/** Hard page: late-game strength (quick mode aiLevel 16 ≈ levels 15–20). */
+const AI_FAQ_HARD = {
+  q: "How strong is the AI on hard spot the difference?",
+  a: `On this page Luna AI plays at late-game strength — the same band as levels 15–20 of the full run. ${AI_FAQ_CORE}`,
+};
+
+/** For-kids page: gentle AI so parents and kids can practice together (quick mode aiLevel 1). */
+const AI_FAQ_KIDS = {
+  q: "Can kids play spot the difference against AI?",
+  a: `Yes. Kids mode keeps the grids small and Luna AI gentle, so parents and children can practice easy levels together before the full 20-level run. ${AI_FAQ_CORE}`,
+};
+
+/** Christmas page: same race, holiday sprites. */
+const AI_FAQ_CHRISTMAS = {
+  q: "Can I race the AI on Christmas spot the difference?",
+  a: `Yes. The Christmas set races Luna AI on holiday sprites — trees, gifts, snowmen and reindeer — with the same rules as every other puzzle here. ${AI_FAQ_CORE}`,
+};
+
+/** Pictures page: gallery sprites in a live race. */
+const AI_FAQ_PICTURES = {
+  q: "Can I play against AI with these spot the difference pictures?",
+  a: `Yes. The live puzzle on this page races Luna AI on the same pixel pictures shown in the gallery. ${AI_FAQ_CORE}`,
 };
 
 const L = {
@@ -175,6 +210,7 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
     ],
     faq: [
       { q: "How is easy mode easier?", a: "Fewer cells, a longer timer and more changed pixels in the odd picture." },
+      AI_FAQ_EASY,
       { q: "Can I switch to harder puzzles?", a: "Yes – the hard page uses up to 8×8 grids with a single changed pixel." },
     ],
     links: [L.kids, L.home, L.hard, L.game],
@@ -200,7 +236,7 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
     ],
     faq: [
       { q: "Is this harder than the 20-level game?", a: "The 9×9 levels of the main game are tougher on time; these puzzles are tougher on detail." },
-      AI_FAQ,
+      AI_FAQ_HARD,
     ],
     links: [L.game, L.find, L.easy, L.home],
   },
@@ -225,6 +261,7 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
     ],
     faq: [
       { q: "What age is this for?", a: "Most children from about four can play the 3×3 puzzles; the 4×4 round is a good stretch." },
+      AI_FAQ_KIDS,
       { q: "Is it safe for kids?", a: "There is no signup, chat or user content. The game never asks for personal information." },
     ],
     links: [L.easy, L.printable, L.christmas, L.home],
@@ -250,7 +287,7 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
     ],
     faq: [
       { q: "Are there printable Christmas puzzles?", a: "Yes – the printable page includes a Christmas sheet with an answer key." },
-      AI_FAQ,
+      AI_FAQ_CHRISTMAS,
     ],
     links: [L.printable, L.kids, L.home, L.pictures],
   },
@@ -271,7 +308,10 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
         ],
       },
     ],
-    faq: [{ q: "Can I use these pictures in class?", a: "Yes, for personal and classroom use. The printable page has ready-made sheets with an answer key." }],
+    faq: [
+      { q: "Can I use these pictures in class?", a: "Yes, for personal and classroom use. The printable page has ready-made sheets with an answer key." },
+      AI_FAQ_PICTURES,
+    ],
     links: [L.printable, L.christmas, L.home, L.find],
   },
 };
