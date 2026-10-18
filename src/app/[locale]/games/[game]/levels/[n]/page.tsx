@@ -9,7 +9,7 @@ import { resolveGameParam } from "@/games/route-game";
 import { localePath, resolveLocaleParam, type Locale } from "@/i18n/config";
 import { fill, getPages } from "@/i18n/pages";
 import { pageMetadata } from "@/lib/page-meta";
-import { isIndexableLevel, loadLevelStats, percent, seconds } from "@/seo/level-stats";
+import { hasAiStats, isIndexableLevel, loadLevelStats, percent, seconds } from "@/seo/level-stats";
 
 export const dynamic = "force-dynamic";
 
@@ -76,9 +76,9 @@ export default async function LevelPage({ params }: Props) {
           {stats && stats.samples > 0 ? (
             <>
               <div className="stat-row"><dt>{copy.runs}</dt><dd><strong>{stats.samples}</strong></dd></div>
-              <div className="stat-row"><dt>{copy.humanWin}</dt><dd><strong>{percent(stats.humanWins, stats.aiSamples)}</strong></dd></div>
-              <div className="stat-row"><dt>{copy.aiAvg}</dt><dd><strong>{seconds(stats.aiAvgMs)}</strong></dd></div>
-              <div className="stat-row"><dt>{copy.aiCorrect}</dt><dd><strong>{percent(stats.aiCorrect, stats.aiAnswered)}</strong></dd></div>
+              <div className="stat-row"><dt>{copy.humanWin}</dt><dd><strong>{hasAiStats(stats) ? percent(stats.humanWins, stats.aiSamples) : "—"}</strong></dd></div>
+              <div className="stat-row"><dt>{copy.aiAvg}</dt><dd><strong>{hasAiStats(stats) ? seconds(stats.aiAvgMs) : "—"}</strong></dd></div>
+              <div className="stat-row"><dt>{copy.aiCorrect}</dt><dd><strong>{hasAiStats(stats) ? percent(stats.aiCorrect, stats.aiAnswered) : "—"}</strong></dd></div>
               <div className="stat-row"><dt>{copy.fastest}</dt><dd><strong>{seconds(stats.fastestHumanMs)}</strong></dd></div>
             </>
           ) : (
