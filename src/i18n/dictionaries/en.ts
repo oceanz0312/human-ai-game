@@ -2,9 +2,9 @@ const en = {
   brand: "HUMAN VS AI",
   home: {
     title: "Find the Difference Game: Human vs AI",
-    description: "Free find the difference game. Spot the one odd cell faster than a real AI opponent. No signup, plays in your browser.",
+    description: "Free find the difference game. Spot the one odd cell faster than the AI opponent. No signup, plays in your browser.",
     h1: ["Can you beat", "the AI?"],
-    lead: ["Find the difference: tap the one odd cell.", "Race a real AI on the same picture."],
+    lead: ["Find the difference: tap the one odd cell.", "Race the AI on the same picture."],
     start: "Start",
     starting: "Starting",
     footnote: ["Find the one difference", "Same puzzles for everyone"],

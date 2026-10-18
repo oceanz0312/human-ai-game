@@ -20,7 +20,7 @@ const en = {
   gameCopy: {
     "spot-the-difference": {
       name: "Spot the Difference",
-      tagline: "Find the one odd cell before a real AI does. 3×3 to 9×9 grids, shorter clock every level.",
+      tagline: "Find the one odd cell before the AI does. 3×3 to 9×9 grids, shorter clock every level.",
       cta: "Play",
     },
   } as Record<string, { name: string; tagline: string; cta: string }>,
@@ -32,25 +32,25 @@ const en = {
   /** Platform hub home page. */
   hub: {
       "title": "Human vs AI Games – Can You Beat the AI?",
-      "description": "Play free browser games against a real AI model. Same puzzle, same start, real AI speed. Start with Spot the Difference – no signup.",
+      "description": "Play free browser games against an AI opponent. Same puzzle, same start. Start with Spot the Difference – no signup.",
       "eyebrowLive": "{n} {n|game|games} live",
       "eyebrowSoon": "More in the works",
       "h1": [
         "Human vs AI",
-        "Play games against real AI"
+        "Play games against AI"
       ],
-      "lede": "In every game you and a real AI model get the same puzzle at the same moment. Its speed is its real speed, and every reveal shows how it thought.",
+      "lede": "In every game you and an AI opponent get the same puzzle at the same moment. Every reveal shows how it played.",
       "playCta": "Play {game}",
       "allGames": "All games",
       "facts": [
-        "Real AI answers live",
+        "AI opponent on every level",
         "No signup · plays in your browser",
         "English / 中文"
       ],
       "vsYou": "You",
       "vsYouLabel": "Human player",
       "vsYouSub": "eyes + instinct",
-      "vsAiLabel": "Real AI model",
+      "vsAiLabel": "AI opponent",
       "vsFoot": "> same puzzle · same start",
       "gamesTitle": "All games",
       "gamesMore": "Game index →",
@@ -69,7 +69,7 @@ const en = {
         ],
         [
           "Start with the AI",
-          "You and a real AI model get the same puzzle; the clock starts together. The AI is never sped up or slowed down."
+          "You and an AI opponent get the same puzzle; the clock starts together. The AI plays on the same clock."
         ],
         [
           "Reveal · see how the AI thinks",
@@ -81,7 +81,7 @@ const en = {
       "faq": [
         {
           "q": "Is the opponent really an AI?",
-          "a": "Yes. Every puzzle calls a real model live (currently Luna). The speed you see is its real speed."
+          "a": "Luna AI is an in-game simulated opponent with human-like timing and accuracy. It is not a live language model, and it never sees your data."
         },
         {
           "q": "Do I need to sign up or pay?",
@@ -108,20 +108,20 @@ const en = {
     comingSoon: "Coming soon",
     moreGames: "More games",
     inTheWorks: "In the works",
-    footerTagline: "Human vs AI games: play against real AI models.",
+    footerTagline: "Human vs AI games: play against AI opponents.",
     related: "Related",
     exit: "Exit",
   },
   pages: {
     spotTheDifference: {
       title: "Spot the Difference Online – Find the Difference Game vs AI (Free)",
-      description: "Free find the difference game: spot the one odd cell in 20 levels and race a real AI that answers at real speed. No signup, plays in your browser.",
+      description: "Free find the difference game: spot the one odd cell in 20 levels and race an AI opponent. No signup, plays in your browser.",
       eyebrow: "Find the difference game",
       h1: "Spot the Difference: You vs AI",
       facts: ["Same picture, same start", "3×3 to 9×9 grids", "Free · no signup"],
       howTitle: "How to play",
       levelsTitle: "Levels",
-      intro: "Twenty puzzles, one odd cell in each. You and a real AI see the same picture at the same moment — whoever spots the difference first wins the level. Free, no signup, made for phones.",
+      intro: "Twenty puzzles, one odd cell in each. You and the AI see the same picture at the same moment — whoever spots the difference first wins the level. Free, no signup, made for phones.",
     },
     findTheDifference: {
       title: "Find the Difference: Quick Puzzles vs AI | HUMAN VS AI",
@@ -131,23 +131,23 @@ const en = {
       intro: "Grids start at 3×3 and jump to 9×9 by level 6, while the timer shrinks. Scan rows, not cells, and trust your first odd shape. Can you find the difference before the AI does?",
     },
     humanVsAi: {
-      title: "Human vs AI: Can You Beat a Real AI at a Puzzle?",
-      description: "Human vs AI, live: race a real AI model on the same visual puzzle. See its real answer time, confidence and mistakes after every level.",
+      title: "Human vs AI: Can You Beat the AI at a Puzzle?",
+      description: "Human vs AI, live: race an AI opponent on the same visual puzzle. See its answer time, confidence and mistakes after every level.",
       eyebrow: "Human vs AI",
       h1: "Human vs AI",
-      intro: "No fake bot: every level calls a real AI model and shows its true answer time, confidence and the cells it doubted. Humans still win plenty of levels — the AI is fast, not perfect.",
+      intro: "Luna AI is an in-game simulated opponent tuned to play like a sharp human: quick on small grids, slower and shakier on 9×9. After each level you see its answer time, confidence and the cells it doubted. Humans still win plenty of levels — the AI is fast, not perfect.",
     },
     games: {
       title: "Human vs AI Games | HUMAN VS AI",
-      description: "Browser games where you play against a real AI. Start with spot the difference; more human vs AI games are coming.",
+      description: "Browser games where you play against the AI. Start with spot the difference; more human vs AI games are coming.",
       eyebrow: "Games",
       h1: "Human vs AI Games",
-      intro: "Each game pits you against a real AI on the same puzzle at the same time. One game is live now; more are on the way.",
+      intro: "Each game pits you against the AI on the same puzzle at the same time. One game is live now; more are on the way.",
       comingSoon: "More games coming soon",
     },
     play: {
       title: "Play Spot the Difference | HUMAN VS AI",
-      description: "Start a spot the difference run against a real AI.",
+      description: "Start a spot the difference run against the AI.",
       eyebrow: "Ready",
       h1: "Race the AI",
       intro: "20 levels. Tap the one cell that's different before the AI does.",
@@ -167,13 +167,13 @@ const en = {
     },
     faq: {
       title: "Spot the Difference vs AI — FAQ | HUMAN VS AI",
-      description: "Answers about the human vs AI spot the difference game: is the AI real, is it free, which model it uses and how ranking works.",
+      description: "Answers about the human vs AI spot the difference game: is the AI a real model, is it free and how ranking works.",
       eyebrow: "FAQ",
       h1: "FAQ",
       intro: "Short answers to common questions.",
       items: [
-        { q: "Is the AI real?", a: "Yes. Every level sends the picture to a real AI model and shows its real answer time. Nothing is scripted." },
-        { q: "Which AI do I play against?", a: "Luna, powered by OpenAI's Decisions API. More opponents are coming soon. We are not affiliated with OpenAI." },
+        { q: "Is the AI a real language model?", a: "No. Luna AI is an in-game simulated opponent: it plays every level with human-like timing and accuracy (fast on small grids, slower and more error-prone on 9×9), so no picture ever leaves the game. It still makes mistakes, and you still race the same clock." },
+        { q: "Can I play spot the difference against AI?", a: "Yes. Every level is a race against Luna AI, our in-game simulated opponent. You both get the same picture at the same moment; tap the odd cell before it does." },
         { q: "Is it free?", a: "Yes, free with no signup. It runs in your phone or desktop browser. Everyone gets 3 runs a day; they come back at 00:00 UTC." },
         { q: "How does ranking work?", a: "By the highest level reached; ties share a rank." },
         { q: "Why did the AI go offline?", a: "If the AI can't answer in time the level still counts for you." },
@@ -181,10 +181,10 @@ const en = {
     },
     about: {
       title: "About HUMAN VS AI",
-      description: "HUMAN VS AI is a small platform of browser games where people race real AI models. Honest timing, no fake bots.",
+      description: "HUMAN VS AI is a small platform of browser games where people race AI opponents. Simple, fast, free.",
       eyebrow: "About",
       h1: "About HUMAN VS AI",
-      intro: "We build quick browser games that put people and real AI models on the same puzzle at the same moment. We show the AI's true speed and mistakes so you can see where humans still win. Independent project; not affiliated with any AI provider.",
+      intro: "We build quick browser games that put people and AI opponents on the same puzzle at the same moment. We show the AI's speed and mistakes so you can see where humans still win. Independent project; not affiliated with any AI provider.",
     },
     privacy: {
       title: "Privacy | HUMAN VS AI",
@@ -208,23 +208,23 @@ const en = {
         easy: {
           name: "Easy",
           title: "Spot the Difference Level {n} – Easy Odd One Out, {secs}s | HUMAN VS AI",
-          description: "Free spot the difference level {n}: find the odd one out among {cells} pictures in {secs} seconds while a real AI races you. A quick warm-up before the hard 9×9 levels.",
+          description: "Free spot the difference level {n}: find the odd one out among {cells} pictures in {secs} seconds while the AI races you. A quick warm-up before the hard 9×9 levels.",
           h1: "Spot the Difference Level {n}: Find the Odd One Out",
-          intro: "Level {n} is a {grid}×{grid} warm-up: {cells} cells, exactly one is different, and you have {secs} seconds. A real AI sees the same picture at the same moment, so tap the odd one out first.",
+          intro: "Level {n} is a {grid}×{grid} warm-up: {cells} cells, exactly one is different, and you have {secs} seconds. The AI sees the same picture at the same moment, so tap the odd one out first.",
           tip: "Tip: look at the whole grid at once instead of cell by cell. In a 3×3 the odd one out usually jumps out within a second.",
         },
         hard: {
           name: "Hard",
           title: "Hard Spot the Difference Level {n} (9×9, {secs}s Timer) | HUMAN VS AI",
-          description: "Hard spot the difference level {n}: find the one different cell among {cells} in {secs} seconds, before a real AI does. Free online find-the-difference game, no download.",
+          description: "Hard spot the difference level {n}: find the one different cell among {cells} in {secs} seconds, before the AI does. Free online find-the-difference game, no download.",
           h1: "Hard Spot the Difference: Level {n}",
-          intro: "From level 6 the grid jumps to {grid}×{grid}: {cells} nearly identical cells and {secs} seconds to find the difference. It is a spot the difference puzzle with a timer, and a real AI is scanning the same image.",
+          intro: "From level 6 the grid jumps to {grid}×{grid}: {cells} nearly identical cells and {secs} seconds to find the difference. It is a spot the difference puzzle with a timer, and the AI is scanning the same image.",
           tip: "Tip: sweep the grid row by row in one pass. Colour and orientation changes are easier to catch than tiny shape changes.",
         },
         expert: {
           name: "Expert",
           title: "Expert Spot the Difference Level {n}: {secs}s to Beat the AI | HUMAN VS AI",
-          description: "Expert spot the difference level {n}: {cells} cells and only {secs} seconds. Can you find the difference faster than a real AI? A free, hard spot the difference game for adults.",
+          description: "Expert spot the difference level {n}: {cells} cells and only {secs} seconds. Can you find the difference faster than the AI? A free, hard spot the difference game for adults.",
           h1: "Expert Spot the Difference: Level {n}",
           intro: "Level {n} gives you {secs} seconds for {cells} cells, a little less every level until 3 seconds at level 20. This is where most humans start losing to the AI.",
           tip: "Tip: do not hunt. Relax your eyes on the centre of the grid and tap the first cell that feels off.",
@@ -251,17 +251,17 @@ const en = {
     },
     aiOpponents: {
       title: "AI Opponents | HUMAN VS AI",
-      description: "The real AI models you play against on HUMAN VS AI.",
+      description: "The AI opponents you play against on HUMAN VS AI.",
       eyebrow: "AI opponents",
       h1: "AI Opponents",
       intro: "Only models that are actually wired into a game are listed here.",
     },
     opponent: {
       title: "Play Against {model} | HUMAN VS AI",
-      description: "Race {model} ({provider} {api}) at spot the difference. Real answer times, real mistakes.",
+      description: "Race {model} ({provider} {api}) at spot the difference. Answer times and mistakes shown after every level.",
       eyebrow: "AI opponent",
       h1: "Human vs {model}",
-      intro: "Your opponent is {provider}'s {api} running {model}. It returns one final answer per level, and we show its real timing. HUMAN VS AI is independent and not affiliated with {provider}.",
+      intro: "Your opponent is {model}, an in-game simulated AI. It returns one final answer per level, and we show its timing. HUMAN VS AI is independent and not affiliated with {provider}.",
     },
   },
 };

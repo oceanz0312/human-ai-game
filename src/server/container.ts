@@ -70,6 +70,16 @@ function resolveDecisionsDispatchMode(): "server" | "off" {
   return process.env.AI_DISPATCH === "off" ? "off" : "server";
 }
 
+/**
+ * AI_MODE=simulated (default in production): the in-game simulated opponent, no model calls at all.
+ * AI_MODE=live: the real model chain below. Local fake mode (DECISIONS_MODE=fake, used by E2E) keeps the scripted fake.
+ */
+function resolveAiMode(): "simulated" | "live" {
+  const explicit = process.env.AI_MODE;
+  if (explicit === "live" || explicit === "simulated") return explicit;
+  return process.env.DECISIONS_MODE === "fake" ? "live" : "simulated";
+}
+
 function selectDecisionClient(decisionsBinding?: Fetcher): DecisionClient {
   const url = process.env.DECISIONS_WORKER_URL;
   const secret = process.env.DECISIONS_WORKER_SHARED_SECRET;
@@ -127,6 +137,7 @@ async function build(): Promise<Container> {
     games: createGameRepository(db),
     leaderboard: createLeaderboardRepository(db),
     decisions: selectDecisionClient(cf?.DECISIONS),
+    simulateAi: resolveAiMode() === "simulated",
     now: () => Date.now(),
     randomId: () => randomUUID(),
     randomPublicId: () => randomBytes(16).toString("base64url"),

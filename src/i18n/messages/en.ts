@@ -165,7 +165,7 @@ const en: Record<string, string> = {
   "分析中": "Analyzing",
   "AI 还在分析": "AI still analyzing",
   "你答对了": "You were right",
-  "真实调用 · 真实速度 · 揭晓前不显示答案": "Real AI · real speed · answer hidden until reveal",
+  "游戏内模拟 AI · 揭晓前不显示答案": "In-game simulated AI · answer hidden until reveal",
   "网络与排队": "Network & queue",
   "AI 一次给出最终答案，没有边想边改。": "The AI gives one final answer — no second guesses.",
   "错误码 {code}": "code {code}",

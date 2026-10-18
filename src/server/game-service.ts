@@ -7,6 +7,7 @@ import { GameError } from "./errors";
 import type { AnyGamePlugin, CoreLevel } from "../core/game-plugin";
 import { nextUtcMidnight, PLAY_LIMIT_DEFAULTS, scopeKey, utcDay, type PlayLimitConfig, type PlayLimitStatus } from "../core/limits/config";
 import { decisionClientForModel } from "../models/adapters";
+import { createSimulatedDecisionClient } from "../models/adapters/simulated";
 import { getModel, resolveModelId } from "../models/registry";
 import type { GameRepository, LeaderboardRepository, RoundRow, SessionRow } from "./repositories/game-repository";
 import type { ServerTiming } from "./server-timing";
@@ -15,6 +16,8 @@ export interface GameServiceDeps {
   games: GameRepository;
   leaderboard: LeaderboardRepository;
   decisions: DecisionClient;
+  /** AI_MODE=simulated (production default): the opponent is the in-game simulated AI, no model calls. */
+  simulateAi?: boolean;
   now: () => number;
   randomId: () => string;
   randomPublicId: () => string;
@@ -267,7 +270,9 @@ export function createGameService(deps: GameServiceDeps) {
   /** Runs the AI for a freshly shown round. The AI clock starts at the same server instant as the human's (shownAt). */
   async function runServerAi(round: RoundRow, level: CoreLevel, emit: (event: AiEvent) => void, modelId: string) {
     // Only live models reach a real client; anything else gets a scaffold that never calls out.
-    const decisions = decisionClientForModel(modelId, deps.decisions);
+    const decisions = deps.simulateAi
+      ? createSimulatedDecisionClient({ level: level.level, totalLevels: game.totalLevels, limitMs: level.limitMs, correctChoice: game.correctAnswer(level), seed: round.id })
+      : decisionClientForModel(modelId, deps.decisions);
     const shownAt = round.shownAt ?? deps.now();
     let answer: DecisionResult;
     try {
