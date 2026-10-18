@@ -1,5 +1,6 @@
 import { expect, test } from "@playwright/test";
 import { answer, next, pickOpponent, startGame } from "./helpers";
+import { t } from "./t";
 
 test("a finished run generates a poster and a shareable landing page", async ({ page, browser }) => {
   await startGame(page);
@@ -10,8 +11,8 @@ test("a finished run generates a poster and a shareable landing page", async ({ 
   await page.waitForURL(/\/result\//);
   const publicId = page.url().split("/result/")[1];
 
-  await page.getByRole("button", { name: "生成战绩海报" }).click();
-  const poster = page.getByRole("dialog", { name: "战绩海报" }).locator("img");
+  await page.getByRole("button", { name: t("生成战绩海报") }).click();
+  const poster = page.getByRole("dialog", { name: t("战绩海报") }).locator("img");
   await expect(poster).toBeVisible();
   const size = await poster.evaluate((img: HTMLImageElement) => ({ width: img.naturalWidth, height: img.naturalHeight }));
   expect(size).toEqual({ width: 1080, height: 1920 });
@@ -25,8 +26,8 @@ test("a finished run generates a poster and a shareable landing page", async ({ 
   const { mkdirSync, writeFileSync } = await import("node:fs");
   mkdirSync("test-results/screens", { recursive: true });
   writeFileSync("test-results/screens/poster.png", Buffer.from(png, "base64"));
-  await expect(page.getByRole("button", { name: "复制链接" })).toBeVisible();
-  await page.getByRole("button", { name: "关闭" }).click();
+  await expect(page.getByRole("button", { name: t("复制链接") })).toBeVisible();
+  await page.getByRole("button", { name: t("关闭") }).click();
 
   const friend = await browser.newContext({ viewport: { width: 375, height: 812 }, isMobile: true, hasTouch: true, extraHTTPHeaders: { "x-play-limit-bypass": "local-e2e-bypass-0123456789" } });
   const friendPage = await friend.newPage();
@@ -62,10 +63,10 @@ test("nicknames can be set from the result page leaderboard", async ({ page }) =
   }
   await page.waitForURL(/\/result\//);
   // The web result page shows the full leaderboard with the nickname form inline (no sheet).
-  await page.getByPlaceholder("昵称（可选）").fill("测试玩家");
-  await page.getByRole("button", { name: "保存" }).click();
-  await expect(page.getByText("昵称已更新")).toBeVisible();
+  await page.getByPlaceholder(t("昵称（可选）")).fill("测试玩家");
+  await page.getByRole("button", { name: t("保存") }).click();
+  await expect(page.getByText(t("昵称已更新"))).toBeVisible();
   await expect(page.locator(".result-board .board-rows .me")).toContainText("测试玩家");
   await expect(page.getByTestId("human-correct")).toContainText("0");
-  await expect(page.getByText("比 AI 更快")).toHaveCount(0);
+  await expect(page.getByText(t("比 AI 更快"))).toHaveCount(0);
 });

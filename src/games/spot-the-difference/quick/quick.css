@@ -1,0 +1,21 @@
+.quick { width: 100%; max-width: min(560px, 100%); margin-inline: auto; display: grid; gap: 8px; }
+.quick-hud { display: flex; justify-content: space-between; gap: 8px; font-size: 12px; font-weight: 700; }
+.quick-score { color: var(--accent, #2f6bff); }
+.quick-stage { position: relative; aspect-ratio: 1 / 1; width: min(100%, 62svh); margin-inline: auto; background: #f4f6fb; border: 3px solid #1d2440; border-radius: 6px; padding: 6px; box-sizing: border-box; contain: layout paint; }
+.quick-grid { display: grid; gap: 4px; width: 100%; height: 100%; }
+.quick-cell { display: grid; place-items: center; background: #fff; border: 2px solid #d5dbe8; border-radius: 4px; padding: 10%; cursor: pointer; min-width: 0; min-height: 0; }
+.quick-cell:disabled { cursor: default; }
+.quick-cell:not(:disabled):hover, .quick-cell:focus-visible { border-color: #2f6bff; outline: none; }
+.quick-cell svg { width: 100%; height: 100%; display: block; }
+.quick-cell[data-state="odd"] { border-color: #19a35b; box-shadow: 0 0 0 3px #19a35b inset; background: #eafff3; }
+.quick-cell[data-state="miss"] { border-color: #e5403a; background: #fff0ef; }
+.quick-cell[data-ai="true"] { position: relative; }
+.quick-cell[data-ai="true"]::after { content: "AI"; position: absolute; top: 2px; right: 2px; font-size: 10px; line-height: 1; padding: 2px 3px; background: #1d2440; color: #fff; border-radius: 2px; }
+.quick-overlay { position: absolute; inset: 0; display: grid; place-content: center; justify-items: center; gap: 10px; text-align: center; background: rgba(244, 246, 251, 0.82); padding: 16px; }
+.quick-overlay p { margin: 0; max-width: 28ch; font-size: 12px; line-height: 1.5; }
+.quick-play, .quick-again, .quick-next { font: inherit; font-weight: 700; border: 3px solid #1d2440; border-radius: 6px; background: #ffd447; color: #1d2440; padding: 10px 20px; font-size: 24px; cursor: pointer; box-shadow: 0 4px 0 #1d2440; }
+.quick-next { padding: 4px 10px; font-size: 12px; box-shadow: 0 2px 0 #1d2440; }
+.quick-again { background: #fff; font-size: 12px; padding: 6px 12px; }
+.quick-final { font-size: 24px; font-weight: 800; }
+.quick-caption { min-height: 3em; font-size: 12px; line-height: 1.5; }
+@media print { .quick { display: none; } }

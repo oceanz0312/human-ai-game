@@ -26,7 +26,7 @@ export default async function Page({ params }: Props) {
       h1={copy.h1}
       intro={copy.intro}
       action={<StartButton label={nav.play} locale={locale} />}
-      links={[{ href: "/how-to-play", label: nav.howToPlay }, { href: "/spot-the-difference", label: nav.spot }, { href: "/faq", label: nav.faq }, { href: "/about", label: nav.about }]}
+      links={[{ href: "/spot-the-difference-game", label: "Spot the difference game" }, { href: "/", label: nav.spot }, { href: "/faq", label: nav.faq }, { href: "/about", label: nav.about }]}
     ></InfoPage>
   );
 }

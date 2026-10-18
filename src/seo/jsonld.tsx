@@ -43,6 +43,25 @@ export const gameLd = (game: GameEntry, locale: Locale, name: string, descriptio
   offers: { "@type": "Offer", price: 0, priceCurrency: "USD" },
 });
 
+/** VideoGame for a keyword page (the game is the same everywhere; the page is the entry point). */
+export const videoGameLd = (path: string, name: string, description: string): Json => ({
+  "@context": "https://schema.org",
+  "@type": "VideoGame",
+  name,
+  description,
+  url: absoluteUrl(path),
+  image: absoluteUrl("/og/en/home.png"),
+  inLanguage: "en",
+  genre: ["Puzzle", "Spot the difference"],
+  gamePlatform: ["Web browser", "Mobile web"],
+  applicationCategory: "Game",
+  operatingSystem: "Any",
+  playMode: "SinglePlayer",
+  isAccessibleForFree: true,
+  publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+  offers: { "@type": "Offer", price: 0, priceCurrency: "USD" },
+});
+
 export const faqLd = (items: { q: string; a: string }[]): Json => ({
   "@context": "https://schema.org",
   "@type": "FAQPage",

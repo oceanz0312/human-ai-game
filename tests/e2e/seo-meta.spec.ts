@@ -4,13 +4,12 @@ import { CONTENT_PATHS } from "./helpers";
 
 const SITE = /NEXT_PUBLIC_SITE_URL=(\S+)/.exec(readFileSync(".env.production", "utf8"))![1].replace(/\/$/, "");
 const abs = (path: string) => `${SITE}${path === "/" ? "" : path}`;
-const zh = (path: string) => (path === "/" ? "/zh" : `/zh${path}`);
 const attr = (html: string, re: RegExp) => re.exec(html)?.[1] ?? null;
 
 const INDEXABLE = CONTENT_PATHS.filter((p) => p !== "/games/spot-the-difference/play");
 
 for (const path of INDEXABLE) {
-  for (const [locale, url] of [["en", path], ["zh", zh(path)]] as const) {
+  for (const [locale, url] of [["en", path]] as const) {
     test(`raw HTML SEO for ${url}`, async ({ request }) => {
       const html = await (await request.get(url)).text();
       expect(attr(html, /<title>([^<]+)<\/title>/), "title").toBeTruthy();
@@ -18,7 +17,7 @@ for (const path of INDEXABLE) {
       expect(html, "h1 in HTML").toMatch(/<h1[^>]*>(?:<[^>]+>)*[^<]+/);
       expect(attr(html, /<link rel="canonical" href="([^"]+)"/)).toBe(abs(url));
       expect(attr(html, /<link rel="alternate" hrefLang="en" href="([^"]+)"/)).toBe(abs(path));
-      expect(attr(html, /<link rel="alternate" hrefLang="zh-Hans" href="([^"]+)"/)).toBe(abs(zh(path)));
+      expect(html, "no zh alternates").not.toMatch(/hrefLang="zh/);
       expect(attr(html, /<link rel="alternate" hrefLang="x-default" href="([^"]+)"/)).toBe(abs(path));
       expect(html).not.toMatch(/<meta name="robots" content="noindex/);
       const blocks = [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].map((m) => JSON.parse(m[1]));
@@ -32,14 +31,14 @@ test("structured data per page type", async ({ request }) => {
     [...(await (await request.get(url)).text()).matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)]
       .flatMap((m) => [JSON.parse(m[1])].flat())
       .map((d) => [d["@type"]].flat().join("+"));
-  expect(await types("/")).toEqual(expect.arrayContaining(["WebSite", "Organization", "ItemList"]));
-  expect(await types("/spot-the-difference")).toEqual(expect.arrayContaining(["BreadcrumbList", "VideoGame+WebApplication"]));
+  expect(await types("/")).toEqual(expect.arrayContaining(["WebSite", "Organization", "VideoGame", "FAQPage"]));
+  expect(await types("/easy")).toEqual(expect.arrayContaining(["BreadcrumbList", "VideoGame", "FAQPage"]));
   expect(await types("/faq")).toEqual(expect.arrayContaining(["BreadcrumbList", "FAQPage"]));
 });
 
 test("query parameters canonicalize to the clean URL", async ({ request }) => {
-  const html = await (await request.get("/spot-the-difference?ref=poster&utm_source=x")).text();
-  expect(attr(html, /<link rel="canonical" href="([^"]+)"/)).toBe(abs("/spot-the-difference"));
+  const html = await (await request.get("/find-the-difference?ref=poster&utm_source=x")).text();
+  expect(attr(html, /<link rel="canonical" href="([^"]+)"/)).toBe(abs("/find-the-difference"));
 });
 
 test("app pages are noindex", async ({ request }) => {
@@ -56,7 +55,6 @@ test("sitemap lists every indexable page with hreflang alternates", async ({ req
   expect(xml).toContain('xmlns:xhtml="http://www.w3.org/1999/xhtml"');
   for (const path of INDEXABLE) {
     expect(xml).toContain(`<loc>${abs(path)}</loc>`);
-    expect(xml).toContain(`<loc>${abs(zh(path))}</loc>`);
   }
   expect(xml).toContain('hreflang="x-default"');
   expect(xml).not.toContain("/play");

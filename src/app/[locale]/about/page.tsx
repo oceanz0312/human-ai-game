@@ -25,7 +25,7 @@ export default async function Page({ params }: Props) {
       h1={copy.h1}
       intro={copy.intro}
       
-      links={[{ href: "/games", label: nav.games }, { href: "/human-vs-ai", label: nav.humanVsAi }, { href: "/privacy", label: nav.privacy }, { href: "/terms", label: nav.terms }]}
+      links={[{ href: "/human-vs-ai", label: nav.humanVsAi }, { href: "/privacy", label: nav.privacy }, { href: "/terms", label: nav.terms }]}
     ></InfoPage>
   );
 }

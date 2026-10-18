@@ -43,7 +43,7 @@ export const spotTheDifferenceClient: ClientGamePlugin<PublicLevel> = {
   Board: SpotBoard,
   RevealBoard: SpotRevealBoard as unknown as ClientGamePlugin<PublicLevel>["RevealBoard"],
   title: (t) => t("大家来找茬"),
-  exitPath: "/spot-the-difference",
+  exitPath: "/",
   cardImage: (round) => (round as unknown as RoundReveal).imageUrl ?? null,
   hint: (level, t) => {
     const size = level?.gridSize ?? 3;

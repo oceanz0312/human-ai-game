@@ -1094,3 +1094,49 @@
     grid-column: 1 / -1;
   }
 }
+
+/* ---- Keyword pages (SEO plan 2026-10-18): H1 + playable board in the first screen ---- */
+.kw-page { padding-block: 12px 32px; }
+.kw-hero { display: grid; gap: 12px; align-items: center; }
+.kw-head { display: grid; gap: 8px; align-content: center; }
+.kw-title { margin: 0; font-size: 24px; line-height: 1.25; }
+@media (min-width: 600px) { .kw-title { font-size: 36px; } }
+@media (min-width: 1200px) { .kw-title { font-size: 48px; } }
+.kw-lede { margin: 0; font-size: 15px; line-height: 1.4; max-width: 46ch; }
+.kw-cta .start-stack { align-items: flex-start; }
+.kw-board { min-width: 0; }
+@media (min-width: 900px) {
+  .kw-hero { grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr); grid-template-rows: auto auto; column-gap: 32px; row-gap: 16px; min-height: calc(100svh - 120px); align-content: center; }
+  .kw-head { grid-column: 1; grid-row: 1; align-self: end; }
+  .kw-cta { grid-column: 1; grid-row: 2; align-self: start; }
+  .kw-board { grid-column: 2; grid-row: 1 / span 2; }
+  .kw-lede { font-size: 18px; }
+}
+.kw-body section { margin-block: 20px; }
+.ad-slot[hidden] { display: none; }
+.ad-slot-banner { min-height: 90px; margin-block: 16px; }
+.ad-slot-native { min-height: 250px; margin-block: 16px; }
+.sprite-gallery { list-style: none; padding: 0; display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+.sprite-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; padding: 10px; text-align: center; }
+.sprite-pair svg { width: 100%; aspect-ratio: 1; image-rendering: pixelated; }
+.sprite-pair span { grid-column: 1 / -1; font-size: 12px; text-transform: capitalize; }
+
+/* Printable sheets */
+.print-sheets { display: grid; gap: 24px; margin-block: 16px; }
+.print-sheet { background: #fff; border: 2px solid #1d2440; border-radius: 6px; padding: 16px; }
+.print-sheet h2 { margin: 0 0 4px; }
+.print-instructions { margin: 0 0 12px; font-size: 12px; }
+.print-puzzles { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px; }
+.print-puzzle { margin: 0; }
+.print-grid { display: grid; gap: 3px; aspect-ratio: 1; border: 2px solid #1d2440; padding: 4px; }
+.print-cell { display: grid; place-items: center; border: 1px solid #c8cfdd; padding: 8%; }
+.print-cell svg { width: 100%; height: 100%; }
+.print-puzzle figcaption { font-size: 12px; margin-top: 4px; text-transform: capitalize; }
+.print-answers { margin-top: 12px; font-size: 12px; }
+.print-answers h3 { font-size: 12px; margin: 0 0 4px; }
+@media print {
+  .site-header, .site-footer, .kw-cta, .kw-lede, .kw-body, .ad-slot, .crumbs, .info-links, .print-button { display: none !important; }
+  .print-sheet { break-after: page; border: 0; padding: 0; }
+  .print-puzzles { grid-template-columns: 1fr 1fr; }
+  .print-answers { break-inside: avoid; }
+}

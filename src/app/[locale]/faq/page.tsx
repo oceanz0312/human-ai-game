@@ -28,7 +28,7 @@ export default async function Page({ params }: Props) {
       intro={copy.intro}
       ld={[faqLd(copy.items)]}
       action={<StartButton label={nav.play} locale={locale} />}
-      links={[{ href: "/how-to-play", label: nav.howToPlay }, { href: "/how-to-play", label: nav.howToPlay }, { href: "/about", label: nav.about }, { href: "/privacy", label: nav.privacy }]}
+      links={[{ href: "/how-to-play", label: nav.howToPlay }, { href: "/spot-the-difference-game", label: "Spot the difference game" }, { href: "/about", label: nav.about }, { href: "/privacy", label: nav.privacy }]}
     >
       {copy.items.map((item, index) => (
         <details key={item.q} className="faq-item" name="faq" open={index === 0}>
