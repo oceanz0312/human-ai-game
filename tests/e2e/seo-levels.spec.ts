@@ -14,12 +14,14 @@ test.describe("@layout level pages", () => {
   }
 });
 
-test("levels without enough runs are noindex and kept out of the sitemap", async ({ request }) => {
-  const html = await (await request.get("/games/spot-the-difference/levels/19")).text();
-  expect(html).toMatch(/<meta name="robots" content="noindex, follow"/);
-  expect(html).toMatch(/<link rel="canonical" href="[^"]+\/games\/spot-the-difference\/levels\/19"/);
+test("every level page is noindex,follow and none is in the sitemap", async ({ request }) => {
+  for (const n of [1, 6, 19, 20]) {
+    const html = await (await request.get(`/games/spot-the-difference/levels/${n}`)).text();
+    expect(html, `level ${n}`).toMatch(/<meta name="robots" content="noindex, follow"/);
+    expect(html).toMatch(new RegExp(`<link rel="canonical" href="[^"]+/games/spot-the-difference/levels/${n}"`));
+  }
   const xml = await (await request.get("/sitemap.xml")).text();
-  expect(xml).not.toContain("/levels/19<");
+  expect(xml).not.toContain("/levels/");
   expect(xml).toContain("/games/spot-the-difference/leaderboard</loc>");
 });
 

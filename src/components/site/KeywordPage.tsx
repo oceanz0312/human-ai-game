@@ -1,5 +1,5 @@
 import Link from "next/link";
-import type { KeywordPageContent } from "@/content/keyword-pages";
+import { THEME_CARDS, type KeywordPageContent } from "@/content/keyword-pages";
 import { QuickBoard } from "@/games/spot-the-difference/quick/QuickBoard";
 import { StartButton } from "@/components/StartButton";
 import { breadcrumbLd, faqLd, JsonLd, organizationLd, videoGameLd, websiteLd } from "@/seo/jsonld";
@@ -14,21 +14,46 @@ export function KeywordPage({ page, children }: { page: KeywordPageContent; chil
     faqLd(page.faq),
     ...(isHome ? [websiteLd("en"), organizationLd()] : [breadcrumbLd("en", [{ name: "Home", path: "/" }, { name: page.nav, path: page.path }])]),
   ];
-  const cta = <StartButton label="Play 20 levels vs AI ▶" busyLabel="Starting…" locale="en" />;
+  const demo = page.hero === "demo";
+  const cta = demo ? (
+    <StartButton label="▶ Play Spot the Difference" sublabel="20 levels · vs AI" busyLabel="Starting…" locale="en" direct trackClick={{ name: "hero_cta_click", metadata: { page: page.path, placement: "hero" } }} />
+  ) : (
+    <StartButton label="Play 20 levels vs AI ▶" busyLabel="Starting…" locale="en" />
+  );
+  const board = (
+    <div className="kw-board">
+      {demo ? <QuickBoard mode={page.board.mode} seed={page.board.seed} title={page.board.label} demo page={page.path} /> : <QuickBoard mode={page.board.mode} seed={page.board.seed} title={page.board.label} cta={cta} />}
+    </div>
+  );
   return (
     <SiteShell locale="en" path={page.path}>
       <JsonLd data={ld} />
       <div className="container kw-page">
-        <section className="kw-hero" data-testid="kw-hero">
+        <section className={`kw-hero${demo ? " kw-hero-demo" : ""}`} data-testid="kw-hero">
           <div className="kw-head">
             <h1 className="page-title kw-title">{page.h1}</h1>
             <p className="kw-lede">{page.lede}</p>
           </div>
-          <div className="kw-board">
-            <QuickBoard mode={page.board.mode} seed={page.board.seed} title={page.board.label} cta={cta} />
-          </div>
-          <div className="kw-cta">{cta}</div>
+          {/* Demo hero: the CTA sits right under the lede on phones (above the board), so it never covers the cells. */}
+          {demo ? <div className="kw-cta kw-cta-hero">{cta}</div> : null}
+          {board}
+          {demo ? null : <div className="kw-cta">{cta}</div>}
         </section>
+        {demo ? (
+          <>
+            <p className="kw-more" data-testid="kw-more">
+              Looking for the full game with all 20 levels? → <Link href="/spot-the-difference-game">spot the difference game</Link>
+            </p>
+            <nav className="kw-themes" aria-label="Spot the difference themes" data-testid="kw-themes">
+              {THEME_CARDS.map((card) => (
+                <Link key={card.href} className="card kw-theme" href={card.href}>
+                  <strong>{card.label}</strong>
+                  <span>{card.blurb}</span>
+                </Link>
+              ))}
+            </nav>
+          </>
+        ) : null}
         <AdSlot name={`${page.path === "/" ? "home" : page.path.slice(1)}-below-hero`} />
         <div className="info-body kw-body">
           {page.sections.map((section) => (

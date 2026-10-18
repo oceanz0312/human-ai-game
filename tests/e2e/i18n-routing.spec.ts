@@ -1,12 +1,12 @@
 import { expect, test } from "@playwright/test";
 import { pickOpponent } from "./helpers";
-import { START } from "./t";
+import { HOME_START, START } from "./t";
 
 test("English is served at the root without a prefix", async ({ page }) => {
   const response = await page.goto("/");
   expect(response?.status()).toBe(200);
   await expect(page.locator("html")).toHaveAttribute("lang", "en");
-  await expect(page.getByRole("button", { name: START })).toBeVisible();
+  await expect(page.getByRole("button", { name: HOME_START })).toBeVisible();
 });
 
 test("English only: /zh, /en and retired URLs redirect permanently to their English page", async ({ request }) => {

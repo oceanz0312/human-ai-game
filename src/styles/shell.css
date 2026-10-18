@@ -268,3 +268,22 @@ html:has(.game-stage) body {
     line-height: 1.5;
   }
 }
+
+/* Header "Levels": a plain text link (the page's own CTA is the only Play button). */
+.site-header .nav-levels {
+  font: 400 var(--fs-px-1)/1 var(--f-display);
+  color: var(--c-text);
+  text-decoration: none;
+  padding: 8px 0;
+  border-bottom: 3px solid transparent;
+  white-space: nowrap;
+}
+.site-header .nav-levels:hover,
+.site-header .nav-levels[aria-current="page"] {
+  border-bottom-color: var(--c-human);
+}
+@media (max-width: 767px) {
+  .site-header .nav-levels {
+    display: none;
+  }
+}

@@ -22,3 +22,10 @@ test("robots.txt disallows only the hub itself (end-anchored), keeping /games/<s
   expect(HIDDEN_HUB_PATHS).toEqual(["/games"]);
   expect(rules[0].disallow).toEqual(["/api/", "/games$"]);
 });
+
+test("sitemap never lists level pages (/games/<slug>/levels/N are noindex)", async () => {
+  const { default: sitemap } = await import("@/app/sitemap");
+  const urls = (await sitemap()).map((e) => e.url);
+  expect(urls.some((url) => url.includes("/levels/"))).toBe(false);
+  expect(urls).toContain(`${SITE_URL}/games/spot-the-difference/leaderboard`);
+});

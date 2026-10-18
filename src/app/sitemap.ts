@@ -3,11 +3,9 @@ import { absoluteUrl } from "@/config/site";
 import { localePath, locales } from "@/i18n/config";
 import { languageAlternates } from "@/seo/alternates";
 import { staticSeoRoutes, type SeoRoute } from "@/seo/routes";
-import { gameLeaderboardPath, gameLevelPath, liveGames } from "@/games/registry";
-import { isIndexableLevel, loadLevelStats } from "@/seo/level-stats";
-import { levelSeoFor } from "@/games/level-seo";
+import { gameLeaderboardPath, liveGames } from "@/games/registry";
 
-/** Data-gated: level pages appear only once they carry enough real runs. */
+/** Level pages (/games/<slug>/levels/N) are noindex and never listed (plan "Approved v2"). */
 export const dynamic = "force-dynamic";
 
 export function buildSitemap(routes: SeoRoute[]): MetadataRoute.Sitemap {
@@ -22,15 +20,6 @@ export function buildSitemap(routes: SeoRoute[]): MetadataRoute.Sitemap {
 }
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
-  const stats = await loadLevelStats();
-  const dynamicRoutes: SeoRoute[] = liveGames().flatMap((game) => {
-    const levelSeo = levelSeoFor(game.slug);
-    return [
-      { path: gameLeaderboardPath(game), priority: 0.5, changeFrequency: "daily" as const },
-      ...(levelSeo ? Array.from({ length: levelSeo.levels }, (_, i) => i + 1) : [])
-        .filter((level) => !levelSeo?.statsGated || isIndexableLevel(stats.get(level)))
-        .map((level) => ({ path: gameLevelPath(game, level), priority: 0.5, changeFrequency: "weekly" as const })),
-    ];
-  });
+  const dynamicRoutes: SeoRoute[] = liveGames().map((game) => ({ path: gameLeaderboardPath(game), priority: 0.5, changeFrequency: "daily" as const }));
   return buildSitemap([...staticSeoRoutes(), ...dynamicRoutes]);
 }
