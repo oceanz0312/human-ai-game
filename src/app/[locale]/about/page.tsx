@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { InfoPage } from "@/components/site/InfoPage";
+import { ContactLine } from "@/components/site/ContactLine";
 import { resolveLocaleParam } from "@/i18n/config";
 import { getPages } from "@/i18n/pages";
 import { pageMetadata } from "@/lib/page-meta";
@@ -24,8 +25,9 @@ export default async function Page({ params }: Props) {
       eyebrow={copy.eyebrow}
       h1={copy.h1}
       intro={copy.intro}
-      
       links={[{ href: "/human-vs-ai", label: nav.humanVsAi }, { href: "/privacy", label: nav.privacy }, { href: "/terms", label: nav.terms }]}
-    ></InfoPage>
+    >
+      <ContactLine lead="Contact" />
+    </InfoPage>
   );
 }

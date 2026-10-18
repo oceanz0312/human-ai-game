@@ -18,3 +18,6 @@ export const SITE_ICONS = {
   apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
 };
 export const SITE_MANIFEST = "/manifest.webmanifest";
+
+/** Public contact mailbox (Cloudflare Email Routing on oceanz.me forwards it to the owner; receive-only). */
+export const CONTACT_EMAIL = "support@oceanz.me";

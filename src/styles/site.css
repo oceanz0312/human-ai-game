@@ -1140,3 +1140,4 @@
   .print-puzzles { grid-template-columns: 1fr 1fr; }
   .print-answers { break-inside: avoid; }
 }
+.info-contact a { color: #c8003c; text-decoration: underline; }
