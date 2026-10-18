@@ -1,3 +1,5 @@
+> **已作废（2026-10-18）**：本目录的多语言、humanvsai.app 域名、平台型首页方案，已被 [gefei-seo-sop/spot-the-difference-site-sop.md 第 11 节](../../gefei-seo-sop/spot-the-difference-site-sop.md) 取代（spotthedifferencegame.com 单游戏 EMD 站，只做英文，AI 用代码模拟）。下文仅作历史记录。
+
 # SEO 文档索引
 
 | 文件 | 内容 |
