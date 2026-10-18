@@ -130,3 +130,19 @@ npm run cf:deploy                                                 # OpenNext 构
 - 第 20 关偏移约 1.5 CSS 像素，在 3 倍屏上约 4–5 个物理像素。
 - 海报在浏览器内用 Canvas 生成，以使用系统中文字体；分享链接中的结果 ID 是服务端生成的 128 位随机令牌，前端无法伪造。
 - 服务端用展示时刻和截止时间约束客户端上报的耗时：拖延到截止时间之后一律判为超时，上报的耗时不能明显短于服务端观测到的时间窗口。
+
+## SEO site structure (2026-10-18 plan: spotthedifferencegame.com)
+
+See `gefei-seo-sop/spot-the-difference-site-sop.md` §11. Implementation:
+
+| Item | Where |
+|---|---|
+| Canonical origin `https://spotthedifferencegame.com`; www and `human-ai.zdychanges.workers.dev` 301 to it (API excluded) | `src/config/site.ts`, `next.config.ts` redirects, `wrangler.jsonc` routes |
+| English only: `/zh/*` and retired URLs 308 to English; hreflang self + x-default | `src/i18n/config.ts` (`locales = ["en"]`), `next.config.ts` |
+| Keyword pages (one word, one page) with a playable board in the first screen | `src/content/keyword-pages.ts`, `src/components/site/KeywordPage.tsx`, `src/games/spot-the-difference/quick/*` |
+| `/printable` (SVG print sheets + answer key), `/pictures` (sprite gallery), `/christmas` (holiday sprite set) | `src/app/[locale]/{printable,pictures,christmas}` |
+| Hidden hub `/games`: meta noindex,nofollow + `X-Robots-Tag`, `Disallow: /games$`, no sitemap entry, no internal links | `src/config/site.ts` `HIDDEN_HUB_PATHS`, `src/app/robots.ts`, `next.config.ts` headers |
+| JSON-LD VideoGame + FAQPage (+ WebSite/Organization on home) | `src/seo/jsonld.tsx` |
+| Simulated AI (`AI_MODE=simulated`, default) | `src/models/adapters/simulated.ts` |
+| AdSense placeholders (hidden until `NEXT_PUBLIC_ADS_ENABLED=1`, no script, no publisher id) | `src/components/site/AdSlot.tsx` |
+| Daily 3-run limit applies to the 20-level run only; quick boards are unlimited and offline | `src/core/limits/*` |

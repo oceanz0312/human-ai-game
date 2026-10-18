@@ -2,13 +2,13 @@ import { appendFileSync, mkdirSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import { LEVELS_V1 } from "../../src/server/levels/spec";
 
-const OUT = "/workspace/redesign-shots/v2";
+const OUT = process.env.LIVE_OUT || "/workspace/redesign-shots/seo";
 const LOG = `${OUT}/live-e2e.jsonl`;
 mkdirSync(OUT, { recursive: true });
 const pad2 = (n: number) => String(n).padStart(2, "0");
 const cell = (choice: string) => {
   const [, r, c] = /^r(\d)c(\d)$/.exec(choice)!;
-  return `第 ${r} 行第 ${c} 列`;
+  return `Row ${r}, column ${c}`;
 };
 
 async function oneScreen(page: Page) {
@@ -20,10 +20,10 @@ async function oneScreen(page: Page) {
 async function playable(page: Page, n: number) {
   await expect(page.locator('.game-stage[data-phase="reveal"]')).toHaveCount(0, { timeout: 30_000 });
   await expect(page.locator(".game-hud .level")).toHaveText(`${pad2(n)} / 20`, { timeout: 30_000 });
-  await expect(page.getByRole("button", { name: "第 1 行第 1 列" })).toBeEnabled({ timeout: 30_000 });
+  await expect(page.getByRole("button", { name: "Row 1, column 1" })).toBeEnabled({ timeout: 30_000 });
 }
 
-test("live run against real Luna", async ({ page }, info) => {
+test("live formal run against Luna AI (simulated)", async ({ page }, info) => {
   const vp = info.project.name;
   const shot = (name: string) => page.screenshot({ path: `${OUT}/${name}-${vp}.png` });
   const sessions: string[] = [];
@@ -33,11 +33,11 @@ test("live run against real Luna", async ({ page }, info) => {
       if (body?.id) sessions.push(body.id);
     }
   });
-  await page.goto("/zh/spot-the-difference");
-  await page.getByRole("button", { name: "开始挑战" }).click();
+  await page.goto("/spot-the-difference-game");
+  await page.getByRole("button", { name: /^Play 20 levels vs AI/ }).click();
   await expect(page.getByTestId("opponent-select")).toBeVisible();
   await shot("opponent-select");
-  await page.getByRole("button", { name: /开始对战|Fight/ }).click();
+  await page.getByRole("button", { name: /^Fight/ }).click();
   await page.waitForURL(/\/play\//);
   await expect(page.locator(".fx-fight")).toBeVisible({ timeout: 8_000 });
 
@@ -52,8 +52,8 @@ test("live run against real Luna", async ({ page }, info) => {
       await shot("streaming-captions");
     }
     if (n === 2) {
-      // let real Luna finish first to show the AI-locked state
-      await expect(page.getByText(/已作答/).first()).toBeVisible({ timeout: 15_000 }).catch(() => undefined);
+      // let Luna AI finish first to show the AI-locked state
+      await expect(page.getByText(/AI answered/).first()).toBeVisible({ timeout: 15_000 }).catch(() => undefined);
       await shot("ai-locked");
     }
     const choice = correct ? spec.correctChoice : spec.choices.find((c) => c !== spec.correctChoice)!;
@@ -96,8 +96,8 @@ test("live run against real Luna", async ({ page }, info) => {
   await page.waitForURL(/\/result\//, { timeout: 30_000 });
   await expect(page.getByTestId("result-grid")).toBeVisible();
   await page.screenshot({ path: `${OUT}/result-grid-${vp}.png`, fullPage: true });
-  await page.getByRole("button", { name: "生成战绩海报" }).click();
-  await expect(page.getByRole("dialog", { name: "战绩海报" }).locator("img")).toBeVisible({ timeout: 20_000 });
+  await page.getByRole("button", { name: "Create result poster" }).click();
+  await expect(page.getByRole("dialog", { name: "Result poster" }).locator("img")).toBeVisible({ timeout: 20_000 });
   await shot("share-card");
   appendFileSync(LOG, JSON.stringify({ vp, at: new Date().toISOString(), sessions, timings }) + "\n");
 });

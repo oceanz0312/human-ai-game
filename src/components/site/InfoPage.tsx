@@ -51,7 +51,8 @@ export function InfoPage({
   ld?: Record<string, unknown>[];
 }) {
   const { nav, ui } = getPages(locale);
-  const parents: Record<string, string> = { "/games": nav.games, "/ai-opponents": nav.opponents, "/spot-the-difference": nav.spot };
+  // /games is the hidden hub: never a breadcrumb parent (no crawlable links to it).
+  const parents: Record<string, string> = {};
   let crumbs: Crumb[] = [{ name: nav.home, path: "/" }];
   if (crumbsOverride) crumbs = [...crumbs, ...crumbsOverride];
   else {

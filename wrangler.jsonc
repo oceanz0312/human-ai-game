@@ -10,6 +10,12 @@
   // Co-locate the Worker with D1 (WNAM) to cut cross-region database latency for API handlers.
   "placement": { "mode": "smart" },
   "workers_dev": true,
+  // Canonical domain (zone spotthedifferencegame.com, same account). www 301s to the apex and workers.dev 301s
+  // to the apex in next.config.ts redirects.
+  "routes": [
+    { "pattern": "spotthedifferencegame.com", "custom_domain": true },
+    { "pattern": "www.spotthedifferencegame.com", "custom_domain": true }
+  ],
   "services": [
     { "binding": "WORKER_SELF_REFERENCE", "service": "human-ai" },
     { "binding": "DECISIONS", "service": "human-ai-decisions" }
@@ -22,7 +28,7 @@
     "AI_MODE": "simulated",
     "DECISIONS_MODE": "worker",
     "DECISIONS_WORKER_URL": "https://human-ai-decisions.zdychanges.workers.dev",
-    "PUBLIC_BASE_URL": "https://human-ai.zdychanges.workers.dev",
+    "PUBLIC_BASE_URL": "https://spotthedifferencegame.com",
     "OPENAI_BASE_URL": "https://api.openai.com/v1",
     "OPENAI_DECISIONS_MODEL": "gpt-6-luna",
     "OPENAI_DECISIONS_TIMEOUT_MS": "8000"
