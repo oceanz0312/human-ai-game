@@ -18,6 +18,12 @@ export interface GameServiceDeps {
   leaderboard: LeaderboardRepository;
   /** Read-through edge cache for finished results, level stats and the public board top (null: no caching). */
   edgeCache?: EdgeCache | null;
+  /**
+   * D1 read replicas (Sessions API, "first-unconstrained"): a fresh session per call, used only for replica-tolerant
+   * public reads (shared result views, level stats, public board top). Everything else (writes, the daily play limit,
+   * sessions/rounds, the owner's fresh result page, fresh boards) stays on the primary `games`/`leaderboard`.
+   */
+  replica?: (() => { games: Pick<GameRepository, "getResultBundle" | "getResultLive">; leaderboard: Pick<LeaderboardRepository, "list" | "levelStats"> }) | null;
   decisions: DecisionClient;
   /** AI_MODE=simulated (production default): the opponent is the in-game simulated AI, no model calls. */
   simulateAi?: boolean;
@@ -88,6 +94,8 @@ export function createGameService(deps: GameServiceDeps) {
   const aiStaleMs = aiTimeoutMs + 5_000;
   const maxSessionsPerHour = deps.maxSessionsPerHour ?? 40;
   const game = deps.game;
+  /** Replica repositories for stale-tolerant reads; the primary when replicas are off or unavailable. */
+  const reader = () => (deps.replica && process.env.D1_REPLICA !== "off" ? deps.replica() : { games: deps.games, leaderboard: deps.leaderboard });
   /** Analytics writes off the player's critical path when a defer hook exists; inline otherwise. */
   const trackLater = async (...args: Parameters<typeof track>) => {
     const work = track(...args);
@@ -368,14 +376,17 @@ export function createGameService(deps: GameServiceDeps) {
           cache.get<{ rank: number; bestLevel: number; nickname: string | null }>(liveKey),
         ]);
         if (core) {
-          const live = liveHit ?? (await deps.games.getResultLive(publicId));
+          const live = liveHit ?? (await reader().games.getResultLive(publicId));
           if (live) {
             if (!liveHit) cache.set(liveKey, live, EDGE_TTL.resultLive);
             return { ownerId: core.ownerId, view: { ...core.view, rank: live.rank, bestLevel: live.bestLevel, nickname: live.nickname } };
           }
         }
       }
-      const bundle = await deps.games.getResultBundle(publicId);
+      // Shared views read a replica; a miss there (a run that finished a moment ago and has not replicated yet) is
+      // re-read from the primary, so a fresh result is never a false 404. The owner's fresh read goes straight to the primary.
+      let bundle = options.fresh ? await deps.games.getResultBundle(publicId) : await reader().games.getResultBundle(publicId);
+      if (!bundle && !options.fresh && deps.replica) bundle = await deps.games.getResultBundle(publicId);
       if (!bundle) return null;
       const built = {
         ownerId: bundle.result.playerId,
@@ -663,7 +674,7 @@ export function createGameService(deps: GameServiceDeps) {
 
     async getLevelStats() {
       const version = deps.game.levelSetVersion;
-      return cached(deps.edgeCache, `level-stats/${version}`, EDGE_TTL.levelStats, () => deps.leaderboard.levelStats(version));
+      return cached(deps.edgeCache, `level-stats/${version}`, EDGE_TTL.levelStats, () => reader().leaderboard.levelStats(version));
     },
 
     /** `fresh` skips the shared top-of-board cache (the viewer just played or renamed and must see it). */
@@ -674,7 +685,7 @@ export function createGameService(deps: GameServiceDeps) {
       const [top, viewerIndex] = await Promise.all([
         input.fresh
           ? deps.leaderboard.list({ limit: input.limit, version })
-          : cached(deps.edgeCache, `board-top/${version}/${input.limit}`, EDGE_TTL.boardTop, () => deps.leaderboard.list({ limit: input.limit, version })),
+          : cached(deps.edgeCache, `board-top/${version}/${input.limit}`, EDGE_TTL.boardTop, () => reader().leaderboard.list({ limit: input.limit, version })),
         viewer ? deps.leaderboard.getDisplayIndex(viewer, version) : Promise.resolve(null),
       ]);
       const toRow = (row: { playerId: string; nickname: string | null; reachedLevel: number; rank: number }): LeaderboardRow => ({
