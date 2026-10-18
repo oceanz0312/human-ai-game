@@ -69,3 +69,76 @@
 - 第 2–4 周：主题/形态内页，建外链资源池。
 - 第 2–3 个月：内页扩到 30–50 个；11 月前上圣诞页。
 - 第 4 个月起：加 hidden object。
+
+---
+
+## 11. 定稿方案（2026-10-18 用户批准，取代上文冲突处）
+
+> 来源：哥飞 SEO Agent 冷启动方案（[对话](https://seo.web.cafe/chat/c/52a334f7d6674f9d8eb16fae3c121d3b)）+ Young 在对话中的决定。参考：[1](https://new.web.cafe/tutorial/detail/feoogz15ou) [2](https://new.web.cafe/tutorial/detail/2huov8xc6e) [3](https://new.web.cafe/tutorial/detail/c8z1ixs1md) [4](https://new.web.cafe/tutorial/detail/bcx02ezpp5) [5](https://new.web.cafe/tutorial/detail/omc9j2auz8) [6](https://new.web.cafe/tutorial/detail/lk5cbjbo9u) [7](https://new.web.cafe/tutorial/detail/k2z73gxq2h)
+
+### 11.0 定位
+- 域名 **spotthedifferencegame.com**（2026-10-18 在 Cloudflare 注册，$10.46/年，自动续费）。第一个站 = spot the difference 完全匹配域名（EMD）单游戏站，不是 gameagainstai.com，也不是多游戏 hub。
+- 品牌 = 关键词：**Spot The Difference Game**。
+- **只做英文**：/zh 全部 308 到英文同名页，hreflang 只留自身 + x-default，sitemap 只列英文。
+- **AI 对手用代码模拟**（用户已批准，取代「真实 AI」规则）：保留对战体验（字幕、锁定、揭晓、特效），按关卡给出合理的用时/准确率，偶尔答错；保留模型适配层，真实 OpenAI 路径用开关关闭，以后可以再开。文案不能声称是真实模型。
+- 多游戏平台 hub 保留在 /games，**不是首页**，且暂时对爬虫不可见（noindex,nofollow + X-Robots-Tag，robots Disallow，sitemap 不列，无可爬内链）。
+
+### 11.1 关键词（美国月搜，哥飞 KD）
+| 词 | 月搜 | KD | 页面 |
+|---|---|---|---|
+| spot the difference | 18,100 | 39.4 | `/` |
+| find the difference | 9,900 | 48.6 | `/find-the-difference` |
+| spot the difference game(s) | 5,400 | 53.8 | `/spot-the-difference-game` |
+| spot the difference printable | 1,300 | 22.2 | `/printable` |
+| find the differences | — | 38.7 | 并入 `/find-the-difference`（同义，不另建页） |
+| spot the difference pictures | 2,900 | — | `/pictures` |
+| christmas spot the difference | 季节词 | — | `/christmas`（**11 月前上线**） |
+| play against computer 等 vs AI 词 | ~50 | — | 不当主词；AI 只做卖点和留存 |
+
+### 11.2 页面结构（一词一页，参考 checkersonline.io）
+- `/`：spot the difference，**首屏可直接玩**。
+- `/spot-the-difference-game`：spot the difference game。
+- `/find-the-difference`、`/how-to-play`。
+- 难度页：`/easy`、`/hard`、`/for-kids`。
+- `/printable`、`/pictures`、`/christmas`。
+- 人机对战作为比赛模式，在 description 和 FAQ 里提。
+
+### 11.3 页面细节
+- Title 示例：`Spot the Difference – Play Free Online | Spot The Difference Game`。
+- description 第一句带「take on the AI」。
+- JSON-LD：VideoGame + FAQPage；FAQ 包含「Can I play spot the difference against AI?」。
+- 品牌在 6 处保持一致：header、meta title、footer、结构化数据、meta 标签、外链锚文本。
+- 首页多用需求词，少用品牌词。
+- AdSense：静态 HTML 广告位（不用 JS 注入），只放 banner / native，不放 popunder。
+- 每页内容独一无二（2026-06 垃圾内容更新）。
+- sitemap、robots、canonical、hreflang（先只英文）、Core Web Vitals、移动端。
+- 然后提交 GSC 和 Bing（API 批量）。
+
+### 11.4 30 / 60 / 90 天
+- 0–30 天：尽快上线；用目录站和博客评论做外链。
+- 30–60 天：50–60 个引用域，DR 26–28；目录站按筛选标准挑选；外链匀速增长。
+- 60–90 天：诊断三件事：页面相似度、外链增速、用户行为。
+
+### 11.5 红线
+- 主词没站稳之前不横向扩展；首页首屏永远是 spot the difference。
+- 第二个站做 checkers（checkersgame.io / onlinecheckersgame.com，**都还没买**）；第三个站做 connect 4 或 battleship online（KD 31.3）。
+- 自己的站之间**不互链**（只允许 nofollow 或爬虫不可见的 UI 链接）；hub 站以后再做。
+- 无关新词（Krillion、Kanto Tactics）不放这个站。
+
+### 11.6 不替 Young 做的事
+- 任何购买、付费外链、对外发消息。
+- 需要注册账号或付费的目录站提交，先列清单交给 Young。
+- GSC / Bing 提交、AdSense 申请（都要 Young 本人账号）。
+
+### 11.7 实施对照（代码仓库 oceanz0312/human-ai-game）
+| 方案条目 | 实现 |
+|---|---|
+| 英文单语 | middleware 把 `/zh/*` 308 到英文同名页；`locales` 公开只留 en；sitemap 和 hreflang 只英文；游戏页固定英文 |
+| 品牌 6 处 | `src/config/site.ts` 定义 `SITE_NAME = "Spot The Difference Game"`，header、footer、JSON-LD、OG、title 模板统一引用 |
+| 首屏可玩 | `/` 首屏是免费试玩盘（第 1 关，本地模拟 AI，不占每日次数），玩完进入 20 关正式局 |
+| 模拟 AI | `src/models/adapters/simulated.ts`；开关 `AI_MODE=simulated`（默认）/ `live`；页面名称叫「Luna AI」，标注为游戏内模拟 AI |
+| 新页面 | `src/app/[locale]/{spot-the-difference-game,easy,hard,for-kids,printable,pictures,christmas}`；`/spot-the-difference` 308 到 `/` |
+| /games hub | noindex,nofollow + `X-Robots-Tag`；robots `Disallow: /games$`；sitemap 不列；导航和页脚不放链接 |
+| AdSense | `AdSlot` 静态占位（`data-ad-slot`，无脚本、无 publisher ID） |
+| 域名 | Worker custom domain：apex + www（www 301 到 apex）；`*.workers.dev` 301 到新域名；`NEXT_PUBLIC_SITE_URL` / `PUBLIC_BASE_URL` 指向新域名 |
+| 每日 3 局 | 保留（localStorage 随机 ID），只作用于完整 20 关；首页试玩盘不受限制 |
