@@ -59,3 +59,11 @@ test("header: no Play button, a plain 'Levels' text link to the 20-level game pa
   expect(levels).toHaveTextContent("Levels");
   expect(levels).toHaveAttribute("href", "/spot-the-difference-game");
 });
+
+test("difficulty copy cites the level where the sim-AI curve's last band starts", async () => {
+  const { FORMAL_DIFFICULTY } = await import("@/config/ai-difficulty");
+  const { AI_BRUTAL_FROM_LEVEL } = await import("@/content/ai-curve");
+  expect(AI_BRUTAL_FROM_LEVEL).toBe(FORMAL_DIFFICULTY.bands.at(-1)!.fromLevel);
+  const { container } = render(HomePage());
+  expect(container).toHaveTextContent(`The AI gets brutal around level ${AI_BRUTAL_FROM_LEVEL}`);
+});
