@@ -135,7 +135,7 @@ const en = {
       description: "Human vs AI, live: race an AI opponent on the same visual puzzle. See its answer time, confidence and mistakes after every level.",
       eyebrow: "Human vs AI",
       h1: "Human vs AI",
-      intro: "Luna AI is an in-game simulated opponent tuned to play like a sharp human: quick on small grids, slower and shakier on 9×9. After each level you see its answer time, confidence and the cells it doubted. Humans still win plenty of levels — the AI is fast, not perfect.",
+      intro: "Luna AI is a simulated opponent built into this spot the difference game. On levels 1–5 you'll beat it more often than not, levels 6–14 are a close race, and from level 15 it answers in about half a second and wins most rounds. After each level you see its answer time, its confidence and the cells it doubted.",
     },
     games: {
       title: "Human vs AI Games | Spot The Difference Game",
