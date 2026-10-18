@@ -98,8 +98,8 @@ export function createMemoryEdgeCache(now: () => number = Date.now): EdgeCache &
 export const EDGE_TTL = {
   /** Finished-run facts never change (levels, outcomes, accuracy, owner). */
   resultCore: 86_400,
-  /** Rank and best move as other runs finish. */
-  resultRank: 60,
+  /** Rank, best and the owner's nickname change after the run (other runs finish, nickname edits). */
+  resultLive: 60,
   /** Level page stats only gate indexing. */
   levelStats: 600,
   /** Public top of the board (leaderboard page; the viewer's own fresh view bypasses it). */

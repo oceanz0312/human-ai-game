@@ -380,16 +380,19 @@ export function createGameRepository(db: Database) {
     },
 
     /** Just the moving part of a result (the owner's best and its global rank), one query. */
-    async getResultRank(publicId: string) {
+    /** The mutable part of a result page: best, rank and the owner's current nickname. */
+    async getResultLive(publicId: string) {
       const [row] = await db
         .select({
+          nickname: players.nickname,
           bestLevel: sql<number>`coalesce(${bests.bestLevel}, ${results.reachedLevel})`,
           rank: sql<number>`1 + (SELECT count(*) FROM bests AS higher WHERE higher.level_set_version = ${results.levelSetVersion} AND higher.best_level > coalesce(${bests.bestLevel}, ${results.reachedLevel}))`,
         })
         .from(results)
+        .innerJoin(players, eq(players.id, results.playerId))
         .leftJoin(bests, and(eq(bests.playerId, results.playerId), eq(bests.levelSetVersion, results.levelSetVersion)))
         .where(eq(results.publicId, publicId));
-      return row ? { bestLevel: Number(row.bestLevel), rank: Number(row.rank) } : null;
+      return row ? { nickname: row.nickname ?? null, bestLevel: Number(row.bestLevel), rank: Number(row.rank) } : null;
     },
 
     /** Settled rounds of one run and how many each side got right (drives the accuracy framing on results). */

@@ -350,24 +350,28 @@ export function createGameService(deps: GameServiceDeps) {
     return { begun: { roundId: marked.id, deadlineAt: marked.deadlineAt, started: firstPaint, ai }, run: null };
   }
 
-  async function resultWithOwner(publicId: string): Promise<{ view: ResultView; ownerId: string } | null> {
+  /**
+   * `fresh` (the owner's own result page) skips cached reads so a just-finished run and a just-edited nickname show
+   * immediately; it still refreshes the cache entries for everyone else in this colo.
+   */
+  async function resultWithOwner(publicId: string, options: { fresh?: boolean } = {}): Promise<{ view: ResultView; ownerId: string } | null> {
     const toOutcome = (round: { aiStatus: string | null; winner: string | null }) =>
       (round.aiStatus === "error" ? "void" : (round.winner ?? "none")) as "human" | "ai" | "none" | "void";
     if (process.env.RESULT_BUNDLE !== "off") {
-      // Finished-run facts are cached for a day, rank/best for a minute (see edge-cache.ts). A full miss is one D1 batch.
+      // Finished-run facts are cached for a day; rank/best/nickname for a minute (see edge-cache.ts). A full miss is one D1 batch.
       const cache = deps.edgeCache ?? null;
       const coreKey = `result-core/${publicId}`;
-      const rankKey = `result-rank/${publicId}`;
-      if (cache) {
-        const [core, rankHit] = await Promise.all([
-          cache.get<{ ownerId: string; view: Omit<ResultView, "rank" | "bestLevel"> }>(coreKey),
-          cache.get<{ rank: number; bestLevel: number }>(rankKey),
+      const liveKey = `result-live/${publicId}`;
+      if (cache && !options.fresh) {
+        const [core, liveHit] = await Promise.all([
+          cache.get<{ ownerId: string; view: Omit<ResultView, "rank" | "bestLevel" | "nickname"> }>(coreKey),
+          cache.get<{ rank: number; bestLevel: number; nickname: string | null }>(liveKey),
         ]);
         if (core) {
-          const rank = rankHit ?? (await deps.games.getResultRank(publicId));
-          if (rank) {
-            if (!rankHit) cache.set(rankKey, rank, EDGE_TTL.resultRank);
-            return { ownerId: core.ownerId, view: { ...core.view, rank: rank.rank, bestLevel: rank.bestLevel } };
+          const live = liveHit ?? (await deps.games.getResultLive(publicId));
+          if (live) {
+            if (!liveHit) cache.set(liveKey, live, EDGE_TTL.resultLive);
+            return { ownerId: core.ownerId, view: { ...core.view, rank: live.rank, bestLevel: live.bestLevel, nickname: live.nickname } };
           }
         }
       }
@@ -391,9 +395,9 @@ export function createGameService(deps: GameServiceDeps) {
         },
       };
       if (cache) {
-        const { rank, bestLevel, ...core } = built.view;
+        const { rank, bestLevel, nickname, ...core } = built.view;
         cache.set(coreKey, { ownerId: built.ownerId, view: core }, EDGE_TTL.resultCore);
-        cache.set(rankKey, { rank, bestLevel }, EDGE_TTL.resultRank);
+        cache.set(liveKey, { rank, bestLevel, nickname }, EDGE_TTL.resultLive);
       }
       return built;
     }

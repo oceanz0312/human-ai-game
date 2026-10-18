@@ -34,7 +34,9 @@ async function ResultLeaderboard({ viewer, nickname }: { viewer: string | null; 
 export default async function ResultPage({ params }: { params: Promise<{ publicId: string }> }) {
   const { publicId } = await params;
   if (!isPublicId(publicId)) notFound();
-  const [found, viewer, locale] = await Promise.all([loadResultWithOwner(publicId), readPlayerId(), getCookieLocale()]);
+  const [shared, viewer, locale] = await Promise.all([loadResultWithOwner(publicId), readPlayerId(), getCookieLocale()]);
+  // The owner's own page reads fresh: a just-finished run and a just-set nickname must show immediately.
+  const found = viewer && shared?.ownerId === viewer ? await loadResultWithOwner(publicId, true) : shared;
   if (!found) notFound();
   const result = found.view;
   // Not the owner: show the public share view in place (was a 307 to /share that repeated every lookup).

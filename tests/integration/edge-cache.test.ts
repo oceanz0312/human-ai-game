@@ -24,7 +24,7 @@ async function setup() {
   const countedGames = {
     ...games,
     getResultBundle: (id: string) => ((calls.bundle += 1), games.getResultBundle(id)),
-    getResultRank: (id: string) => ((calls.rank += 1), games.getResultRank(id)),
+    getResultLive: (id: string) => ((calls.rank += 1), games.getResultLive(id)),
   };
   const countedBoard = {
     ...leaderboard,
@@ -93,11 +93,29 @@ test("a finished result is served from cache; rank refreshes after its minute", 
   // Another player overtakes: within the minute the cached rank stands, after it the rank refreshes with one query.
   await ctx.finishRun(b, 6);
   expect((await ctx.service.getResultWithOwner(publicId))!.view.rank).toBe(1);
-  ctx.advance((EDGE_TTL.resultRank + 1) * 1000);
+  ctx.advance((EDGE_TTL.resultLive + 1) * 1000);
   const later = await ctx.service.getResultWithOwner(publicId);
   expect(later!.view.rank).toBe(2);
   expect(later!.view.reachedLevel).toBe(first!.view.reachedLevel);
   expect(ctx.calls).toMatchObject({ bundle: 1, rank: 1 });
+});
+
+test("nickname edits show at once on the owner's fresh read and within the live TTL for everyone else", async () => {
+  const ctx = await setup();
+  const a = await ctx.player();
+  const publicId = await ctx.finishRun(a, 3);
+  expect((await ctx.service.getResultWithOwner(publicId))!.view.nickname).toBeNull();
+  await ctx.service.setNickname(a, "Bo");
+  // Owner's own page: no cached reads.
+  const fresh = await ctx.service.getResultWithOwner(publicId, { fresh: true });
+  expect(fresh!.view.nickname).toBe("Bo");
+  // The fresh read reseeds this colo's entries, so shared views pick the new nickname up right away too.
+  expect((await ctx.service.getResultWithOwner(publicId))!.view.nickname).toBe("Bo");
+  await ctx.service.setNickname(a, "Cy");
+  ctx.advance((EDGE_TTL.resultLive + 1) * 1000);
+  const shared = await ctx.service.getResultWithOwner(publicId);
+  expect(shared!.view.nickname).toBe("Cy");
+  expect(shared!.view.reachedLevel).toBe(fresh!.view.reachedLevel);
 });
 
 test("unknown results are not cached (a just-finished run is visible immediately)", async () => {
