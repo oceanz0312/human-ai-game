@@ -12,11 +12,10 @@ import { htmlLang, isLocale, locales } from "@/i18n/config";
 import { SITE_NAME, SITE_URL } from "@/config/site";
 import { I18nProvider } from "@/i18n/client";
 import { Analytics } from "@/components/site/Analytics";
-import { LocaleBanner } from "@/components/site/LocaleBanner";
 
 export const generateStaticParams = () => locales.map((locale) => ({ locale }));
 
-export const metadata: Metadata = { metadataBase: new URL(SITE_URL), title: SITE_NAME, applicationName: SITE_NAME };
+export const metadata: Metadata = { metadataBase: new URL(SITE_URL), title: { default: SITE_NAME, template: `%s | ${SITE_NAME}` }, applicationName: SITE_NAME };
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -32,7 +31,6 @@ export default async function LocaleLayout({ children, params }: { children: Rea
     <html lang={htmlLang[locale]} className={fontVariables}>
       <body>
         <I18nProvider locale={locale}>{children}</I18nProvider>
-        <LocaleBanner />
         <Analytics />
       </body>
     </html>

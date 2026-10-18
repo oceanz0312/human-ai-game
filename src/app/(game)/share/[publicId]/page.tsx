@@ -18,9 +18,9 @@ async function load(publicId: string) {
 
 export async function generateMetadata({ params }: { params: Promise<{ publicId: string }> }): Promise<Metadata> {
   const result = await load((await params).publicId);
-  if (!result) return { title: "HUMAN VS AI" };
+  if (!result) return { title: "Spot The Difference Game" };
   const locale = await getCookieLocale();
-  const title = `${shareLine(result, locale)} · HUMAN VS AI`;
+  const title = `${shareLine(result, locale)} · Spot The Difference Game`;
   return {
     metadataBase: new URL(await publicBaseUrl()),
     robots: { index: false, follow: true },
@@ -42,7 +42,7 @@ export default async function ShareLandingPage({ params }: { params: Promise<{ p
       <div className="container share-page">
         <section className="card result-card share-landing" aria-labelledby="share-title">
           <div className="topline">
-            <span className="brand">HUMAN VS AI</span>
+            <span className="brand">Spot The Difference Game</span>
             <span className="eyebrow">{shareCopy(locale).game}</span>
           </div>
           <h1 className="eyebrow share-who" id="share-title">

@@ -84,7 +84,7 @@ export default async function HomePage({ params }: Props) {
         </div>
         <div className="card vs-panel" aria-hidden>
           <div className="vs-panel-bar">
-            <span>HUMAN VS AI</span>
+            <span>YOU VS AI</span>
             <span className="vs-panel-dots">
               <i />
               <i />

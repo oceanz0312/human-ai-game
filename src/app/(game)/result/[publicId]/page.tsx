@@ -35,7 +35,7 @@ export default async function ResultPage({ params }: { params: Promise<{ publicI
             <h1 className="eyebrow" id="result-title">
               {result.cleared ? t("挑战完成") : t("挑战结束")}
             </h1>
-            <span className="brand">HUMAN VS AI</span>
+            <span className="brand">Spot The Difference Game</span>
           </div>
           <ResultSummary result={result} locale={locale} />
           <ResultGrid outcomes={result.outcomes ?? []} title={shareLine(result, locale)} url={shareUrl} />

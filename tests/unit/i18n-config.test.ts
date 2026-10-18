@@ -8,10 +8,11 @@ test("default locale has no prefix; others are prefixed", () => {
 });
 
 test("locale detection from pathname", () => {
-  expect(localeFromPathname("/zh/faq")).toBe("zh");
+  // zh is no longer a public locale: /zh/* redirects to English.
+  expect(localeFromPathname("/zh/faq")).toBe("en");
   expect(localeFromPathname("/faq")).toBe("en");
   expect(localeFromPathname("/zhx")).toBe("en");
-  expect(stripLocale("/zh/faq")).toBe("/faq");
-  expect(stripLocale("/zh")).toBe("/");
+  expect(stripLocale("/zh/faq")).toBe("/zh/faq");
+  expect(stripLocale("/zh")).toBe("/zh");
   expect(normalizePath("/a/b/")).toBe("/a/b");
 });

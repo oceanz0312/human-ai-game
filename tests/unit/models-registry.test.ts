@@ -25,7 +25,7 @@ describe("model registry", () => {
   });
 
   it("aiOpponents pages derive from live models only", () => {
-    expect(aiOpponents).toEqual([{ slug: "luna", model: "gpt-6-luna", provider: "OpenAI", api: "Decisions API" }]);
+    expect(aiOpponents).toEqual([{ slug: "luna", model: "simulated", provider: "Spot The Difference Game", api: "In-game simulated AI" }]);
   });
 });
 

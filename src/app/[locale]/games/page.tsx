@@ -31,7 +31,6 @@ export default async function GamesPage({ params }: Props) {
       ld={[itemListLd(locale, hub.itemListName, games.map((game) => ({ name: gameCopy[game.slug]?.name ?? game.slug, path: game.landingPath })))]}
       links={[
         { href: "/human-vs-ai", label: nav.humanVsAi },
-        { href: "/ai-opponents", label: nav.opponents },
         { href: "/about", label: nav.about },
       ]}
     >

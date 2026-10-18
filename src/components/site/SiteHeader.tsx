@@ -6,14 +6,14 @@ import { Button } from "@/components/ui/8bit";
 
 export function SiteLogo({ href }: { href: string }) {
   return (
-    <Link className="site-logo" href={href} aria-label="HUMAN VS AI">
+    <Link className="site-logo" href={href} aria-label="Spot The Difference Game">
       <span className="site-logo-mark" aria-hidden>
         <i />
         <i />
         <i />
         <i />
       </span>
-      HUMAN VS AI
+      Spot The Difference Game
     </Link>
   );
 }
@@ -42,7 +42,6 @@ export function navItems(locale: Locale) {
   return [
     { href: "/games", label: nav.games },
     ...liveGames().map((game) => ({ href: game.landingPath, label: gameCopy[game.slug]?.name ?? game.slug })),
-    { href: "/ai-opponents", label: nav.opponents },
     { href: "/faq", label: nav.faq },
   ];
 }

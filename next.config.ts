@@ -14,7 +14,14 @@ const nextConfig: NextConfig = {
       { source: "/en/:path*", destination: "/:path*", permanent: true },
       // A game's structured base path never competes with its keyword landing page.
       { source: "/games/spot-the-difference", destination: "/spot-the-difference", permanent: true },
-      { source: "/zh/games/spot-the-difference", destination: "/zh/spot-the-difference", permanent: true },
+      // English only: every /zh URL goes to its English equivalent (old /zh paths are mapped first).
+      { source: "/zh/games/spot-the-difference", destination: "/spot-the-difference", permanent: true },
+      { source: "/zh/ai-opponents/:path*", destination: "/human-vs-ai", permanent: true },
+      { source: "/zh", destination: "/", permanent: true },
+      { source: "/zh/:path*", destination: "/:path*", permanent: true },
+      // Platform-only opponent pages fold into the human vs AI feature page.
+      { source: "/ai-opponents", destination: "/human-vs-ai", permanent: true },
+      { source: "/ai-opponents/:path*", destination: "/human-vs-ai", permanent: true },
     ];
   },
   async rewrites() {

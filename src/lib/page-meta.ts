@@ -5,7 +5,6 @@ import { canonicalUrl, languageAlternates } from "@/seo/alternates";
 
 const OG_KEYS: Record<string, string> = {
   "/": "home",
-  "/spot-the-difference": "spot-the-difference",
   "/find-the-difference": "find-the-difference",
   "/human-vs-ai": "human-vs-ai",
 };
@@ -37,10 +36,9 @@ export function pageMetadata(
       description: copy.description,
       url,
       locale: ogLocale[locale],
-      alternateLocale: Object.entries(ogLocale).filter(([key]) => key !== locale).map(([, value]) => value),
       ...(images ? { images } : {}),
     },
     twitter: { card: "summary_large_image", title: copy.title, description: copy.description, images: [image] },
-    robots: opts.index === false ? { index: false, follow: true } : { index: true, follow: true },
+    robots: opts.index === false ? { index: false, follow: true } : { index: true, follow: true, "max-image-preview": "large" },
   };
 }

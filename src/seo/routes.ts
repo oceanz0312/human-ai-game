@@ -1,4 +1,4 @@
-import { aiOpponents, games } from "@/games/registry";
+import { games } from "@/games/registry";
 
 export interface SeoRoute {
   path: string;
@@ -16,8 +16,6 @@ export function staticSeoRoutes(): SeoRoute[] {
     { path: "/games", priority: 0.6, changeFrequency: "weekly" },
     { path: "/how-to-play", priority: 0.6, changeFrequency: "monthly" },
     { path: "/faq", priority: 0.6, changeFrequency: "monthly" },
-    { path: "/ai-opponents", priority: 0.5, changeFrequency: "monthly" },
-    ...aiOpponents.map((o) => ({ path: `/ai-opponents/${o.slug}`, priority: 0.6, changeFrequency: "weekly" as const })),
     { path: "/about", priority: 0.4, changeFrequency: "yearly" },
     { path: "/privacy", priority: 0.2, changeFrequency: "yearly" },
     { path: "/terms", priority: 0.2, changeFrequency: "yearly" },

@@ -10,7 +10,7 @@ export default function NotFound() {
   const t = getDictionary(locale).notFound;
   return (
     <main className="container notfound-page">
-      <div className="brand">HUMAN VS AI</div>
+      <div className="brand">Spot The Difference Game</div>
       <div className="reveal-body">
         <h1 className="page-title">{t.title}</h1>
         <p className="body-text">{t.body}</p>
