@@ -1,3 +1,4 @@
+import { cached, EDGE_TTL, type EdgeCache } from "./edge-cache";
 import type { AiDispatch, AiEvent, BeginRoundResponse, LeaderboardRow, ResultView, RoundReveal, RoundStartResponse, SessionSnapshot, SubmitResponse } from "../game/contracts";
 import { parseStoredProbabilities } from "../game/ai-insights";
 import { advanceSession, reconcileElapsed, resolveHumanAnswer, resolveRace } from "../game/rules";
@@ -15,6 +16,8 @@ import type { ServerTiming } from "./server-timing";
 export interface GameServiceDeps {
   games: GameRepository;
   leaderboard: LeaderboardRepository;
+  /** Read-through edge cache for finished results, level stats and the public board top (null: no caching). */
+  edgeCache?: EdgeCache | null;
   decisions: DecisionClient;
   /** AI_MODE=simulated (production default): the opponent is the in-game simulated AI, no model calls. */
   simulateAi?: boolean;
@@ -347,13 +350,34 @@ export function createGameService(deps: GameServiceDeps) {
     return { begun: { roundId: marked.id, deadlineAt: marked.deadlineAt, started: firstPaint, ai }, run: null };
   }
 
-  async function resultWithOwner(publicId: string): Promise<{ view: ResultView; ownerId: string } | null> {
+  /**
+   * `fresh` (the owner's own result page) skips cached reads so a just-finished run and a just-edited nickname show
+   * immediately; it still refreshes the cache entries for everyone else in this colo.
+   */
+  async function resultWithOwner(publicId: string, options: { fresh?: boolean } = {}): Promise<{ view: ResultView; ownerId: string } | null> {
     const toOutcome = (round: { aiStatus: string | null; winner: string | null }) =>
       (round.aiStatus === "error" ? "void" : (round.winner ?? "none")) as "human" | "ai" | "none" | "void";
     if (process.env.RESULT_BUNDLE !== "off") {
+      // Finished-run facts are cached for a day; rank/best/nickname for a minute (see edge-cache.ts). A full miss is one D1 batch.
+      const cache = deps.edgeCache ?? null;
+      const coreKey = `result-core/${publicId}`;
+      const liveKey = `result-live/${publicId}`;
+      if (cache && !options.fresh) {
+        const [core, liveHit] = await Promise.all([
+          cache.get<{ ownerId: string; view: Omit<ResultView, "rank" | "bestLevel" | "nickname"> }>(coreKey),
+          cache.get<{ rank: number; bestLevel: number; nickname: string | null }>(liveKey),
+        ]);
+        if (core) {
+          const live = liveHit ?? (await deps.games.getResultLive(publicId));
+          if (live) {
+            if (!liveHit) cache.set(liveKey, live, EDGE_TTL.resultLive);
+            return { ownerId: core.ownerId, view: { ...core.view, rank: live.rank, bestLevel: live.bestLevel, nickname: live.nickname } };
+          }
+        }
+      }
       const bundle = await deps.games.getResultBundle(publicId);
       if (!bundle) return null;
-      return {
+      const built = {
         ownerId: bundle.result.playerId,
         view: {
           played: bundle.accuracy.played,
@@ -370,6 +394,12 @@ export function createGameService(deps: GameServiceDeps) {
           endedAt: bundle.result.createdAt,
         },
       };
+      if (cache) {
+        const { rank, bestLevel, nickname, ...core } = built.view;
+        cache.set(coreKey, { ownerId: built.ownerId, view: core }, EDGE_TTL.resultCore);
+        cache.set(liveKey, { rank, bestLevel, nickname }, EDGE_TTL.resultLive);
+      }
+      return built;
     }
     const row = await deps.games.getResultByPublicId(publicId);
     if (!row) return null;
@@ -632,15 +662,19 @@ export function createGameService(deps: GameServiceDeps) {
     },
 
     async getLevelStats() {
-      return deps.leaderboard.levelStats(deps.game.levelSetVersion);
+      const version = deps.game.levelSetVersion;
+      return cached(deps.edgeCache, `level-stats/${version}`, EDGE_TTL.levelStats, () => deps.leaderboard.levelStats(version));
     },
 
-    async getLeaderboard(input: { viewerPlayerId: string | null; limit: number }) {
+    /** `fresh` skips the shared top-of-board cache (the viewer just played or renamed and must see it). */
+    async getLeaderboard(input: { viewerPlayerId: string | null; limit: number; fresh?: boolean }) {
       const version = deps.game.levelSetVersion;
       // Top rows and the viewer's position are independent: fetch them concurrently (2 round trips at most, was 4).
       const viewer = input.viewerPlayerId;
       const [top, viewerIndex] = await Promise.all([
-        deps.leaderboard.list({ limit: input.limit, version }),
+        input.fresh
+          ? deps.leaderboard.list({ limit: input.limit, version })
+          : cached(deps.edgeCache, `board-top/${version}/${input.limit}`, EDGE_TTL.boardTop, () => deps.leaderboard.list({ limit: input.limit, version })),
         viewer ? deps.leaderboard.getDisplayIndex(viewer, version) : Promise.resolve(null),
       ]);
       const toRow = (row: { playerId: string; nickname: string | null; reachedLevel: number; rank: number }): LeaderboardRow => ({
