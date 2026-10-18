@@ -9,7 +9,7 @@ import { resolveGameParam } from "@/games/route-game";
 import { localePath, resolveLocaleParam, type Locale } from "@/i18n/config";
 import { fill, getPages } from "@/i18n/pages";
 import { pageMetadata } from "@/lib/page-meta";
-import { hasAiStats, isIndexableLevel, loadLevelStats, percent, seconds } from "@/seo/level-stats";
+import { hasAiStats, loadLevelStats, percent, seconds } from "@/seo/level-stats";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +21,7 @@ function levelVars(game: GameEntry, n: string) {
   if (!provider || !/^\d{1,3}$/.test(n)) return null;
   const page = provider.page(Number(n));
   if (!page) return null;
-  return { level: page, tier: page.tier, vars: page.vars, statsGated: provider.statsGated };
+  return { level: page, tier: page.tier, vars: page.vars };
 }
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
@@ -30,12 +30,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const found = levelVars(game, (await params).n);
   if (!found) return {};
   const tier = getPages(locale).pages.level.tiers[found.tier];
-  const stats = (await loadLevelStats()).get(found.level.level);
+  // Level pages are never indexed (plan "Approved v2": templated pages; links stay followable).
   return pageMetadata(
     locale,
     gameLevelPath(game, found.level.level),
     { title: fill(tier.title, found.vars), description: fill(tier.description, found.vars) },
-    { index: !found.statsGated || isIndexableLevel(stats), image: `/og/${locale}/${game.slug}.png` },
+    { index: false, image: `/og/${locale}/${game.slug}.png` },
   );
 }
 

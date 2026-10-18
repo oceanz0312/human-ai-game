@@ -19,3 +19,13 @@
 .quick-final { font-size: 24px; font-weight: 800; }
 .quick-caption { min-height: 3em; font-size: 12px; line-height: 1.5; }
 @media print { .quick { display: none; } }
+/* Home hero demo (plan "Approved v2"): no button over the cells; a corner badge + cell highlights only. */
+.quick-hero .quick-cell { cursor: pointer; }
+.quick-hero[data-phase="demo"] .quick-cell { transition: border-color 0.15s, box-shadow 0.15s, background 0.15s; }
+.quick-cell[data-state="scan"] { border-color: #ffd447; box-shadow: 0 0 0 3px #ffd447 inset; background: #fffbe8; }
+.quick-hero[data-phase="demo"] .quick-cell[data-state="odd"] { animation: quick-found 0.45s steps(3) 1; }
+@keyframes quick-found { 0% { transform: scale(1); } 50% { transform: scale(1.12); } 100% { transform: scale(1); } }
+.quick-demo-tag { position: absolute; top: 10px; left: 10px; pointer-events: none; z-index: 1; }
+.quick-demo-badge { display: inline-block; font-size: 11px; font-weight: 800; letter-spacing: 0.04em; padding: 3px 6px; background: #1d2440; color: #fff; border-radius: 2px; }
+.quick-up { font-size: 12px; }
+@media (prefers-reduced-motion: reduce) { .quick-hero[data-phase="demo"] .quick-cell { transition: none; animation: none; } }

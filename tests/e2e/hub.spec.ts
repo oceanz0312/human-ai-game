@@ -44,6 +44,8 @@ test.describe("hidden platform hub (/games)", () => {
 
 test.describe("@viewport keyword pages", () => {
   test("home: H1 'Spot the Difference' and a playable board inside the first screen", async ({ page }) => {
+    // Reduced motion: no auto-starting demo, so the first tap deterministically starts the match.
+    await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/");
     await expect(page).toHaveTitle("Spot the Difference – Play Free Online | Spot The Difference Game");
     await expect(page.getByRole("heading", { level: 1 })).toHaveText("Spot the Difference");
@@ -51,8 +53,11 @@ test.describe("@viewport keyword pages", () => {
     const box = (await board.locator(".quick-stage").boundingBox())!;
     const viewport = page.viewportSize()!;
     expect(box.y + box.height, "board fits the first screen").toBeLessThanOrEqual(viewport.height + 1);
-    await page.getByTestId("quick-start").click();
-    await expect(page.getByTestId("quick-cell").first()).toBeEnabled();
+    // Hero v2: no Play button on the board; the first tap on a cell starts the match in place.
+    await expect(page.getByTestId("quick-start")).toHaveCount(0);
+    await page.getByTestId("quick-cell").first().click();
+    await expect(board).toHaveAttribute("data-phase", "playing");
+    await expect(page).toHaveURL(/\/$/);
     await page.getByTestId("quick-cell").first().click();
     await expect(page.getByTestId("quick-result")).toHaveText(/You win!|AI wins|No winner/);
     await page.getByTestId("quick-next").click();
@@ -113,7 +118,7 @@ test.describe("@viewport keyword pages", () => {
 test("@viewport header controls stay fully on-screen (long brand wraps on small phones)", async ({ page }) => {
   await page.goto("/");
   const width = page.viewportSize()!.width;
-  for (const selector of [".nav-menu > summary", ".site-header .nav-cta"]) {
+  for (const selector of [".nav-menu > summary", ".site-header .nav-levels"]) {
     const el = page.locator(selector);
     if (!(await el.isVisible())) continue;
     const box = (await el.boundingBox())!;

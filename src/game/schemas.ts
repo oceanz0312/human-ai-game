@@ -30,6 +30,11 @@ export const ANALYTICS_EVENTS = [
   "share_completed",
   "share_landing_started",
   "quick_round",
+  // Home hero (plan "Approved v2"): primary CTA, demo overlay and in-place board starts.
+  "hero_cta_click",
+  "demo_view",
+  "demo_skip",
+  "board_start",
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];

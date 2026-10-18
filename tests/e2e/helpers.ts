@@ -155,7 +155,16 @@ export async function assertMobileLayout(page: Page) {
       scrollWidth: document.documentElement.scrollWidth,
       board: rect(".board"),
       image: rect(".board img"),
-      primary: rect(".primary-action"),
+      // Topmost visible start action in the game stage or the keyword-page hero (CTA or the quick board's Play).
+      // The header no longer carries a Play button, which used to satisfy this check vacuously on every page.
+      primary: (() => {
+        const boxes = Array.from(document.querySelectorAll(".game-stage .primary-action, .kw-hero .primary-action, [data-testid='quick-start']"))
+          .map((element) => element.getBoundingClientRect())
+          .filter((box) => box.width > 0 && box.height > 0)
+          .sort((a, b) => a.top - b.top);
+        const box = boxes[0];
+        return box ? { left: box.left, right: box.right, top: box.top, bottom: box.bottom, width: box.width, height: box.height } : null;
+      })(),
       firstCell: cells[0] ? { left: cells[0].left, top: cells[0].top, width: cells[0].width } : null,
       lastCell: cells.length ? { right: cells[cells.length - 1].right, bottom: cells[cells.length - 1].bottom } : null,
       cellCount: cells.length,

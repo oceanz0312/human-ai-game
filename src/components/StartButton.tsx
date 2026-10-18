@@ -19,6 +19,8 @@ export function StartButton({
   ai,
   game = "spot-the-difference",
   direct = false,
+  sublabel,
+  trackClick,
 }: {
   label?: string;
   busyLabel?: string;
@@ -32,6 +34,10 @@ export function StartButton({
   game?: string;
   /** Start the run right away. Otherwise a fresh start goes to the opponent-select step first (D4-1). */
   direct?: boolean;
+  /** Second, smaller line inside the button (e.g. "20 levels · vs AI"). */
+  sublabel?: string;
+  /** Analytics event sent on click, before the run is created (home hero: hero_cta_click). */
+  trackClick?: { name: "hero_cta_click"; metadata?: Record<string, string> };
 }) {
   const router = useRouter();
   const t = useT();
@@ -46,6 +52,7 @@ export function StartButton({
     setError(null);
     if (locale) document.cookie = `${LOCALE_COOKIE}=${locale}; Path=/; Max-Age=31536000; SameSite=Lax`;
     if (fromShare) track("share_landing_started");
+    if (trackClick) track(trackClick.name, { metadata: { ...trackClick.metadata, remaining: status ? status.remaining : null } });
     const entry = getGame(game);
     if (!direct && !replay && entry) {
       router.push(localePath(locale ?? currentLocale, `${entry.basePath}/play`));
@@ -81,6 +88,7 @@ export function StartButton({
       ) : null}
       <Button variant={replay ? "text" : "primary"} onClick={start} disabled={busy && !replay}>
         {busy ? (busyLabel ?? t("正在开始")) : (label ?? t("开始挑战"))}
+        {sublabel ? <span className="btn-sub">{sublabel}</span> : null}
       </Button>
       {replay ? null : <PlayLimitBadge status={status} />}
     </span>

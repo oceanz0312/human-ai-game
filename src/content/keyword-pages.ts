@@ -1,4 +1,5 @@
 import type { QuickModeKey } from "@/games/spot-the-difference/quick/puzzle";
+import { AI_CURVE_LINE } from "./ai-curve";
 
 /**
  * English keyword pages (one search term = one page, SEO plan 2026-10-18). Every page carries its own copy;
@@ -22,7 +23,21 @@ export interface KeywordPageContent {
   links: { href: string; label: string }[];
   /** Short name for nav/footer/breadcrumbs. */
   nav: string;
+  /**
+   * "demo" (home only, plan "Approved v2"): the board opens with a ~3 s skippable demo and has no button on it,
+   * there is a single primary CTA (straight into the 20-level run), and theme cards follow the first screen.
+   */
+  hero?: "demo";
 }
+
+/** Theme cards under the home first screen (each links an existing keyword page). */
+export const THEME_CARDS = [
+  { href: "/easy", label: "Easy spot the difference", blurb: "Small grids, bigger changes, more time." },
+  { href: "/hard", label: "Hard spot the difference", blurb: "Up to 8×8 grids, one pixel changed." },
+  { href: "/for-kids", label: "Spot the difference for kids", blurb: "Big 3×3 pictures and a long timer." },
+  { href: "/christmas", label: "Christmas spot the difference", blurb: "Trees, gifts, bells and snowmen." },
+  { href: "/pictures", label: "Spot the difference pictures", blurb: "The pixel picture set behind every puzzle." },
+];
 
 /** Shared closing for every keyword-page AI FAQ (20-level curve; keep in sync with sim-v2). */
 const AI_FAQ_CORE =
@@ -86,8 +101,9 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
     title: "Spot the Difference – Play Free Online | Spot The Difference Game",
     description: "Take on the AI in free spot the difference puzzles: find the one picture that is different before Luna AI does. Play instantly in your browser, no signup.",
     h1: "Spot the Difference",
-    lede: "Find the one picture that is different. Free, instant, and you race an AI on every puzzle.",
+    lede: "Spot the difference before the AI does. Find the one picture that's different in 20 free levels — no download, right in your browser.",
     board: { mode: "home", seed: "home-v1", label: "Spot the difference puzzle" },
+    hero: "demo",
     sections: [
       {
         h2: "How this spot the difference works",
@@ -100,6 +116,7 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
         h2: "Want a longer challenge?",
         paragraphs: [
           "The full spot the difference game has 20 levels, from 3×3 warm-ups to 9×9 grids with a clock that shrinks every level, three chances per run and a daily leaderboard.",
+          AI_CURVE_LINE,
         ],
       },
       {

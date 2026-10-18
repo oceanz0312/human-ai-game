@@ -1141,3 +1141,23 @@
   .print-answers { break-inside: avoid; }
 }
 .info-contact a { color: #c8003c; text-decoration: underline; }
+
+/* Home hero v2 (plan "Approved v2"): one primary CTA under the lede, demo board on the right / below. */
+.kw-cta-hero .start-stack { display: flex; align-items: stretch; }
+.kw-cta-hero .play-limit-badge { align-self: center; }
+.kw-cta-hero .px-btn { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 64px; padding: 8px 12px; font-size: var(--fs-px-2); width: 100%; white-space: normal; text-align: center; }
+.kw-cta-hero .btn-sub { font-size: var(--fs-px-1); font-weight: 400; opacity: 0.9; }
+@media (min-width: 600px) { .kw-cta-hero .px-btn { width: auto; min-width: 360px; min-height: 72px; padding-inline: 24px; } .kw-cta-hero .start-stack { display: inline-flex; align-items: flex-start; } .kw-cta-hero .play-limit-badge { align-self: flex-start; } }
+.kw-hero-demo { gap: 10px; }
+@media (max-width: 899px) {
+  /* Phones: keep the demo board inside the first screen under the CTA. */
+  .kw-hero-demo .quick-stage { width: min(100%, 46svh); }
+}
+.kw-more { margin: 20px 0 12px; font-size: 15px; }
+.kw-more a { font-weight: 700; }
+.kw-themes { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: 12px; margin-block: 8px 20px; }
+.kw-theme { display: grid; gap: 6px; padding: 12px; color: inherit; text-decoration: none; }
+.kw-theme strong { font-size: 14px; }
+.kw-theme span { font-size: 12px; line-height: 1.4; }
+.kw-theme:hover strong { text-decoration: underline; }
+@media print { .kw-more, .kw-themes { display: none !important; } }

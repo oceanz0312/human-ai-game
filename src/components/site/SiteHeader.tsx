@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Locale } from "@/i18n/config";
 import { SITE_NAME } from "@/config/site";
-import { Button } from "@/components/ui/8bit";
 
 export function SiteLogo({ href }: { href: string }) {
   return (
@@ -48,9 +47,10 @@ export function SiteHeader({ path }: { locale?: Locale; path: string }) {
           ))}
         </nav>
         <span className="site-header-spacer" />
-        <Button variant="primary" className="nav-cta" href="/spot-the-difference-game">
-          Play
-        </Button>
+        {/* Text link, not a button: the page's own primary CTA is the only "Play" (plan "Approved v2"). */}
+        <Link className="nav-levels" href="/spot-the-difference-game" aria-current={isCurrent("/spot-the-difference-game") ? "page" : undefined}>
+          Levels
+        </Link>
         <details className="nav-menu">
           <summary aria-label="Menu">
             <span className="nav-menu-icon" aria-hidden />
@@ -61,7 +61,7 @@ export function SiteHeader({ path }: { locale?: Locale; path: string }) {
                 {item.label}
               </Link>
             ))}
-            <Link href="/spot-the-difference-game">Play 20 levels</Link>
+            <Link href="/spot-the-difference-game">Levels</Link>
           </div>
         </details>
       </div>

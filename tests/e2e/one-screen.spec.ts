@@ -1,14 +1,16 @@
 import { expect, test } from "@playwright/test";
 import { answer, assertDanmakuOffBoard, assertNoHorizontalOverflow, assertOneScreen, assertRevealNextBelowBoard, boardSize, startGame, waitForPlayable } from "./helpers";
-import { rx, t, START } from "./t";
+import { rx, t, HOME_START } from "./t";
 
 test.describe("@layout one-screen zero scroll", () => {
-  test("home first screen shows a playable board and its Play button", async ({ page }) => {
+  test("home first screen shows the playable board and the single primary CTA", async ({ page }) => {
     await page.goto("/");
     await assertNoHorizontalOverflow(page);
     await expect(page.getByTestId("quick-board")).toBeVisible();
-    const start = await page.getByTestId("quick-start").boundingBox();
+    const start = await page.getByRole("button", { name: HOME_START }).boundingBox();
     expect(start!.y + start!.height).toBeLessThanOrEqual(page.viewportSize()!.height);
+    const cell = await page.getByTestId("quick-cell").first().boundingBox();
+    expect(cell!.y + cell!.height, "first board row inside the first screen").toBeLessThanOrEqual(page.viewportSize()!.height);
     await expect(page.locator("body")).not.toContainText(/命/);
   });
 

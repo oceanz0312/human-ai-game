@@ -8,7 +8,8 @@ import { makePuzzle, QUICK_MODES, type QuickModeKey } from "./puzzle";
 import { SpriteDefs, SpriteUse } from "./PixelSprite";
 import "./quick.css";
 
-type Phase = "ready" | "playing" | "reveal" | "done";
+type Phase = "demo" | "ready" | "playing" | "reveal" | "done";
+type StartTrigger = "tap" | "demo_end" | "play" | "again";
 interface RoundResult {
   you: "correct" | "wrong" | "timeout";
   youMs: number | null;
@@ -21,21 +22,61 @@ interface RoundResult {
 
 const fmt = (ms: number) => `${(ms / 1000).toFixed(1)}s`;
 
+/** Demo timeline (ms): decoy cells light up one after another, then the odd one; play starts at DEMO_END_MS. */
+export const DEMO_DECOYS = 3;
+const DEMO_STEP_MS = 520;
+const DEMO_FOUND_MS = 300 + DEMO_DECOYS * DEMO_STEP_MS;
+export const DEMO_END_MS = DEMO_FOUND_MS + 1300;
+
 /**
  * Instant spot-the-difference board: plays entirely in the browser against the in-game simulated AI
  * (same engine as the ranked game), never touches the server or the daily run limit.
+ *
+ * `demo` (home hero, plan "Approved v2"): no Play button on the board. A ~3 s demo on a separate demo puzzle
+ * highlights cells in sequence and then the odd one; tapping any cell skips it, and the demo ending starts
+ * play in place (timer starts, no navigation). Reduced motion: no animation, tap a cell to start.
  */
-export function QuickBoard({ mode: modeKey, seed, title, cta }: { mode: QuickModeKey; seed: string; title: string; cta?: React.ReactNode }) {
+export function QuickBoard({
+  mode: modeKey,
+  seed,
+  title,
+  cta,
+  demo = false,
+  page = "",
+}: {
+  mode: QuickModeKey;
+  seed: string;
+  title: string;
+  cta?: React.ReactNode;
+  demo?: boolean;
+  /** Page path for analytics metadata. */
+  page?: string;
+}) {
   const mode = QUICK_MODES[modeKey];
   const [series, setSeries] = useState(seed);
   const [round, setRound] = useState(0);
-  const [phase, setPhase] = useState<Phase>("ready");
+  const [phase, setPhase] = useState<Phase>(demo ? "demo" : "ready");
+  const [demoStep, setDemoStep] = useState(-1);
+  const stageRef = useRef<HTMLDivElement>(null);
+  const demoViewed = useRef(false);
   const [now, setNow] = useState(0);
   const [startedAt, setStartedAt] = useState(0);
   const [results, setResults] = useState<RoundResult[]>([]);
   const startRef = useRef(0);
 
-  const puzzle = useMemo(() => makePuzzle(`${series}|${round}`, { theme: mode.theme, grid: mode.grids[round], changes: mode.changes }), [series, round, mode]);
+  const realPuzzle = useMemo(() => makePuzzle(`${series}|${round}`, { theme: mode.theme, grid: mode.grids[round], changes: mode.changes }), [series, round, mode]);
+  // Demo uses its own seed so it never gives away the first real puzzle.
+  const demoPuzzle = useMemo(() => makePuzzle(`${seed}|demo`, { theme: mode.theme, grid: mode.grids[0], changes: mode.changes }), [seed, mode]);
+  const puzzle = phase === "demo" ? demoPuzzle : realPuzzle;
+  const demoDecoys = useMemo(() => {
+    const total = demoPuzzle.grid * demoPuzzle.grid;
+    const picks: number[] = [];
+    for (let k = 1; picks.length < DEMO_DECOYS && k < total * 3; k += 1) {
+      const cell = (demoPuzzle.oddIndex + k * 7) % total;
+      if (cell !== demoPuzzle.oddIndex && !picks.includes(cell)) picks.push(cell);
+    }
+    return picks;
+  }, [demoPuzzle]);
   const limitMs = mode.limitS * 1000;
   const cells = puzzle.grid * puzzle.grid;
   const ai = useMemo(
@@ -50,7 +91,7 @@ export function QuickBoard({ mode: modeKey, seed, title, cta }: { mode: QuickMod
       }),
     [modeKey, round, limitMs, puzzle.oddIndex, series, cells],
   );
-  const prefix = `q-${modeKey}-${round}`;
+  const prefix = phase === "demo" ? `q-${modeKey}-demo` : `q-${modeKey}-${round}`;
   const elapsed = phase === "playing" ? now - startedAt : 0;
   const aiLocked = phase === "playing" && elapsed >= ai.thinkMs;
   // Presence cues: cosmetic, a pure function of elapsed time (never of the AI's answer or answer time).
@@ -95,13 +136,68 @@ export function QuickBoard({ mode: modeKey, seed, title, cta }: { mode: QuickMod
     return () => window.clearInterval(id);
   }, [phase, limitMs, finish]);
 
-  const start = () => {
+  const start = useCallback(() => {
     const t = performance.now();
     startRef.current = t;
     setStartedAt(t);
     setNow(t);
     setPhase("playing");
-  };
+  }, []);
+
+  /** Leave the demo (or the reduced-motion still) and play the first real puzzle in place. */
+  const startFromDemo = useCallback(
+    (trigger: StartTrigger, stepAtTap: number) => {
+      if (trigger === "tap" && stepAtTap >= 0) track("demo_skip", { metadata: { page, atMs: Math.round(Math.min(DEMO_END_MS, 300 + stepAtTap * DEMO_STEP_MS)) } });
+      track("board_start", { metadata: { page, trigger } });
+      setDemoStep(-1);
+      start();
+    },
+    [page, start],
+  );
+
+  // Demo timeline: runs only while the board is on screen and the tab is visible; restarts from 0 when it comes back.
+  useEffect(() => {
+    if (phase !== "demo" || !demo) return;
+    const node = stageRef.current;
+    if (!node || typeof IntersectionObserver === "undefined") return;
+    if (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches) return;
+    let timers: number[] = [];
+    let visible = false;
+    const stop = () => {
+      timers.forEach((id) => window.clearTimeout(id));
+      timers = [];
+      setDemoStep(-1);
+    };
+    const run = () => {
+      stop();
+      if (!demoViewed.current) {
+        demoViewed.current = true;
+        track("demo_view", { metadata: { page } });
+      }
+      for (let i = 0; i <= DEMO_DECOYS; i += 1) timers.push(window.setTimeout(() => setDemoStep(i), 300 + i * DEMO_STEP_MS));
+      timers.push(window.setTimeout(() => startFromDemo("demo_end", -1), DEMO_END_MS));
+    };
+    const sync = () => {
+      const active = visible && document.visibilityState === "visible";
+      if (active && timers.length === 0) run();
+      else if (!active && timers.length > 0) stop();
+    };
+    const observer = new IntersectionObserver(
+      (entries) => {
+        visible = entries.some((entry) => entry.isIntersecting && entry.intersectionRatio >= 0.6);
+        sync();
+      },
+      { threshold: [0, 0.6, 1] },
+    );
+    observer.observe(node);
+    document.addEventListener("visibilitychange", sync);
+    return () => {
+      observer.disconnect();
+      document.removeEventListener("visibilitychange", sync);
+      timers.forEach((id) => window.clearTimeout(id));
+    };
+  }, [phase, demo, page, startFromDemo]);
+
   const next = () => {
     if (round + 1 >= mode.grids.length) return setPhase("done");
     setRound(round + 1);
@@ -111,7 +207,10 @@ export function QuickBoard({ mode: modeKey, seed, title, cta }: { mode: QuickMod
     setSeries(`${seed}-${Math.random().toString(36).slice(2, 8)}`);
     setResults([]);
     setRound(0);
-    setPhase("ready");
+    if (!demo) return setPhase("ready");
+    // Hero board: never put a Play button back over the cells; a new match starts right away.
+    track("board_start", { metadata: { page, trigger: "again" } });
+    start();
   };
 
   const youWins = results.filter((r) => r?.winner === "you").length;
@@ -119,7 +218,7 @@ export function QuickBoard({ mode: modeKey, seed, title, cta }: { mode: QuickMod
   const remaining = Math.max(0, limitMs - elapsed);
 
   return (
-    <section className="quick" data-testid="quick-board" data-phase={phase} aria-label={title}>
+    <section className={`quick${demo ? " quick-hero" : ""}`} data-testid="quick-board" data-phase={phase} data-demo-step={phase === "demo" ? demoStep : undefined} aria-label={title}>
       <div className="quick-hud">
         <span className="quick-round">
           Puzzle {round + 1}/{mode.grids.length} · {puzzle.grid}×{puzzle.grid}
@@ -128,15 +227,31 @@ export function QuickBoard({ mode: modeKey, seed, title, cta }: { mode: QuickMod
           YOU {youWins} – {aiWins} AI
         </span>
         <span className="quick-clock" aria-live="off">
-          {phase === "playing" ? fmt(remaining) : fmt(limitMs)}
+          {phase === "playing" ? fmt(remaining) : phase === "demo" ? "DEMO" : fmt(limitMs)}
         </span>
       </div>
-      <div className="quick-stage">
+      <div className="quick-stage" ref={stageRef}>
         <SpriteDefs prefix={prefix} sprites={[puzzle.base, puzzle.odd]} />
         <div className="quick-grid" style={{ gridTemplateColumns: `repeat(${puzzle.grid}, 1fr)` }} role="group" aria-label={`${puzzle.grid} by ${puzzle.grid} picture grid`}>
           {Array.from({ length: cells }, (_, i) => {
             const isOdd = i === puzzle.oddIndex;
-            const state = phase === "reveal" || phase === "done" ? (isOdd ? "odd" : result?.pick === i ? "miss" : result?.aiPick === i ? "ai" : "") : "";
+            const decoyAt = demoDecoys.indexOf(i);
+            const state =
+              phase === "demo"
+                ? isOdd && demoStep >= DEMO_DECOYS
+                  ? "odd"
+                  : decoyAt >= 0 && demoStep === decoyAt
+                    ? "scan"
+                    : ""
+                : phase === "reveal" || phase === "done"
+                  ? isOdd
+                    ? "odd"
+                    : result?.pick === i
+                      ? "miss"
+                      : result?.aiPick === i
+                        ? "ai"
+                        : ""
+                  : "";
             return (
               <button
                 key={i}
@@ -146,14 +261,19 @@ export function QuickBoard({ mode: modeKey, seed, title, cta }: { mode: QuickMod
                 data-ai={(phase === "reveal" || phase === "done") && result?.aiPick === i ? "true" : undefined}
                 data-testid="quick-cell"
                 aria-label={`Row ${Math.floor(i / puzzle.grid) + 1}, column ${(i % puzzle.grid) + 1}`}
-                disabled={phase !== "playing"}
-                onClick={() => finish(i)}
+                disabled={phase !== "playing" && phase !== "demo"}
+                onClick={() => (phase === "demo" ? startFromDemo("tap", demoStep) : finish(i))}
               >
                 <SpriteUse href={`${prefix}-${isOdd ? puzzle.odd.id : puzzle.base.id}`} />
               </button>
             );
           })}
         </div>
+        {phase === "demo" ? (
+          <div className="quick-demo-tag" data-testid="quick-demo" aria-hidden>
+            <span className="quick-demo-badge">▶ DEMO</span>
+          </div>
+        ) : null}
         {phase === "ready" ? (
           <div className="quick-overlay">
             <button type="button" className="quick-play" data-testid="quick-start" onClick={start}>
@@ -168,7 +288,7 @@ export function QuickBoard({ mode: modeKey, seed, title, cta }: { mode: QuickMod
             <p>
               YOU {youWins} – {aiWins} AI
             </p>
-            {cta}
+            {cta ?? (demo ? <p className="quick-up">Ready for all 20 levels? Hit Play Spot the Difference.</p> : null)}
             <button type="button" className="quick-again" onClick={again}>
               New puzzles ↻
             </button>
@@ -177,6 +297,11 @@ export function QuickBoard({ mode: modeKey, seed, title, cta }: { mode: QuickMod
       </div>
       <div className="quick-caption" data-testid="quick-caption" aria-live="polite">
         {phase === "ready" ? "Tap Play, then tap the odd one out." : null}
+        {phase === "demo" ? (
+          <span data-testid="quick-demo-caption">
+            {demoStep >= DEMO_DECOYS ? "Found the odd one! Your turn — tap any picture to play." : demoStep >= 0 ? "Not this one… keep looking." : "Find the one picture that's different before the AI does. Tap any picture to play."}
+          </span>
+        ) : null}
         {phase === "playing" ? <span data-testid="quick-ai-status">{aiCaption}</span> : null}
         {phase === "reveal" && result ? (
           <>
