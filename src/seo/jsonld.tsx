@@ -1,4 +1,4 @@
-import { absoluteUrl, SITE_NAME, SITE_URL } from "@/config/site";
+import { absoluteUrl, CONTACT_EMAIL, SITE_NAME, SITE_URL } from "@/config/site";
 import type { GameEntry } from "@/games/registry";
 import { localePath, type Locale } from "@/i18n/config";
 
@@ -25,6 +25,7 @@ export const organizationLd = (): Json => ({
   name: SITE_NAME,
   url: SITE_URL,
   logo: absoluteUrl("/icon.png"),
+  email: CONTACT_EMAIL,
 });
 
 export const gameLd = (game: GameEntry, locale: Locale, name: string, description: string): Json => ({
