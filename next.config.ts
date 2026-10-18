@@ -1,7 +1,7 @@
 import type { NextConfig } from "next";
 
 /** First path segments that must never be rewritten into the English locale tree. */
-const UNPREFIXED_EXCLUDE = "(?:zh|en|api|play|result|share|_next|levels|og)(?:/|$)|sitemap\\.xml$|robots\\.txt$|favicon\\.ico$";
+const UNPREFIXED_EXCLUDE = "(?:zh|en|api|play|result|share|_next|levels|og)(?:/|$)|sitemap\\.xml$|robots\\.txt$|favicon\\.ico$|icon(?:-\\d+)?\\.png$|apple-icon\\.png$|manifest\\.webmanifest$";
 
 const nextConfig: NextConfig = {
   serverExternalPackages: ["@libsql/client", "libsql"],

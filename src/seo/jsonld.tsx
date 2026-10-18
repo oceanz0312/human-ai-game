@@ -24,6 +24,7 @@ export const organizationLd = (): Json => ({
   "@type": "Organization",
   name: SITE_NAME,
   url: SITE_URL,
+  logo: absoluteUrl("/icon.png"),
 });
 
 export const gameLd = (game: GameEntry, locale: Locale, name: string, description: string): Json => ({
@@ -58,7 +59,7 @@ export const videoGameLd = (path: string, name: string, description: string): Js
   operatingSystem: "Any",
   playMode: "SinglePlayer",
   isAccessibleForFree: true,
-  publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL },
+  publisher: { "@type": "Organization", name: SITE_NAME, url: SITE_URL, logo: absoluteUrl("/icon.png") },
   offers: { "@type": "Offer", price: 0, priceCurrency: "USD" },
 });
 

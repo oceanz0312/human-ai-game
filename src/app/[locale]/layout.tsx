@@ -9,13 +9,13 @@ import "@/styles/site.css";
 import "@/styles/ui.css";
 import { fontVariables } from "@/lib/fonts";
 import { htmlLang, isLocale, locales } from "@/i18n/config";
-import { SITE_NAME, SITE_URL } from "@/config/site";
+import { SITE_ICONS, SITE_MANIFEST, SITE_NAME, SITE_URL } from "@/config/site";
 import { I18nProvider } from "@/i18n/client";
 import { Analytics } from "@/components/site/Analytics";
 
 export const generateStaticParams = () => locales.map((locale) => ({ locale }));
 
-export const metadata: Metadata = { metadataBase: new URL(SITE_URL), title: { default: SITE_NAME, template: `%s | ${SITE_NAME}` }, applicationName: SITE_NAME };
+export const metadata: Metadata = { metadataBase: new URL(SITE_URL), title: { default: SITE_NAME, template: `%s | ${SITE_NAME}` }, applicationName: SITE_NAME, icons: SITE_ICONS, manifest: SITE_MANIFEST };
 
 export const viewport: Viewport = {
   width: "device-width",

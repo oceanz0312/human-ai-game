@@ -8,13 +8,13 @@ import "@/styles/game.css";
 import "@/styles/site.css";
 import "@/styles/ui.css";
 import { fontVariables } from "@/lib/fonts";
-import { SITE_NAME } from "@/config/site";
+import { SITE_ICONS, SITE_MANIFEST, SITE_NAME } from "@/config/site";
 import { htmlLang } from "@/i18n/config";
 import { I18nProvider } from "@/i18n/client";
 import { Analytics } from "@/components/site/Analytics";
 import { getCookieLocale } from "@/i18n/server";
 
-export const metadata: Metadata = { title: SITE_NAME };
+export const metadata: Metadata = { title: SITE_NAME, icons: SITE_ICONS, manifest: SITE_MANIFEST };
 
 export const viewport: Viewport = {
   width: "device-width",
