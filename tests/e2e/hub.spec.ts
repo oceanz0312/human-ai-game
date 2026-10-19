@@ -4,6 +4,8 @@ import { START } from "./t";
 
 const KEYWORD_PAGES = ["/", "/spot-the-difference-game", "/find-the-difference", "/easy", "/hard", "/for-kids", "/christmas", "/halloween", "/pictures", "/printable", "/how-to-play", "/human-vs-ai", "/faq", "/about", "/privacy", "/terms"];
 
+const HOLIDAY_TITLES_WITHOUT_BRAND = ["/halloween", "/thanksgiving"];
+
 const jsonLd = (html: string) =>
   [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].flatMap((match) => ([] as Record<string, unknown>[]).concat(JSON.parse(match[1])));
 
@@ -78,7 +80,8 @@ test.describe("@viewport keyword pages", () => {
         expect(seen[key].has(value), `${path} duplicate ${key}`).toBe(false);
         seen[key].add(value);
       }
-      expect(title, path).toMatch(/Spot The Difference Game/);
+      // Holiday pages carry 哥飞's reviewed short titles (no brand suffix) — copy review 2026-10-19.
+      if (!HOLIDAY_TITLES_WITHOUT_BRAND.includes(path)) expect(title, path).toMatch(/Spot The Difference Game/);
       expect(html, path).toContain(`<link rel="canonical" href="https://spotthedifferencegame.com${path === "/" ? "" : path}"/>`);
       expect(html, path).not.toMatch(/hreflang="zh/);
     }
@@ -95,7 +98,7 @@ test.describe("@viewport keyword pages", () => {
   test("printable page has real print sheets with answer keys", async ({ page }) => {
     await page.goto("/printable");
     await expect(page.getByTestId("print-sheet")).toHaveCount(4);
-    await expect(page.getByTestId("answer-key")).toHaveCount(3);
+    await expect(page.getByTestId("answer-key")).toHaveCount(4);
     await page.emulateMedia({ media: "print" });
     await expect(page.locator(".site-header")).toBeHidden();
     await expect(page.getByTestId("print-sheet").first()).toBeVisible();
