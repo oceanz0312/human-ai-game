@@ -60,6 +60,7 @@ export const QUICK_MODES = {
   kids: { key: "kids", theme: "everyday", grids: [3, 3, 4], changes: 5, limitS: 40, aiLevel: 1 },
   christmas: { key: "christmas", theme: "christmas", grids: [4, 5, 6], changes: 2, limitS: 20, aiLevel: 8 },
   halloween: { key: "halloween", theme: "halloween", grids: [4, 5, 6], changes: 2, limitS: 20, aiLevel: 8 },
+  thanksgiving: { key: "thanksgiving", theme: "thanksgiving", grids: [4, 5, 6], changes: 2, limitS: 20, aiLevel: 8 },
   game: { key: "game", theme: "everyday", grids: [5, 6, 7], changes: 2, limitS: 18, aiLevel: 12 },
   find: { key: "find", theme: "everyday", grids: [4, 6, 8], changes: 2, limitS: 22, aiLevel: 10 },
 } satisfies Record<string, QuickMode>;

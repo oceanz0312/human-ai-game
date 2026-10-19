@@ -8,7 +8,7 @@ import { pageMetadata } from "@/lib/page-meta";
 
 const PATH = "/printable";
 const TITLE = "Spot the Difference Printable – Free Sheets with Answers | Spot The Difference Game";
-const DESCRIPTION = "Free spot the difference printable sheets: four pages of pixel picture puzzles (easy, hard, Halloween and Christmas) with an answer key. Print or save as PDF.";
+const DESCRIPTION = "Free spot the difference printable sheets: five pages of pixel picture puzzles (easy, hard, Halloween, Thanksgiving and Christmas) with an answer key. Print or save as PDF.";
 
 export const generateMetadata = () => pageMetadata("en", PATH, { title: TITLE, description: DESCRIPTION });
 
@@ -16,7 +16,8 @@ const SHEETS: SheetSpec[] = [
   { id: "easy", title: "Sheet 1 · Easy (ages 4+)", theme: "everyday", grids: [3, 3, 4, 4], changes: 5 },
   { id: "classic", title: "Sheet 2 · Classic", theme: "everyday", grids: [5, 5, 6, 6], changes: 2 },
   { id: "halloween", title: "Sheet 3 · Halloween", theme: "halloween", grids: [4, 4, 5, 5], changes: 3 },
-  { id: "christmas", title: "Sheet 4 · Christmas", theme: "christmas", grids: [4, 4, 5, 5], changes: 3 },
+  { id: "thanksgiving", title: "Sheet 4 · Thanksgiving", theme: "thanksgiving", grids: [4, 4, 5, 5], changes: 3 },
+  { id: "christmas", title: "Sheet 5 · Christmas", theme: "christmas", grids: [4, 4, 5, 5], changes: 3 },
 ];
 
 const FAQ = [
@@ -34,7 +35,7 @@ export default function Page() {
         <section className="kw-hero kw-hero-print">
           <div className="kw-head">
             <h1 className="page-title kw-title">Spot the Difference Printable</h1>
-            <p className="kw-lede">Four free sheets – easy, classic, Halloween and Christmas – with an answer key. Print them or save as PDF.</p>
+            <p className="kw-lede">Five free sheets – easy, classic, Halloween, Thanksgiving and Christmas – with an answer key. Print them or save as PDF.</p>
             <div className="kw-cta">
               <PrintButton />
             </div>

@@ -14,7 +14,7 @@ test("sitemap is English only and never lists the hidden hub", () => {
   const entries = buildSitemap(staticSeoRoutes());
   expect(entries.every((e) => !e.url.includes("/zh"))).toBe(true);
   expect(entries.map((e) => e.url)).not.toContain(`${SITE_URL}/games`);
-  expect(entries.map((e) => e.url)).toEqual(expect.arrayContaining([SITE_URL, `${SITE_URL}/printable`, `${SITE_URL}/christmas`, `${SITE_URL}/halloween`, `${SITE_URL}/find-the-difference`]));
+  expect(entries.map((e) => e.url)).toEqual(expect.arrayContaining([SITE_URL, `${SITE_URL}/printable`, `${SITE_URL}/christmas`, `${SITE_URL}/halloween`, `${SITE_URL}/thanksgiving`, `${SITE_URL}/find-the-difference`]));
 });
 
 test("robots.txt disallows only the hub itself (end-anchored), keeping /games/<slug>/* crawlable", () => {
