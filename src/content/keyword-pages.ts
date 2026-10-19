@@ -7,10 +7,18 @@ import { SKINS } from "@/config/skins";
  * English keyword pages (one search term = one page, SEO plan 2026-10-18). Every page carries its own copy;
  * nothing here is shared between pages except the FAQ item that must appear site-wide on the home page.
  */
+/** A list item is plain text, or text with one inline keyword-anchored link (before + link + after). */
+export type KeywordListItem = string | { before?: string; link: { href: string; label: string }; after?: string };
 export interface KeywordSection {
   h2: string;
   paragraphs?: string[];
-  list?: string[];
+  list?: KeywordListItem[];
+}
+/** FAQ item; `link` renders under the answer (the FAQPage JSON-LD keeps the plain answer text). */
+export interface KeywordFaq {
+  q: string;
+  a: string;
+  link?: { href: string; label: string };
 }
 export interface KeywordPageContent {
   path: string;
@@ -21,7 +29,7 @@ export interface KeywordPageContent {
   lede: string;
   board: { mode: QuickModeKey; seed: string; label: string; /** Start button on the board; themed only when the board really is that theme. */ start?: string };
   sections: KeywordSection[];
-  faq: { q: string; a: string }[];
+  faq: KeywordFaq[];
   links: { href: string; label: string }[];
   /** Short name for nav/footer/breadcrumbs. */
   nav: string;
@@ -57,8 +65,8 @@ export const SEASONAL_CARDS: Record<string, ThemeCard> = {
   "/halloween": { href: "/halloween", label: "Halloween spot the difference", blurb: "Pumpkins, ghosts, bats and black cats." },
   "/thanksgiving": { href: "/thanksgiving", label: "Thanksgiving spot the difference", blurb: "Turkeys, pies, corn and fall leaves." },
   "/christmas": { href: "/christmas", label: "Christmas spot the difference", blurb: "Trees, gifts, bells and snowmen." },
-  // Not built yet; these show automatically once the route is added to KEYWORD_PAGES (copy to be reviewed then).
   "/winter": { href: "/winter", label: "Winter spot the difference", blurb: "Snowflakes, polar bears, mittens and cocoa." },
+  // Not built yet; these show automatically once the route is added to KEYWORD_PAGES (copy to be reviewed then).
   "/spring": { href: "/spring", label: "Spring spot the difference", blurb: "Flowers, eggs, shamrocks and rain." },
   "/summer": { href: "/summer", label: "Summer spot the difference", blurb: "Suns, beach balls, ice pops and fireworks." },
   "/fall": { href: "/fall", label: "Fall spot the difference", blurb: "Leaves, acorns, apples and scarecrows." },
@@ -123,6 +131,12 @@ const AI_FAQ_THANKSGIVING = {
   a: `Yes. The Thanksgiving set races Luna AI on holiday sprites – turkeys, pies, corn and fall leaves – with the same rules as every other puzzle here. ${AI_FAQ_CORE}`,
 };
 
+/** Winter page: same race, winter sprites (no Christmas pictures). */
+const AI_FAQ_WINTER = {
+  q: "Can I race the AI on winter spot the difference?",
+  a: `Yes. The winter set races Luna AI on winter sprites – snowflakes, mittens, penguins and polar bears – with the same rules as every other puzzle here. ${AI_FAQ_CORE}`,
+};
+
 /** Pictures page: gallery sprites in a live race. */
 const AI_FAQ_PICTURES = {
   q: "Can I play against AI with these spot the difference pictures?",
@@ -141,6 +155,7 @@ const L = {
   christmas: { href: "/christmas", label: "Christmas spot the difference" },
   halloween: { href: "/halloween", label: "Halloween spot the difference" },
   thanksgiving: { href: "/thanksgiving", label: "Thanksgiving spot the difference" },
+  winter: { href: "/winter", label: "Winter spot the difference" },
   how: { href: "/how-to-play", label: "How to play" },
   vs: { href: "/human-vs-ai", label: "Human vs AI mode" },
 };
@@ -358,7 +373,8 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
       { q: "Are there printable Christmas puzzles?", a: "Yes – the printable page includes a Christmas sheet with an answer key." },
       AI_FAQ_CHRISTMAS,
     ],
-    links: [L.printable, L.kids, L.home, L.pictures],
+    // Seasonal ring (holiday-calendar.md): every holiday/season page links the others.
+    links: [L.printable, L.winter, L.thanksgiving, L.halloween, L.kids, L.home, L.pictures],
   },
   /** Halloween (holiday-pages-plan.md, ★ copy per 哥飞 review 2026-10-19: title and H1 both "Spot"). */
   "/halloween": {
@@ -402,7 +418,7 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
       AI_FAQ_HALLOWEEN,
       { q: "Can I play after Halloween?", a: "Yes, this page stays up all year." },
     ],
-    links: [{ href: "/printable", label: "Halloween printable spot the difference" }, L.thanksgiving, L.kids, L.home],
+    links: [{ href: "/printable", label: "Halloween printable spot the difference" }, L.thanksgiving, L.christmas, L.winter, L.kids, L.home],
   },
   /** Thanksgiving (holiday-pages-plan.md, ★ copy per 哥飞 review 2026-10-19: title and H1 both "Spot"). */
   "/thanksgiving": {
@@ -441,7 +457,54 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
       AI_FAQ_THANKSGIVING,
       { q: "Can I play after Thanksgiving?", a: "Yes, this page stays up all year." },
     ],
-    links: [{ href: "/printable", label: "Thanksgiving printable spot the difference" }, L.halloween, L.kids, L.home],
+    links: [{ href: "/printable", label: "Thanksgiving printable spot the difference" }, L.halloween, L.christmas, L.winter, L.kids, L.home],
+  },
+  /**
+   * Winter (winter-page-plan.md; 哥飞-reviewed copy, winter-printable-copy-final.md). Targets winter / New Year /
+   * Valentine's; no Santa, tree or gift wording except the boundary FAQ that points to /christmas.
+   */
+  "/winter": {
+    path: "/winter",
+    keyword: "winter spot the difference",
+    nav: "Winter",
+    title: "Winter Spot the Difference – Free Puzzle vs AI",
+    description: "Winter spot the difference with snowflakes, mittens, hot cocoa and polar bears. Find the odd picture before Luna AI does. Free, no signup.",
+    h1: "Winter Spot the Difference",
+    lede: "Winter spot the difference with snowflakes, mittens and hot cocoa — one of them isn't quite right.",
+    board: { mode: "winter", seed: "winter-v1", label: "Winter spot the difference puzzle", start: "Tap to play a Winter round" },
+    sections: [
+      {
+        h2: "A cozy winter set",
+        paragraphs: [
+          "Eight winter sprites: a snowflake, a mitten, a mug of hot cocoa, a knit hat, an ice skate, a sled, a penguin and a polar bear. Each round fills a 4×4, 5×5 or 6×6 grid with copies of one sprite, and exactly one copy has two pixels changed. Spot it and tap it before Luna AI — the simulated opponent — finds it first.",
+          "Look for a snowflake missing one arm, a mitten with a cuff in the wrong color or a mug with one less marshmallow. Pale sprites hide changes well against a light board, so check the edges first.",
+        ],
+      },
+      {
+        h2: "New Year spot the difference",
+        paragraphs: ["Ring in the new year with a quick race: play three rounds before midnight and see who wins more, you or the AI. The puzzles use the same winter set, so you can keep playing well into January."],
+      },
+      {
+        h2: "Valentine's Day spot the difference",
+        paragraphs: ["A short, sweet puzzle break for February. Pass the phone to a friend or your valentine and see who finds the odd picture faster — loser picks the next movie."],
+      },
+      {
+        h2: "Snow day ideas",
+        list: [
+          "Play while school is closed for snow.",
+          { before: "Print the ", link: { href: "/printable#winter", label: "winter spot the difference printable" }, after: " for indoor recess." },
+          "Beat the AI three times in a row.",
+        ],
+      },
+    ],
+    faq: [
+      { q: "Is it free?", a: "Yes. It runs in your browser with no download or signup." },
+      AI_FAQ_WINTER,
+      { q: "Is there a winter spot the difference printable?", a: "Yes. The printable page has a winter sheet with an answer key — print it or save it as a PDF.", link: { href: "/printable#winter", label: "Winter spot the difference printable" } },
+      { q: "Is this different from the Christmas page?", a: "Yes. The Christmas page has trees, gifts and snowmen. This winter set skips the Christmas pictures, so it works all season, from December through February.", link: { href: "/christmas", label: "Christmas spot the difference" } },
+      { q: "Can I play after winter?", a: "Yes, this page stays up all year." },
+    ],
+    links: [{ href: "/printable#winter", label: "Winter spot the difference printable" }, L.christmas, L.thanksgiving, L.halloween, L.kids, L.home],
   },
   "/pictures": {
     path: "/pictures",

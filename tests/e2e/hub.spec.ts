@@ -2,9 +2,9 @@ import { expect, test } from "@playwright/test";
 import { assertNoHorizontalOverflow } from "./helpers";
 import { START } from "./t";
 
-const KEYWORD_PAGES = ["/", "/spot-the-difference-game", "/find-the-difference", "/easy", "/hard", "/for-kids", "/christmas", "/halloween", "/thanksgiving", "/pictures", "/printable", "/how-to-play", "/human-vs-ai", "/faq", "/about", "/privacy", "/terms"];
+const KEYWORD_PAGES = ["/", "/spot-the-difference-game", "/find-the-difference", "/easy", "/hard", "/for-kids", "/christmas", "/halloween", "/thanksgiving", "/winter", "/pictures", "/printable", "/how-to-play", "/human-vs-ai", "/faq", "/about", "/privacy", "/terms"];
 
-const HOLIDAY_TITLES_WITHOUT_BRAND = ["/halloween", "/thanksgiving"];
+const HOLIDAY_TITLES_WITHOUT_BRAND = ["/halloween", "/thanksgiving", "/winter"];
 
 const jsonLd = (html: string) =>
   [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].flatMap((match) => ([] as Record<string, unknown>[]).concat(JSON.parse(match[1])));
@@ -32,7 +32,7 @@ test.describe("hidden platform hub (/games)", () => {
     const xml = await (await request.get("/sitemap.xml")).text();
     expect(xml).not.toMatch(/<loc>[^<]*\/games<\/loc>/);
     expect(xml).not.toContain("/zh");
-    for (const path of ["", "/printable", "/christmas", "/halloween", "/thanksgiving", "/find-the-difference", "/spot-the-difference-game"]) expect(xml).toContain(`<loc>https://spotthedifferencegame.com${path}</loc>`);
+    for (const path of ["", "/printable", "/christmas", "/halloween", "/thanksgiving", "/winter", "/find-the-difference", "/spot-the-difference-game"]) expect(xml).toContain(`<loc>https://spotthedifferencegame.com${path}</loc>`);
   });
 
   test("no crawlable internal link points to the hub from any public page", async ({ request }) => {
@@ -97,8 +97,8 @@ test.describe("@viewport keyword pages", () => {
 
   test("printable page has real print sheets with answer keys", async ({ page }) => {
     await page.goto("/printable");
-    await expect(page.getByTestId("print-sheet")).toHaveCount(5);
-    await expect(page.getByTestId("answer-key")).toHaveCount(5);
+    await expect(page.getByTestId("print-sheet")).toHaveCount(6);
+    await expect(page.getByTestId("answer-key")).toHaveCount(6);
     await page.emulateMedia({ media: "print" });
     await expect(page.locator(".site-header")).toBeHidden();
     await expect(page.getByTestId("print-sheet").first()).toBeVisible();

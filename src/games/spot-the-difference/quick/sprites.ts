@@ -64,17 +64,31 @@ export const THANKSGIVING: Sprite[] = [
 ];
 
 /**
+ * Winter set (seasonal, not Christmas: no tree, gift or snowman – the snowman stays in CHRISTMAS). Same contrast
+ * rules as the other holiday sets: pale colors (polar bear, belly, cuff) stay visibly darker than the white cell.
+ */
+export const WINTER: Sprite[] = [
+  s("snowflake", "snowflake", { b: "#3a8fd9", l: "#8cc4f0" }, ["b..b..b.", ".b.b.b..", "..lbl...", "bbbbbbb.", "..lbl...", ".b.b.b..", "b..b..b.", "........"]),
+  s("mitten", "mitten", { r: "#e5403a", c: "#a9b4c8" }, ["...rrr..", "..rrrrr.", "r.rrrrr.", "rrrrrrr.", "rrrrrrr.", ".rrrrrr.", ".cccccc.", ".cccccc."]),
+  s("hot-cocoa", "mug of hot cocoa", { m: "#3a7bff", p: "#f2b8c6", d: "#6b3d1f", s: "#a9b4c8" }, ["..s..s..", ".s..s...", "mmmmmm..", "mpdpdmmm", "mddddm.m", "mmmmmmmm", ".mmmmm..", "..mmm..."]),
+  s("knit-hat", "knit hat", { r: "#e5403a", y: "#ffd447", p: "#a9b4c8" }, ["...pp...", "..pppp..", "..rrrr..", ".rrrrrr.", ".yyyyyy.", "rrrrrrrr", "ryryryry", "rrrrrrrr"]),
+  s("ice-skate", "ice skate", { b: "#7b4fc9", y: "#ffd447", s: "#5a6080" }, [".bb.....", ".bb.....", ".byb....", ".bbyb...", ".bbbbbb.", ".bbbbbbb", "..s..s..", "ssssssss"]),
+  s("sled", "sled", { r: "#e5403a", w: "#c98a3a", k: "#5a6080" }, ["........", "k.......", ".k......", "..rrrrrr", "..wwwwww", "..k...k.", ".kkkkkkk", "........"]),
+  s("penguin", "penguin", { k: "#1d2440", w: "#b8c7d9", o: "#f39c34" }, ["..kkkk..", ".kwkkwk.", ".kkookk.", "kkwwwwkk", "kkwwwwkk", "kkwwwwkk", ".kwwwwk.", "..o..o.."]),
+  s("polar-bear", "polar bear", { p: "#b8c7d9", n: "#7d86b3", k: "#1d2440" }, [".pp..pp.", "pppppppp", "pkppppkp", "pppppppp", "ppnkknpp", ".ppnnpp.", "..pppp..", "........"]),
+];
+
+/**
  * Seasonal skin marks (home header decoration only, src/config/skins.ts). Not part of any puzzle set, so they never
  * change a board, a printable or the simulated AI.
  */
-export const SKIN_SPRITES: Record<"snowflake" | "shamrock" | "egg" | "sun" | "firework", Sprite> = {
-  snowflake: s("snowflake", "snowflake", { b: "#3a9be0", l: "#9fd4ff" }, ["...b....", ".b.b.b..", "..bbb...", "bbblbbb.", "..bbb...", ".b.b.b..", "...b....", "........"]),
+export const SKIN_SPRITES: Record<"shamrock" | "egg" | "sun" | "firework", Sprite> = {
   shamrock: s("shamrock", "shamrock", { g: "#3aa655", d: "#1f7a3a" }, [".gg.gg..", "gggggg..", "gggggg..", ".gggg...", "gggggg..", "ggddgg..", "...d....", "..d....."]),
   egg: s("egg", "Easter egg", { p: "#b48cf0", y: "#ffd447", b: "#3ab0ff" }, ["...pp...", "..pppp..", ".pppppp.", ".yyyyyy.", "pppppppp", "bbbbbbbb", ".pppppp.", "..pppp.."]),
   sun: s("sun", "sun", { y: "#ffcf3f", o: "#f39c34" }, ["y..y...y", ".y.y..y.", "...oo...", "yyooooyy", "yyooooyy", "...oo...", ".y..y.y.", "y...y..y"]),
   firework: s("firework", "firework", { r: "#e5403a", b: "#3a7bff" }, ["r..b..r.", ".r.b.r..", "..rbr...", "bbb.bbb.", "..rbr...", ".r.b.r..", "r..b..r.", "........"]),
 };
 
-export type QuickTheme = "everyday" | "christmas" | "halloween" | "thanksgiving";
-const SETS: Record<QuickTheme, Sprite[]> = { everyday: EVERYDAY, christmas: CHRISTMAS, halloween: HALLOWEEN, thanksgiving: THANKSGIVING };
+export type QuickTheme = "everyday" | "christmas" | "halloween" | "thanksgiving" | "winter";
+const SETS: Record<QuickTheme, Sprite[]> = { everyday: EVERYDAY, christmas: CHRISTMAS, halloween: HALLOWEEN, thanksgiving: THANKSGIVING, winter: WINTER };
 export const spritesFor = (theme: QuickTheme) => SETS[theme];
