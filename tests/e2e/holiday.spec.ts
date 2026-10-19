@@ -5,12 +5,14 @@ import { seasonalCard } from "../../src/content/keyword-pages";
 const ld = (html: string) =>
   [...html.matchAll(/<script type="application\/ld\+json">([\s\S]*?)<\/script>/g)].flatMap((m) => [JSON.parse(m[1])].flat()) as Record<string, unknown>[];
 
-test("/halloween: find-variant title, spot-variant H1, indexable, VideoGame + FAQPage + BreadcrumbList", async ({ request }) => {
+test("/halloween: 哥飞-reviewed title/H1 (both \"Spot\"), indexable, VideoGame + FAQPage + BreadcrumbList", async ({ request }) => {
   const res = await request.get("/halloween");
   expect(res.status()).toBe(200);
   expect(res.headers()["x-robots-tag"]).toBeUndefined();
   const html = await res.text();
-  expect(html).toContain("<title>Halloween Find the Difference – Free Spot the Difference Puzzles | Spot The Difference Game</title>");
+  expect(html).toMatch(/<title>Halloween Spot the Difference – Free Puzzle vs AI( \| Spot The Difference Game)?<\/title>/);
+  const visible = html.replace(/<script[\s\S]*?<\/script>/g, "");
+  expect(visible.match(/Halloween find the difference/gi), "find variant once, naturally").toHaveLength(1);
   expect(html).toMatch(/<h1[^>]*>Halloween Spot the Difference<\/h1>/);
   expect(html).not.toMatch(/<meta name="robots" content="noindex/);
   const types = ld(html).map((d) => [d["@type"]].flat().join("+"));
@@ -39,10 +41,12 @@ test("/halloween: a full 3-puzzle match on Halloween sprites, no auto-advance be
   await expect(page.getByTestId("quick-done")).toBeVisible();
 });
 
-test("/halloween is linked from the footer, the printable page has a Halloween sheet, Christmas links back", async ({ page }) => {
-  await page.goto("/christmas");
+test("/halloween is linked from the footer, links /printable exactly once, and the printable page has a Halloween sheet", async ({ page }) => {
+  await page.goto("/halloween");
   await expect(page.locator('footer a[href="/halloween"]')).toHaveText("Halloween puzzles");
-  await expect(page.locator('.info-links a[href="/halloween"]')).toHaveCount(1);
+  const printable = page.locator('.kw-page a[href="/printable"]');
+  await expect(printable).toHaveCount(1);
+  await expect(printable).toHaveText(/^Halloween printable spot the difference/);
   await page.goto("/printable");
   await expect(page.getByRole("heading", { name: "Sheet 3 · Halloween" })).toBeVisible();
 });

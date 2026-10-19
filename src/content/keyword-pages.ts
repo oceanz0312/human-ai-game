@@ -340,24 +340,31 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
       { q: "Are there printable Christmas puzzles?", a: "Yes – the printable page includes a Christmas sheet with an answer key." },
       AI_FAQ_CHRISTMAS,
     ],
-    links: [L.printable, L.halloween, L.kids, L.home, L.pictures],
+    links: [L.printable, L.kids, L.home, L.pictures],
   },
-  /** Halloween (holiday-pages-plan.md). Title leads with "find the difference" (US KD 27.6 vs 50.1); H1 keeps "spot". */
+  /** Halloween (holiday-pages-plan.md, ★ copy per 哥飞 review 2026-10-19: title and H1 both "Spot"). */
   "/halloween": {
     path: "/halloween",
-    keyword: "halloween find the difference",
+    keyword: "halloween spot the difference",
     nav: "Halloween",
-    title: "Halloween Find the Difference – Free Spot the Difference Puzzles | Spot The Difference Game",
-    description: "Halloween find the difference: pumpkins, ghosts, bats and black cats – spot the one picture that's different and race the AI. Free, no signup.",
+    title: "Halloween Spot the Difference – Free Puzzle vs AI",
+    description: "Pumpkins, ghosts, bats and black cats. Find the one picture that's different before Luna AI does. Free, no signup, in your browser.",
     h1: "Halloween Spot the Difference",
-    lede: "Pumpkins, ghosts, bats and witch hats. One of them is a little off.",
+    lede: "Halloween spot the difference with pumpkins, ghosts, bats and witch hats — one of them is a little off.",
     board: { mode: "halloween", seed: "halloween-v1", label: "Halloween spot the difference puzzle", start: "Tap to play a Halloween round" },
     sections: [
       {
         h2: "A spooky (but not scary) set",
         paragraphs: [
-          "This Halloween set uses eight pixel pictures: a jack-o'-lantern, a ghost, a bat, a witch hat, a black cat, candy corn, a spider and a cauldron. Each round fills a 4×4, 5×5 or 6×6 grid with copies of one picture, and exactly one copy has two pixels changed. Find it and tap it before Luna AI, the game's simulated opponent, does.",
+          "Eight Halloween sprites: a jack-o'-lantern, a ghost, a bat, a witch hat, a black cat, candy corn, a spider and a cauldron. Each round fills a 4×4, 5×5 or 6×6 grid with copies of one sprite, and exactly one copy has two pixels changed. Spot it and tap it before Luna AI — the simulated opponent — finds it first.",
           "Watch for a pumpkin with a different grin, a bat missing a wing pixel or a candy corn with its colors swapped.",
+        ],
+      },
+      {
+        h2: "How Halloween spot the difference plays differently here",
+        paragraphs: [
+          // Quick-mode pacing (QUICK_AI.modes.halloween) shortens the AI's median time each round: "every round" is literal.
+          "Most spot the difference games put two pictures side by side. This one fills a whole grid with the same sprite and changes two pixels on one copy — so you're scanning, not comparing. It's harder than it sounds, and Luna AI gets faster every round.",
         ],
       },
       {
@@ -371,13 +378,13 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
       },
     ],
     faq: [
-      { q: "Is this Halloween game scary?", a: "No. The pictures are cute 8×8 pixel art – no gore and no jump scares." },
+      { q: "Is this Halloween find the difference game scary?", a: "No. The pixel-art sprites are cute 8×8 pictures – no gore and no jump scares." },
       { q: "Is it free?", a: "Yes. It runs in your browser with no download or signup." },
       { q: "Are there printable Halloween puzzles?", a: "Yes – the printable page includes a Halloween sheet with an answer key." },
       AI_FAQ_HALLOWEEN,
       { q: "Can I play after Halloween?", a: "Yes, this page stays up all year." },
     ],
-    links: [L.christmas, L.printable, L.kids, L.home],
+    links: [{ href: "/printable", label: "Halloween printable spot the difference" }, L.kids, L.home],
   },
   "/pictures": {
     path: "/pictures",
