@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { HOME_START } from "./t";
+import { themeCards } from "../../src/content/keyword-pages";
 
 type Beacon = { name: string; metadata?: Record<string, unknown> };
 
