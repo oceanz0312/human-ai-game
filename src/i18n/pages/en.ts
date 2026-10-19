@@ -81,7 +81,7 @@ const en = {
       "faq": [
         {
           "q": "Is the opponent really an AI?",
-          "a": "Luna AI is an in-game simulated opponent tuned like a fast vision model: it eases in on the first levels, then often answers in under a second. It is not a live language model, and it never sees your data."
+          "a": "Luna AI is a simulated in-game opponent, not a live language model, and it never sees your data. It starts slow on the first levels, gets faster as the grids grow, and from level 15 it answers in about half a second and wins most rounds."
         },
         {
           "q": "Do I need to sign up or pay?",
@@ -172,7 +172,7 @@ const en = {
       h1: "FAQ",
       intro: "Short answers to common questions.",
       items: [
-        { q: "Is the AI a real language model?", a: "No. Luna AI is an in-game simulated opponent, so no picture ever leaves the game. It warms up on the first levels, then answers in well under a second, like a fast vision model. You race the same clock: beat it by being quicker, or by catching the levels it gets wrong." },
+        { q: "Is the AI a real language model?", a: "No. Luna AI is a simulated in-game opponent, so no picture ever leaves the game. It starts slow on the first levels, gets faster as the grids grow, and from level 15 it answers in about half a second and wins most rounds. You race the same clock: beat it by being quicker, or by catching the levels it gets wrong." },
         { q: "Can I play spot the difference against AI?", a: "Yes. Every level is a race against Luna AI, our in-game simulated opponent. You both get the same picture at the same moment; tap the odd cell before it does." },
         { q: "Is it free?", a: "Yes, free with no signup. It runs in your phone or desktop browser. Everyone gets 3 runs a day; they come back at 00:00 UTC." },
         { q: "How does ranking work?", a: "By the highest level reached; ties share a rank." },

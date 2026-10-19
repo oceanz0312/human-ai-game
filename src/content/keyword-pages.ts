@@ -246,7 +246,7 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
         h2: "What makes it hard",
         paragraphs: [
           "Only one pixel of an 8×8 sprite changes – sometimes a colour swap, sometimes a pixel added or removed at the edge. The grids run 6×6, 7×7 and 8×8, and the AI here plays at its level-16 strength.",
-          "Expect to lose a few rounds. The AI is quick on hard grids but not perfect: around a third of its answers on the biggest boards are wrong, so a careful sweep can still beat it.",
+          "Expect to lose some rounds. Luna AI starts slow on the 6×6 grid and gets faster as the grids grow – from about 2.5 seconds to about 1.6 seconds on the 8×8 – and it gets roughly nine in ten right. Beat it by being quicker, or by catching the round it gets wrong.",
         ],
       },
       { h2: "Strategy for one-pixel differences", list: ["Split the grid into quarters and clear one at a time.", "Focus on the sprite's outline – edge changes are the hardest to see.", "Trust your first strong hunch; the clock is short."] },
