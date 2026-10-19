@@ -1,6 +1,11 @@
 import { expect, test, type Page } from "@playwright/test";
 import { HOME_START } from "./t";
 import { themeCards } from "../../src/content/keyword-pages";
+import { parseSkinDate, skinForDay } from "../../src/config/skin-calendar";
+import { E2E_SKIN_DATE } from "./skin-date";
+
+const d = parseSkinDate(E2E_SKIN_DATE)!;
+const E2E_SKIN = skinForDay(d.year, d.month, d.day);
 
 type Beacon = { name: string; metadata?: Record<string, unknown> };
 
@@ -85,8 +90,8 @@ test.describe("@viewport home hero v2", () => {
     await page.goto("/");
     const more = page.getByTestId("kw-more").getByRole("link", { name: "spot the difference game", exact: true });
     await expect(more).toHaveAttribute("href", "/spot-the-difference-game");
-    // Five evergreen cards, plus one seasonal holiday card first while its window is open (prerendered at build).
-    await expect(page.getByTestId("kw-themes").getByRole("link")).toHaveCount(themeCards().length);
+    // Five evergreen cards, plus the seasonal card first while its skin is on (picked per request by NY date).
+    await expect(page.getByTestId("kw-themes").getByRole("link")).toHaveCount(themeCards(E2E_SKIN).length);
     for (const href of ["/easy", "/hard", "/for-kids", "/christmas", "/pictures"]) await expect(page.locator(`.kw-themes a[href="${href}"]`)).toHaveCount(1);
     await expect(page.locator(".site-header .nav-cta")).toHaveCount(0);
     await expect(page.locator(".site-header a.nav-levels")).toHaveAttribute("href", "/spot-the-difference-game");

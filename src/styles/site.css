@@ -1184,3 +1184,14 @@
   .kw-hero:not(.kw-hero-demo) .kw-title { font-size: 20px; }
   .kw-hero:not(.kw-hero-demo) .kw-lede { font-size: 13px; line-height: 1.35; }
 }
+
+/* Seasonal skin (proposals/seasonal-skin-plan.md): accent only, no layout change (inset shadows, absolute mark). */
+.skin .site-header { box-shadow: inset 0 -4px 0 var(--skin-accent); }
+.skin .site-footer { box-shadow: inset 0 4px 0 var(--skin-accent); }
+.skin .kw-head { position: relative; }
+.skin-mark { position: absolute; top: 0; right: 0; display: flex; gap: 4px; pointer-events: none; }
+.skin-mark svg { width: 20px; height: 20px; }
+@media (min-width: 900px) { .skin-mark svg { width: 28px; height: 28px; } }
+.kw-theme-seasonal { box-shadow: inset 6px 0 0 var(--skin-accent), var(--sh); padding-left: 18px; }
+body[data-skin] .game-topbar { box-shadow: inset 0 -4px 0 var(--skin-accent); }
+@media print { .skin-mark { display: none !important; } }

@@ -1,4 +1,6 @@
 import { defineConfig } from "@playwright/test";
+// Seasonal home skin: fixed date for a deterministic suite; single tests override it with ?skinDate= / ?skin=.
+import { E2E_SKIN_DATE } from "./tests/e2e/skin-date";
 
 const PORT = Number(process.env.E2E_PORT ?? 3100);
 const mobile = (width: number, height: number) => ({
@@ -47,6 +49,8 @@ export default defineConfig({
       RESULT_SIGNING_SECRET: "e2e-signing-secret-0123456789abcdef",
       PUBLIC_BASE_URL: `http://127.0.0.1:${PORT}`,
       PLAY_LIMIT_BYPASS_SECRET: E2E_BYPASS,
+      SKIN_DATE: E2E_SKIN_DATE,
+      SKIN_OVERRIDE_ENABLED: "1",
     },
   },
 });

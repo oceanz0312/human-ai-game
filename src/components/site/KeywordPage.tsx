@@ -5,9 +5,16 @@ import { StartButton } from "@/components/StartButton";
 import { breadcrumbLd, faqLd, JsonLd, organizationLd, videoGameLd, websiteLd } from "@/seo/jsonld";
 import { SiteShell } from "./SiteShell";
 import { AdSlot } from "./AdSlot";
+import type { SkinId } from "@/config/skin-calendar";
+import { SKINS } from "@/config/skins";
+import { PixelSprite } from "@/games/spot-the-difference/quick/PixelSprite";
 
 /** One keyword page: H1 + playable board in the first screen, then the page's own copy, FAQ and related links. */
-export function KeywordPage({ page, children }: { page: KeywordPageContent; children?: React.ReactNode }) {
+/**
+ * `skin` (home only, src/middleware.ts picks it per request): accent color + a decorative sprite mark + the seasonal
+ * card first. It never changes the title, H1, lede, body copy, FAQ or JSON-LD.
+ */
+export function KeywordPage({ page, children, skin }: { page: KeywordPageContent; children?: React.ReactNode; skin?: SkinId | null }) {
   const isHome = page.path === "/";
   const ld = [
     videoGameLd(page.path, page.h1, page.description),
@@ -26,11 +33,18 @@ export function KeywordPage({ page, children }: { page: KeywordPageContent; chil
     </div>
   );
   return (
-    <SiteShell locale="en" path={page.path}>
+    <SiteShell locale="en" path={page.path} skin={skin}>
       <JsonLd data={ld} />
       <div className="container kw-page">
         <section className={`kw-hero${demo ? " kw-hero-demo" : ""}`} data-testid="kw-hero">
           <div className="kw-head">
+            {skin ? (
+              <span className="skin-mark" aria-hidden data-testid="skin-mark">
+                {SKINS[skin].marks.map((sprite) => (
+                  <PixelSprite key={sprite.id} sprite={sprite} />
+                ))}
+              </span>
+            ) : null}
             <h1 className="page-title kw-title">{page.h1}</h1>
             <p className="kw-lede">{page.lede}</p>
           </div>
@@ -45,8 +59,8 @@ export function KeywordPage({ page, children }: { page: KeywordPageContent; chil
               Looking for the full game with all 20 levels? → <Link href="/spot-the-difference-game">spot the difference game</Link>
             </p>
             <nav className="kw-themes" aria-label="Spot the difference themes" data-testid="kw-themes">
-              {themeCards().map((card) => (
-                <Link key={card.href} className="card kw-theme" href={card.href}>
+              {themeCards(skin).map((card, i) => (
+                <Link key={card.href} className={`card kw-theme${skin && i === 0 && card.href === SKINS[skin].page ? " kw-theme-seasonal" : ""}`} href={card.href}>
                   <strong>{card.label}</strong>
                   <span>{card.blurb}</span>
                 </Link>
