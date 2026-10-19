@@ -56,4 +56,36 @@ test("home seasonal card follows the date window", async ({ page }) => {
   const card = page.locator('.kw-themes a[href="/halloween"]');
   // Pages are prerendered at build time: assert against the build day's window (same UTC day in CI).
   await expect(card).toHaveCount(seasonalCard()?.href === "/halloween" ? 1 : 0);
+  await expect(page.locator('.kw-themes a[href="/thanksgiving"]')).toHaveCount(seasonalCard()?.href === "/thanksgiving" ? 1 : 0);
+});
+
+test("/thanksgiving: 哥飞-reviewed title/H1, indexable, find variant once, one /printable link, full match", async ({ page, request }) => {
+  const res = await request.get("/thanksgiving");
+  expect(res.status()).toBe(200);
+  const html = await res.text();
+  expect(html).toMatch(/<title>Thanksgiving Spot the Difference – Free Puzzle vs AI<\/title>/);
+  expect(html).toMatch(/<h1[^>]*>Thanksgiving Spot the Difference<\/h1>/);
+  expect(html).not.toMatch(/<meta name="robots" content="noindex/);
+  const visible = html.replace(/<script[\s\S]*?<\/script>/g, "");
+  expect(visible.match(/Thanksgiving find the difference/gi)).toHaveLength(1);
+  expect(visible).toContain("simulated opponent");
+  expect(visible).not.toMatch(/\b(best|#1|colour|favourite)\b/i);
+  const types = ld(html).map((d) => [d["@type"]].flat().join("+"));
+  expect(types).toEqual(expect.arrayContaining(["VideoGame", "FAQPage", "BreadcrumbList"]));
+
+  await page.goto("/thanksgiving");
+  await expect(page.locator('footer a[href="/thanksgiving"]')).toHaveText("Thanksgiving puzzles");
+  await expect(page.locator('.kw-page a[href="/printable"]')).toHaveText(/^Thanksgiving printable spot the difference/);
+  const board = page.getByTestId("quick-board");
+  await expect(board.locator("symbol").first()).toHaveAttribute("id", /-(turkey|pumpkin-pie|corn|acorn|maple-leaf|football|cornucopia|gourd)(-odd)?$/);
+  await page.getByTestId("quick-start").click();
+  for (let round = 0; round < 3; round++) {
+    await expect(board).toHaveAttribute("data-phase", "playing");
+    await board.locator('.quick-cell:has(use[href$="-odd"])').click();
+    await expect(page.getByTestId("quick-result")).toHaveText(/You win!|AI wins|No winner/);
+    await page.getByTestId("quick-next").click();
+  }
+  await expect(page.getByTestId("quick-done")).toBeVisible();
+  await page.goto("/printable");
+  await expect(page.getByRole("heading", { name: "Sheet 4 · Thanksgiving" })).toBeVisible();
 });

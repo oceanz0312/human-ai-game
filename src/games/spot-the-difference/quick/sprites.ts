@@ -51,6 +51,18 @@ export const HALLOWEEN: Sprite[] = [
   s("cauldron", "cauldron", { e: "#8be04e", k: "#1d2440", s: "#5a6080", o: "#f39c34", y: "#ffd447" }, ["..e...e.", ".eeeeee.", "kkkkkkkk", "kskkkkkk", "kskkkkkk", ".kkkkkk.", "..k..k..", ".oyoyoo."]),
 ];
 
-export type QuickTheme = "everyday" | "christmas" | "halloween";
-const SETS: Record<QuickTheme, Sprite[]> = { everyday: EVERYDAY, christmas: CHRISTMAS, halloween: HALLOWEEN };
+/** Thanksgiving set (US harvest + football). Same contrast rules as the Halloween set. */
+export const THANKSGIVING: Sprite[] = [
+  s("turkey", "turkey", { r: "#e5403a", o: "#f39c34", y: "#ffcf3f", b: "#8a5a32", k: "#1d2440" }, ["..oyyo..", ".royyor.", "roybbyor", "robkbbor", "robbybor", ".bbrbbb.", "..bbbb..", "..o..o.."]),
+  s("pumpkin-pie", "pumpkin pie", { c: "#d9a35a", f: "#c4621d", w: "#ead29c" }, ["..cccc..", ".cffffc.", "cffffffc", "cffwwffc", "cffwwffc", "cffffffc", ".cffffc.", "..cccc.."]),
+  s("corn", "ear of corn", { y: "#ffd447", d: "#d99a1e", g: "#3aa655", h: "#8bd16a" }, ["...yy...", "..ydyy..", "..yydy..", "..ydyy..", "g.yydy.g", "ggydyygg", ".ghyyhg.", "..gggg.."]),
+  s("acorn", "acorn", { b: "#6b3d1f", t: "#a0703f", n: "#c98a3a", h: "#e8b56a" }, ["....b...", ".bbbbbb.", "btbtbtbb", ".bbbbbb.", ".nnnnnn.", ".nhnnnn.", "..nnnn..", "...nn..."]),
+  s("maple-leaf", "maple leaf", { r: "#e5403a", o: "#f39c34", b: "#6b3d1f" }, ["...r....", "r.rrr.r.", "rrrorrr.", ".rrorr..", "rrrorrr.", "..ror...", "...b....", "...b...."]),
+  s("football", "football", { b: "#8a4b25", l: "#d8cbb0", k: "#5a2e14" }, ["........", "..bbbb..", ".bblblb.", "kbllllbk", ".bblblb.", "..bbbb..", "........", "........"]),
+  s("cornucopia", "cornucopia", { h: "#c98a3a", d: "#8a5a32", r: "#e5403a", p: "#7b4fc9", g: "#3aa655" }, ["........", "....hhpp", "...hdhpp", "..hdhhrg", ".hdhhhrr", "hdhhhhgg", "h.dhhh..", "........"]),
+  s("gourd", "gourd", { n: "#e9a54a", d: "#b8742a", g: "#3aa655" }, ["...g....", "...nn...", "...nn...", "..nnnn..", ".nnnnnn.", ".nndnnn.", ".nnnnnn.", "..nnnn.."]),
+];
+
+export type QuickTheme = "everyday" | "christmas" | "halloween" | "thanksgiving";
+const SETS: Record<QuickTheme, Sprite[]> = { everyday: EVERYDAY, christmas: CHRISTMAS, halloween: HALLOWEEN, thanksgiving: THANKSGIVING };
 export const spritesFor = (theme: QuickTheme) => SETS[theme];

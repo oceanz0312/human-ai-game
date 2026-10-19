@@ -1,8 +1,8 @@
-import { CHRISTMAS, EVERYDAY, HALLOWEEN, spritesFor } from "@/games/spot-the-difference/quick/sprites";
+import { CHRISTMAS, EVERYDAY, HALLOWEEN, spritesFor, THANKSGIVING } from "@/games/spot-the-difference/quick/sprites";
 import { makePuzzle, QUICK_MODES } from "@/games/spot-the-difference/quick/puzzle";
 
 test("every sprite is 8×8 and only uses its palette", () => {
-  for (const sprite of [...EVERYDAY, ...CHRISTMAS, ...HALLOWEEN]) {
+  for (const sprite of [...EVERYDAY, ...CHRISTMAS, ...HALLOWEEN, ...THANKSGIVING]) {
     expect(sprite.rows, sprite.id).toHaveLength(8);
     for (const row of sprite.rows) {
       expect(row, sprite.id).toHaveLength(8);
@@ -38,7 +38,7 @@ const contrast = (a: string, b: string) => {
 const rgbDistance = (a: string, b: string) => Math.hypot(...[1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16) - parseInt(b.slice(i, i + 2), 16)));
 
 test("holiday sets: 8 unique sprites, every color visible on the white cell and distinct from the others", () => {
-  for (const set of [HALLOWEEN]) {
+  for (const set of [HALLOWEEN, THANKSGIVING]) {
     expect(set).toHaveLength(8);
     expect(new Set(set.map((sprite) => sprite.id)).size).toBe(8);
     for (const sprite of set) {
@@ -52,7 +52,9 @@ test("holiday sets: 8 unique sprites, every color visible on the white cell and 
 });
 
 test("holiday puzzles never draw from another theme", () => {
-  const ids = new Set(HALLOWEEN.map((sprite) => sprite.id));
-  expect(spritesFor("halloween")).toBe(HALLOWEEN);
-  for (let i = 0; i < 50; i++) expect(ids.has(makePuzzle(`h-${i}`, { theme: "halloween", grid: 4, changes: 2 }).base.id)).toBe(true);
+  for (const [theme, set] of [["halloween", HALLOWEEN], ["thanksgiving", THANKSGIVING]] as const) {
+    const ids = new Set(set.map((sprite) => sprite.id));
+    expect(spritesFor(theme)).toBe(set);
+    for (let i = 0; i < 50; i++) expect(ids.has(makePuzzle(`h-${i}`, { theme, grid: 4, changes: 2 }).base.id)).toBe(true);
+  }
 });

@@ -52,6 +52,8 @@ export interface ThemeCard {
  */
 export const SEASONAL_CARDS: Array<ThemeCard & { from: [number, number]; until: [number, number] }> = [
   { href: "/halloween", label: "Halloween spot the difference", blurb: "Pumpkins, ghosts, bats and black cats.", from: [9, 1], until: [10, 31] },
+  // Thanksgiving is the 4th Thursday of November (Nov 22–28): the card stays up through the latest possible date.
+  { href: "/thanksgiving", label: "Thanksgiving spot the difference", blurb: "Turkeys, pies, corn and fall leaves.", from: [11, 1], until: [11, 28] },
 ];
 
 export function seasonalCard(now: Date = new Date()): ThemeCard | null {
@@ -106,6 +108,12 @@ const AI_FAQ_HALLOWEEN = {
   a: `Yes. The Halloween set races Luna AI on holiday sprites – pumpkins, ghosts, bats and cats – with the same rules as every other puzzle here. ${AI_FAQ_CORE}`,
 };
 
+/** Thanksgiving page: same race, Thanksgiving sprites. */
+const AI_FAQ_THANKSGIVING = {
+  q: "Can I race the AI on Thanksgiving spot the difference?",
+  a: `Yes. The Thanksgiving set races Luna AI on holiday sprites – turkeys, pies, corn and fall leaves – with the same rules as every other puzzle here. ${AI_FAQ_CORE}`,
+};
+
 /** Pictures page: gallery sprites in a live race. */
 const AI_FAQ_PICTURES = {
   q: "Can I play against AI with these spot the difference pictures?",
@@ -123,6 +131,7 @@ const L = {
   pictures: { href: "/pictures", label: "Spot the difference pictures" },
   christmas: { href: "/christmas", label: "Christmas spot the difference" },
   halloween: { href: "/halloween", label: "Halloween spot the difference" },
+  thanksgiving: { href: "/thanksgiving", label: "Thanksgiving spot the difference" },
   how: { href: "/how-to-play", label: "How to play" },
   vs: { href: "/human-vs-ai", label: "Human vs AI mode" },
 };
@@ -384,7 +393,46 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
       AI_FAQ_HALLOWEEN,
       { q: "Can I play after Halloween?", a: "Yes, this page stays up all year." },
     ],
-    links: [{ href: "/printable", label: "Halloween printable spot the difference" }, L.kids, L.home],
+    links: [{ href: "/printable", label: "Halloween printable spot the difference" }, L.thanksgiving, L.kids, L.home],
+  },
+  /** Thanksgiving (holiday-pages-plan.md, ★ copy per 哥飞 review 2026-10-19: title and H1 both "Spot"). */
+  "/thanksgiving": {
+    path: "/thanksgiving",
+    keyword: "thanksgiving spot the difference",
+    nav: "Thanksgiving",
+    title: "Thanksgiving Spot the Difference – Free Puzzle vs AI",
+    description: "Turkeys, pies, corn and fall leaves. Find the one picture that's different before Luna AI does. Free Thanksgiving puzzles, no signup.",
+    h1: "Thanksgiving Spot the Difference",
+    lede: "Thanksgiving spot the difference with turkeys, pies, corn and fall leaves — one of them doesn't match.",
+    board: { mode: "thanksgiving", seed: "thanksgiving-v1", label: "Thanksgiving spot the difference puzzle", start: "Tap to play a Thanksgiving round" },
+    sections: [
+      {
+        h2: "A fall harvest set",
+        paragraphs: [
+          "Eight Thanksgiving sprites: a turkey, a pumpkin pie, an ear of corn, an acorn, a maple leaf, a football, a cornucopia and a gourd. Each round fills a 4×4, 5×5 or 6×6 grid with copies of one sprite, and exactly one copy has two pixels changed. Spot it and tap it before Luna AI — the simulated opponent — finds it first.",
+          "Look for a turkey feather in the wrong color, a pie with a missing crust pixel or a leaf with an extra point.",
+        ],
+      },
+      {
+        h2: "A Thanksgiving find the difference for the whole table",
+        paragraphs: [
+          "Unlike a printed two-picture puzzle, every round here is a grid of identical sprites with one odd copy, so it works on a single phone passed around the table. Play a round while the turkey rests, then hand it to the kids' table and see who beats Luna AI first.",
+        ],
+        list: [
+          "After dinner, pass the phone around and compare scores.",
+          "Print the Thanksgiving sheet for a class party – it comes with an answer key.",
+          "Try to win three rounds in a row before the AI takes one.",
+        ],
+      },
+    ],
+    faq: [
+      { q: "Is it free?", a: "Yes. It runs in your browser with no download or signup." },
+      { q: "Is it good for kids?", a: "Yes. There is no signup, chat or user content, and the 4×4 round is a gentle start. For smaller grids, try the kids page." },
+      { q: "Are there printable Thanksgiving puzzles?", a: "Yes – the printable page includes a Thanksgiving sheet with an answer key." },
+      AI_FAQ_THANKSGIVING,
+      { q: "Can I play after Thanksgiving?", a: "Yes, this page stays up all year." },
+    ],
+    links: [{ href: "/printable", label: "Thanksgiving printable spot the difference" }, L.halloween, L.kids, L.home],
   },
   "/pictures": {
     path: "/pictures",

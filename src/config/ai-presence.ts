@@ -60,6 +60,7 @@ export const QUICK_AI = {
     home: { medianMs: [4500, 3800, 3200], accuracy: [0.85, 0.88, 0.9] },
     christmas: { medianMs: [4500, 3800, 3200], accuracy: [0.85, 0.88, 0.9] },
     halloween: { medianMs: [4500, 3800, 3200], accuracy: [0.85, 0.88, 0.9] },
+    thanksgiving: { medianMs: [4500, 3800, 3200], accuracy: [0.85, 0.88, 0.9] },
     easy: { medianMs: [6000, 5000, 4500], accuracy: [0.8, 0.82, 0.85] },
     kids: { medianMs: [9000, 8000, 7000], accuracy: [0.75, 0.78, 0.8] },
     find: { medianMs: [4000, 3200, 2600], accuracy: [0.88, 0.9, 0.92] },
