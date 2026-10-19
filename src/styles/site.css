@@ -1134,8 +1134,17 @@
 .print-puzzle figcaption { font-size: 12px; margin-top: 4px; text-transform: capitalize; }
 .print-answers { margin-top: 12px; font-size: 12px; }
 .print-answers h3 { font-size: 12px; margin: 0 0 4px; }
+.print-sheet { scroll-margin-top: calc(var(--nav-h) + 12px); }
+.print-toc { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: baseline; margin-block: 8px 0; font-size: 14px; }
+.print-toc span { color: var(--c-text-2); }
+.print-toc a { font-weight: 700; color: inherit; }
+.print-intro p { margin: 4px 0 10px; font-size: 14px; line-height: 1.5; max-width: 72ch; }
+.print-downloads { display: flex; flex-wrap: wrap; gap: 8px 16px; align-items: center; margin: 0 0 12px; }
+.print-download { display: inline-block; padding: 8px 14px; border: 2px solid var(--c-ink); background: var(--c-cta-bg); color: var(--c-cta-fg); font-weight: 700; text-decoration: none; box-shadow: 3px 3px 0 var(--c-ink); }
+.print-download:hover { background: var(--c-cta-hover); }
+.print-download-answers { font-weight: 700; color: inherit; }
 @media print {
-  .site-header, .site-footer, .kw-cta, .kw-lede, .kw-body, .ad-slot, .crumbs, .info-links, .print-button { display: none !important; }
+  .site-header, .site-footer, .kw-cta, .kw-lede, .kw-body, .ad-slot, .crumbs, .info-links, .print-button, .print-toc, .print-intro, .print-downloads { display: none !important; }
   .print-sheet { break-after: page; border: 0; padding: 0; }
   .print-puzzles { grid-template-columns: 1fr 1fr; }
   .print-answers { break-inside: avoid; }
@@ -1195,3 +1204,8 @@
 .kw-theme-seasonal { box-shadow: inset 6px 0 0 var(--skin-accent), var(--sh); padding-left: 18px; }
 body[data-skin] .game-topbar { box-shadow: inset 0 -4px 0 var(--skin-accent); }
 @media print { .skin-mark { display: none !important; } }
+/* /printable has no board: no full-height hero on desktop, so the TOC and the first sheet show in the first screen. */
+@media (min-width: 900px) {
+  .kw-hero.kw-hero-print { min-height: 0; grid-template-columns: minmax(0, 1fr); padding-top: 24px; }
+  .kw-hero-print .kw-cta { grid-row: auto; }
+}

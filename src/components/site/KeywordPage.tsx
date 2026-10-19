@@ -103,7 +103,7 @@ export function KeywordPage({ page, children, skin }: { page: KeywordPageContent
                   <p>{item.a}</p>
                   {item.link ? (
                     <p className="faq-link">
-                      <Link href={item.link.href}>{item.link.label} →</Link>
+                      <Link href={item.link.href}>{item.link.label}</Link> <span aria-hidden>→</span>
                     </p>
                   ) : null}
                 </details>

@@ -136,3 +136,38 @@ test("seasonal ring: /christmas, /halloween and /thanksgiving link each other an
     for (const to of ring.filter((p) => p !== from)) await expect(page.locator(`.info-links a[href="${to}"]`), `${from} → ${to}`).toHaveCount(1);
   }
 });
+
+test("/printable#christmas: anchor scrolls to the Christmas sheet; TOC jumps; print hides intro/TOC/downloads but keeps all 6 sheets", async ({ page }) => {
+  await page.goto("/printable#christmas");
+  const sheet = page.locator("article#christmas");
+  await expect(sheet.getByRole("heading", { level: 2, name: "Christmas Spot the Difference Printable" })).toBeInViewport();
+  await page.goto("/printable");
+  await page.getByTestId("print-toc").getByRole("link", { name: "Winter" }).click();
+  await expect(page).toHaveURL(/#winter$/);
+  await expect(page.locator("article#winter h2")).toBeInViewport();
+  await page.emulateMedia({ media: "print" });
+  await expect(page.getByTestId("christmas-intro")).toBeHidden();
+  await expect(page.getByTestId("print-toc")).toBeHidden();
+  await expect(page.getByTestId("christmas-downloads")).toBeHidden();
+  await expect(page.getByTestId("print-sheet")).toHaveCount(6);
+  await expect(page.getByTestId("answer-key")).toHaveCount(6);
+});
+
+test("/christmas → /printable#christmas (FAQ + Holiday ideas) lands on the sheet", async ({ page }) => {
+  await page.goto("/christmas");
+  const links = page.locator('a[href="/printable#christmas"]');
+  await expect(links).toHaveCount(2);
+  await expect(links.first()).toHaveText("Christmas spot the difference printable");
+  await links.first().click();
+  await page.waitForURL(/\/printable#christmas$/);
+  await expect(page.locator("article#christmas h2")).toBeInViewport();
+});
+
+test("printable PDFs: 200 + application/pdf for the Christmas and winter sheets and answer keys", async ({ request }) => {
+  for (const url of ["/printables/christmas-spot-the-difference.pdf", "/printables/christmas-spot-the-difference-answers.pdf", "/printables/winter-spot-the-difference.pdf", "/printables/winter-spot-the-difference-answers.pdf"]) {
+    const res = await request.get(url);
+    expect(res.status(), url).toBe(200);
+    expect(res.headers()["content-type"], url).toContain("application/pdf");
+    expect((await res.body()).subarray(0, 5).toString(), url).toBe("%PDF-");
+  }
+});

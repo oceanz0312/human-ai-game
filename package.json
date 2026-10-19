@@ -31,7 +31,8 @@
     "og:generate": "node scripts/generate-og.mjs",
     "share:samples": "node scripts/render-share-samples.mjs",
     "seo:indexnow": "node scripts/indexnow-submit.mjs",
-    "stats:d1": "node scripts/d1-stats.mjs"
+    "stats:d1": "node scripts/d1-stats.mjs",
+    "printables:generate": "tsx scripts/generate-printables.ts"
   },
   "dependencies": {
     "@libsql/client": "0.18.0",
