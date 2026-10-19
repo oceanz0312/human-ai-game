@@ -48,7 +48,7 @@ export default function Page() {
         <div className="info-body kw-body">
           <section>
             <h2>Using the printable sheets</h2>
-            <p>Every sheet has four grids that grow in size. In each grid one picture differs from the rest by a few pixels – a colour that changed or a dot that went missing. Ask players to circle the odd picture and write how long it took.</p>
+            <p>Every sheet has four grids that grow in size. In each grid one picture differs from the rest by a few pixels – a color that changed or a dot that went missing. Ask players to circle the odd picture and write how long it took.</p>
             <p>Prefer playing on screen? The <Link href="/">online spot the difference</Link> puzzles race you against an AI, and the <Link href="/for-kids">kids version</Link> uses the same big 3×3 grids as Sheet 1.</p>
           </section>
           <section>

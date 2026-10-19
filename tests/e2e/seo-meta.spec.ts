@@ -65,3 +65,10 @@ test("robots.txt allows crawling, blocks the API and points to the sitemap", asy
   expect(text).toMatch(/Disallow: \/api\//);
   expect(text).toContain(`Sitemap: ${SITE}/sitemap.xml`);
 });
+
+test("IndexNow key file is served verbatim at /<key>.txt", async ({ request }) => {
+  const { key } = JSON.parse(readFileSync("src/config/indexnow.json", "utf8")) as { key: string };
+  const res = await request.get(`/${key}.txt`);
+  expect(res.status()).toBe(200);
+  expect((await res.text()).trim()).toBe(key);
+});

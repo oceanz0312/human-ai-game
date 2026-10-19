@@ -1,0 +1,23 @@
+{
+  "$comment": "Rule for excluding our own traffic from scripts/d1-stats.mjs. D1 events store no IP or user agent, so test traffic is identified by player id and by time. A player is 'test' if ANY of: (1) its first-ever event is before `launchAt` (pre-launch dev/QA on workers.dev and the new domain); (2) its id is in `playerIds`, or it owns a session in `sessionIds` (live E2E runs log their session ids to redesign-shots/*/live-e2e.jsonl); (3) its first-ever event falls inside a `windows` entry (our post-deploy live checks, screenshot sweeps and launch-kit captures, taken from merge times and artifact mtimes), or within `mergeWindowMinutes` after any merge to origin/main (every merge auto-deploys and is followed by a live smoke check). Times are UTC+8. Real visitors who arrive inside a window are excluded too: this is a deliberately conservative filter. Add new windows/ids here when you test against prod.",
+  "launchAt": "2026-10-18T17:08:00+08:00",
+  "mergeWindowMinutes": 20,
+  "playerIds": [],
+  "sessionIds": [
+    "9872f863-b688-456a-b156-cd4b5448a76a", "0520fb3c-3de0-44a8-8c94-b248fc1a9ead", "eac5977a-ce95-41eb-b9bb-6a2a6c05721f",
+    "dffb8197-8588-4034-97a1-7ae17f7cf8c4", "880898c7-1eb6-4c5a-8917-9c8ceb7f7780", "278daa14-f6e3-47da-abf2-be7d1b280763",
+    "e78ec554-0282-4106-b280-9f208c62ab16", "5e70d058-a234-462d-8282-b4e0b2261f2c", "b461e719-6008-4593-9954-b832b1039034",
+    "79cfec54-04b7-44f8-96d6-3552ae0ecc05", "785c8898-ec14-4b9b-bda9-694ec3b209fd", "c10e215d-9513-4dda-8d08-e616db1f5630",
+    "adb82ae8-26df-4517-8503-b3ddda0f4b66", "26765b56-7f00-4570-94c6-ee7e98e021d4", "69dda192-7695-40bf-a993-5e1c503f3251",
+    "7e9e8ff1-3f11-4d2f-af48-aa2467946770", "18e32b0a-3a25-427f-b6bf-73ac533947f3"
+  ],
+  "windows": [
+    { "from": "2026-10-18T17:08:00+08:00", "to": "2026-10-18T17:35:00+08:00", "why": "canonical-domain switch + live E2E (seo/live-e2e.jsonl 17:10–17:16)" },
+    { "from": "2026-10-18T23:15:00+08:00", "to": "2026-10-18T23:55:00+08:00", "why": "hero live screenshots (redesign-shots/hero)" },
+    { "from": "2026-10-19T00:10:00+08:00", "to": "2026-10-19T00:45:00+08:00", "why": "deploys #59/#60 + post-deploy checks" },
+    { "from": "2026-10-19T01:05:00+08:00", "to": "2026-10-19T01:20:00+08:00", "why": "deploy #62 + checks" },
+    { "from": "2026-10-19T01:55:00+08:00", "to": "2026-10-19T02:10:00+08:00", "why": "hero v2 deploy #61 + live CTA checks (redesign-shots/hero-v2)" },
+    { "from": "2026-10-19T10:30:00+08:00", "to": "2026-10-19T11:35:00+08:00", "why": "small-screen measurements (redesign-shots/small-cta, after) + deploys #63/#64" },
+    { "from": "2026-10-19T13:45:00+08:00", "to": "2026-10-19T14:20:00+08:00", "why": "launch-kit screenshots (launch-kits/*/shots)" }
+  ]
+}

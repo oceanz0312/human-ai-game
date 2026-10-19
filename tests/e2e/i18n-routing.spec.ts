@@ -5,7 +5,7 @@ import { HOME_START, START } from "./t";
 test("English is served at the root without a prefix", async ({ page }) => {
   const response = await page.goto("/");
   expect(response?.status()).toBe(200);
-  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en-US");
   await expect(page.getByRole("button", { name: HOME_START })).toBeVisible();
 });
 
@@ -42,7 +42,7 @@ test("session pages are English even with an old zh cookie", async ({ page }) =>
   await page.goto("/spot-the-difference-game");
   await page.getByRole("button", { name: START }).click();
   await pickOpponent(page);
-  await expect(page.locator("html")).toHaveAttribute("lang", "en");
+  await expect(page.locator("html")).toHaveAttribute("lang", "en-US");
   await expect(page.getByRole("button", { name: "Row 1, column 1" })).toBeEnabled({ timeout: 30_000 });
   await expect(page.locator(".game-hint")).toContainText("Tap the odd one");
   await page.getByRole("button", { name: "Row 1, column 1" }).click();

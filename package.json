@@ -29,7 +29,9 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx scripts/migrate.ts",
     "og:generate": "node scripts/generate-og.mjs",
-    "share:samples": "node scripts/render-share-samples.mjs"
+    "share:samples": "node scripts/render-share-samples.mjs",
+    "seo:indexnow": "node scripts/indexnow-submit.mjs",
+    "stats:d1": "node scripts/d1-stats.mjs"
   },
   "dependencies": {
     "@libsql/client": "0.18.0",
