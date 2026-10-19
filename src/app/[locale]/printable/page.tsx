@@ -2,30 +2,31 @@ import Link from "next/link";
 import { SiteShell } from "@/components/site/SiteShell";
 import { PrintButton } from "@/components/site/PrintButton";
 import { AdSlot } from "@/components/site/AdSlot";
-import { PrintSheet, type SheetSpec } from "@/games/spot-the-difference/quick/PrintSheet";
+import { PrintSheet } from "@/games/spot-the-difference/quick/PrintSheet";
+import { SHEETS } from "@/content/printables";
 import { breadcrumbLd, faqLd, JsonLd } from "@/seo/jsonld";
 import { pageMetadata } from "@/lib/page-meta";
 
 const PATH = "/printable";
 const TITLE = "Spot the Difference Printable – Free Sheets with Answers | Spot The Difference Game";
-const DESCRIPTION = "Free spot the difference printable sheets: five pages of pixel picture puzzles (easy, hard, Halloween, Thanksgiving and Christmas) with an answer key. Print or save as PDF.";
+const DESCRIPTION = "Free spot the difference printables with answer keys: easy, classic, Halloween, Thanksgiving, Christmas and winter sheets. Print or save as PDF for home or class.";
 
 export const generateMetadata = () => pageMetadata("en", PATH, { title: TITLE, description: DESCRIPTION });
 
-const SHEETS: SheetSpec[] = [
-  { id: "easy", title: "Sheet 1 · Easy (ages 4+)", theme: "everyday", grids: [3, 3, 4, 4], changes: 5 },
-  { id: "classic", title: "Sheet 2 · Classic", theme: "everyday", grids: [5, 5, 6, 6], changes: 2 },
-  { id: "halloween", title: "Sheet 3 · Halloween", theme: "halloween", grids: [4, 4, 5, 5], changes: 3 },
-  { id: "thanksgiving", title: "Sheet 4 · Thanksgiving", theme: "thanksgiving", grids: [4, 4, 5, 5], changes: 3 },
-  { id: "christmas", title: "Sheet 5 · Christmas", theme: "christmas", grids: [4, 4, 5, 5], changes: 3 },
-  { id: "winter", title: "Sheet 6 · Winter", theme: "winter", grids: [4, 4, 5, 5], changes: 3 },
-];
 
 const FAQ = [
   { q: "How do I print these puzzles?", a: "Tap Print puzzles (or use your browser's print menu). Each sheet starts on a new page; choose Save as PDF to keep a copy." },
   { q: "Where are the answers?", a: "Each sheet ends with an answer key giving the row and column of the odd picture." },
   { q: "Can I use them in a classroom?", a: "Yes. The sheets are free for personal and classroom use." },
 ];
+
+/** Christmas sheet intro (哥飞-reviewed final copy, ~90 words; screen only, hidden in print). Names no sprites on purpose. */
+const CHRISTMAS_INTRO = (
+  <p>
+    This Christmas spot the difference printable has four grids of pixel-art holiday pictures. In each grid, one picture is a little different — circle the odd one out. The grids get bigger as you go, so younger kids can start easy and older kids get a real challenge. The answer key at the bottom lists each answer by row and column, so kids can check their own work. It&apos;s free for home and classroom use: print it or save it as a PDF. Rather play on a screen? Try the{" "}
+    <Link href="/christmas">online Christmas spot the difference</Link> and race the AI.
+  </p>
+);
 
 /** Printable spot the difference: real print-ready SVG sheets + answer keys (print CSS hides site chrome). */
 export default function Page() {
@@ -42,9 +43,17 @@ export default function Page() {
             </div>
           </div>
         </section>
+        <nav className="print-toc" aria-label="Sheets" data-testid="print-toc">
+          <span>Jump to:</span>
+          {SHEETS.map((sheet) => (
+            <a key={sheet.id} href={`#${sheet.id}`}>
+              {sheet.toc}
+            </a>
+          ))}
+        </nav>
         <div className="print-sheets">
           {SHEETS.map((sheet) => (
-            <PrintSheet key={sheet.id} sheet={sheet} />
+            <PrintSheet key={sheet.id} sheet={sheet} intro={sheet.id === "christmas" ? CHRISTMAS_INTRO : undefined} />
           ))}
         </div>
         <AdSlot name="printable-below-sheets" />

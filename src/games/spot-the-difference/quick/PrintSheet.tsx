@@ -1,23 +1,29 @@
-import { makePuzzle } from "./puzzle";
-import type { QuickTheme } from "./sprites";
+import { answerLines, sheetPuzzles, type SheetSpec } from "@/content/printables";
 import { SpriteDefs, SpriteUse } from "./PixelSprite";
 
-export interface SheetSpec {
-  id: string;
-  title: string;
-  theme: QuickTheme;
-  grids: number[];
-  changes: number;
-}
+export type { SheetSpec } from "@/content/printables";
 
-const cellName = (index: number, grid: number) => `row ${Math.floor(index / grid) + 1}, column ${(index % grid) + 1}`;
-
-/** One printable sheet: N numbered puzzles + an answer key. Pure SVG, prints crisp at any size. */
-export function PrintSheet({ sheet }: { sheet: SheetSpec }) {
-  const puzzles = sheet.grids.map((grid, i) => makePuzzle(`print-${sheet.id}-${i}`, { theme: sheet.theme, grid, changes: sheet.changes }));
+/**
+ * One printable sheet: N numbered puzzles + an answer key. Pure SVG, prints crisp at any size. `intro` (screen only,
+ * hidden in print) sits between the heading and the puzzles.
+ */
+export function PrintSheet({ sheet, intro }: { sheet: SheetSpec; intro?: React.ReactNode }) {
+  const puzzles = sheetPuzzles(sheet);
+  const answers = answerLines(sheet);
   return (
     <article id={sheet.id} className="print-sheet" data-testid="print-sheet" aria-labelledby={`${sheet.id}-title`}>
       <h2 id={`${sheet.id}-title`}>{sheet.title}</h2>
+      {intro ? <div className="print-intro" data-testid={`${sheet.id}-intro`}>{intro}</div> : null}
+      {sheet.pdf ? (
+        <p className="print-downloads" data-testid={`${sheet.id}-downloads`}>
+          <a className="print-download" href={sheet.pdf.sheet} download>
+            ⬇ Download PDF
+          </a>
+          <a className="print-download-answers" href={sheet.pdf.answers} download>
+            Answer key (PDF)
+          </a>
+        </p>
+      ) : null}
       <p className="print-instructions">In each grid, one picture is different from all the others. Circle it! Name: ____________</p>
       <div className="print-puzzles">
         {puzzles.map((puzzle, i) => {
@@ -39,13 +45,11 @@ export function PrintSheet({ sheet }: { sheet: SheetSpec }) {
           );
         })}
       </div>
-      <section className="print-answers" data-testid="answer-key">
+      <section className="print-answers" data-testid="answer-key" id={`${sheet.id}-answers`}>
         <h3>Answer key</h3>
         <ol>
-          {puzzles.map((puzzle, i) => (
-            <li key={i}>
-              Puzzle {i + 1}: {cellName(puzzle.oddIndex, puzzle.grid)} ({puzzle.changed.length} {puzzle.changed.length === 1 ? "pixel" : "pixels"} changed)
-            </li>
+          {answers.map((line) => (
+            <li key={line}>{line}</li>
           ))}
         </ol>
       </section>

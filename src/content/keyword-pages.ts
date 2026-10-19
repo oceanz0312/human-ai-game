@@ -367,10 +367,17 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
           "Look for an ornament that changed color, a missing ribbon pixel or a reindeer with an odd antler. Then race Luna AI to tap it.",
         ],
       },
-      { h2: "Holiday ideas", list: ["Play as a family: pass the phone and compare scores.", "Print the Christmas sheet for a classroom party.", "Challenge each other to beat the AI three times in a row."] },
+      {
+        h2: "Holiday ideas",
+        list: [
+          "Play as a family: pass the phone and compare scores.",
+          { before: "Print the ", link: { href: "/printable#christmas", label: "Christmas spot the difference printable" }, after: " for a classroom party." },
+          "Challenge each other to beat the AI three times in a row.",
+        ],
+      },
     ],
     faq: [
-      { q: "Are there printable Christmas puzzles?", a: "Yes – the printable page includes a Christmas sheet with an answer key." },
+      { q: "Are there printable Christmas puzzles?", a: "Yes – the printable page includes a Christmas sheet with an answer key.", link: { href: "/printable#christmas", label: "Christmas spot the difference printable" } },
       AI_FAQ_CHRISTMAS,
     ],
     // Seasonal ring (holiday-calendar.md): every holiday/season page links the others.
