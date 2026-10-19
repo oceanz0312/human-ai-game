@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { THEME_CARDS, type KeywordPageContent } from "@/content/keyword-pages";
+import { themeCards, type KeywordPageContent } from "@/content/keyword-pages";
 import { QuickBoard } from "@/games/spot-the-difference/quick/QuickBoard";
 import { StartButton } from "@/components/StartButton";
 import { breadcrumbLd, faqLd, JsonLd, organizationLd, videoGameLd, websiteLd } from "@/seo/jsonld";
@@ -45,7 +45,7 @@ export function KeywordPage({ page, children }: { page: KeywordPageContent; chil
               Looking for the full game with all 20 levels? → <Link href="/spot-the-difference-game">spot the difference game</Link>
             </p>
             <nav className="kw-themes" aria-label="Spot the difference themes" data-testid="kw-themes">
-              {THEME_CARDS.map((card) => (
+              {themeCards().map((card) => (
                 <Link key={card.href} className="card kw-theme" href={card.href}>
                   <strong>{card.label}</strong>
                   <span>{card.blurb}</span>

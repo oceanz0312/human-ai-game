@@ -15,6 +15,7 @@ const PAGES: Array<[string, string]> = [
   ["/hard", "▶ Tap to play a hard round"],
   ["/for-kids", "▶ Tap to play a round for kids"],
   ["/christmas", "▶ Tap to play a Christmas round"],
+  ["/halloween", "▶ Tap to play a Halloween round"],
   ["/pictures", "▶ Tap to play a quick round"],
   ["/spot-the-difference-game", "▶ Tap to play a quick round"],
   ["/find-the-difference", "▶ Tap to play a quick round"],

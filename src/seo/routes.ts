@@ -13,6 +13,7 @@ export function staticSeoRoutes(): SeoRoute[] {
     { path: "/printable", priority: 0.8, changeFrequency: "monthly" },
     { path: "/pictures", priority: 0.8, changeFrequency: "monthly" },
     { path: "/christmas", priority: 0.8, changeFrequency: "weekly" },
+    { path: "/halloween", priority: 0.8, changeFrequency: "weekly" },
     { path: "/easy", priority: 0.7, changeFrequency: "monthly" },
     { path: "/hard", priority: 0.7, changeFrequency: "monthly" },
     { path: "/for-kids", priority: 0.7, changeFrequency: "monthly" },

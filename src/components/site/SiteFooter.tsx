@@ -13,6 +13,7 @@ export function SiteFooter(_props: { locale?: Locale }) {
         { href: "/find-the-difference", label: "Find the difference" },
         { href: "/pictures", label: "Spot the difference pictures" },
         { href: "/printable", label: "Printable puzzles" },
+        { href: "/halloween", label: "Halloween puzzles" },
         { href: "/christmas", label: "Christmas puzzles" },
       ],
     },
