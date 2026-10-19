@@ -1161,3 +1161,26 @@
 .kw-theme span { font-size: 12px; line-height: 1.4; }
 .kw-theme:hover strong { text-decoration: underline; }
 @media print { .kw-more, .kw-themes { display: none !important; } }
+
+/* Keyword pages (哥飞-adjusted small-screen layout): the themed board is the one primary action; the 20-level
+   button is a secondary button right under it, with the daily badge beside it. Desktop (>=900px) unchanged. */
+.kw-cta-secondary .start-stack { flex-direction: row; flex-wrap: nowrap; align-items: center; gap: 8px; }
+.kw-cta-secondary .play-limit-badge { flex: none; }
+.quick-play-label { font-size: 16px; padding: 10px 14px; max-width: 92%; }
+@media (max-width: 899px) {
+  .kw-hero:not(.kw-hero-demo) { gap: 8px; }
+  .kw-hero:not(.kw-hero-demo) .quick { gap: 4px; }
+  .kw-hero:not(.kw-hero-demo) .quick-stage { width: min(100%, 50svh); }
+  .kw-hero:not(.kw-hero-demo) .kw-board-hard .quick-stage { width: min(100%, 56svh); padding: 4px; }
+  .kw-hero:not(.kw-hero-demo) .kw-board-hard .quick-grid { gap: 3px; }
+  .kw-hero:not(.kw-hero-demo) .quick-caption { min-height: 0; }
+  .kw-hero:not(.kw-hero-demo) .quick[data-phase="ready"] .quick-caption { display: none; }
+  .kw-cta-secondary { justify-self: stretch; }
+  .kw-cta-secondary .start-stack { display: flex; justify-content: center; }
+  .kw-cta-secondary .px-btn { flex: 0 1 auto; min-width: 0; }
+  .kw-cta-secondary .px-btn { font-size: 12px; min-height: 40px; padding: 8px 12px; white-space: normal; text-align: center; }
+}
+@media (max-width: 899px) and (max-height: 640px) {
+  .kw-hero:not(.kw-hero-demo) .kw-title { font-size: 20px; }
+  .kw-hero:not(.kw-hero-demo) .kw-lede { font-size: 13px; line-height: 1.35; }
+}

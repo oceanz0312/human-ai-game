@@ -35,6 +35,8 @@ export const ANALYTICS_EVENTS = [
   "demo_view",
   "demo_skip",
   "board_start",
+  // Keyword pages: the secondary 20-level CTA under the themed board.
+  "kw_cta_click",
 ] as const;
 
 export type AnalyticsEventName = (typeof ANALYTICS_EVENTS)[number];

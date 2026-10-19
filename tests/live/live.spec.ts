@@ -34,7 +34,7 @@ test("live formal run against Luna AI (simulated)", async ({ page }, info) => {
     }
   });
   await page.goto("/spot-the-difference-game");
-  await page.getByRole("button", { name: /^Play 20 levels vs AI/ }).click();
+  await page.getByRole("button", { name: /^Spot the Difference Game: 20 levels vs AI/ }).click();
   await expect(page.getByTestId("opponent-select")).toBeVisible();
   await shot("opponent-select");
   await page.getByRole("button", { name: /^Fight/ }).click();

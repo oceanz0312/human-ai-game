@@ -18,11 +18,11 @@ export function KeywordPage({ page, children }: { page: KeywordPageContent; chil
   const cta = demo ? (
     <StartButton label="▶ Play Spot the Difference" sublabel="20 levels · vs AI" busyLabel="Starting…" locale="en" direct trackClick={{ name: "hero_cta_click", metadata: { page: page.path, placement: "hero" } }} />
   ) : (
-    <StartButton label="Play 20 levels vs AI ▶" busyLabel="Starting…" locale="en" />
+    <StartButton label="Spot the Difference Game: 20 levels vs AI" busyLabel="Starting…" locale="en" variant="secondary" trackClick={{ name: "kw_cta_click", metadata: { page: page.path, placement: "below-board" } }} />
   );
   const board = (
-    <div className="kw-board">
-      {demo ? <QuickBoard mode={page.board.mode} seed={page.board.seed} title={page.board.label} demo page={page.path} /> : <QuickBoard mode={page.board.mode} seed={page.board.seed} title={page.board.label} cta={cta} />}
+    <div className={`kw-board kw-board-${page.board.mode}`}>
+      {demo ? <QuickBoard mode={page.board.mode} seed={page.board.seed} title={page.board.label} demo page={page.path} /> : <QuickBoard mode={page.board.mode} seed={page.board.seed} title={page.board.label} cta={cta} startLabel={page.board.start} />}
     </div>
   );
   return (
@@ -37,7 +37,7 @@ export function KeywordPage({ page, children }: { page: KeywordPageContent; chil
           {/* Demo hero: the CTA sits right under the lede on phones (above the board), so it never covers the cells. */}
           {demo ? <div className="kw-cta kw-cta-hero">{cta}</div> : null}
           {board}
-          {demo ? null : <div className="kw-cta">{cta}</div>}
+          {demo ? null : <div className="kw-cta kw-cta-secondary" data-testid="kw-cta-secondary">{cta}</div>}
         </section>
         {demo ? (
           <>

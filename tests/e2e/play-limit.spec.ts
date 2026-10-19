@@ -12,7 +12,7 @@ test("@viewport daily play limit: 3 runs a day, then a friendly blocked state wi
   const left = Number((await badge.textContent())!.match(/Today (\d)/)![1]);
   for (let index = 0; index < left; index += 1) {
     await page.goto("/spot-the-difference-game");
-    await page.getByRole("button", { name: /^Start|^Play 20 levels/ }).first().click();
+    await page.getByRole("button", { name: /^Start|^Spot the Difference Game: 20 levels/ }).first().click();
     await pickOpponent(page);
   }
   await page.goto("/spot-the-difference-game");
