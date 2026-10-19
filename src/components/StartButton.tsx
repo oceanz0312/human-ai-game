@@ -21,6 +21,7 @@ export function StartButton({
   direct = false,
   sublabel,
   trackClick,
+  variant = "primary",
 }: {
   label?: string;
   busyLabel?: string;
@@ -37,7 +38,9 @@ export function StartButton({
   /** Second, smaller line inside the button (e.g. "20 levels · vs AI"). */
   sublabel?: string;
   /** Analytics event sent on click, before the run is created (home hero: hero_cta_click). */
-  trackClick?: { name: "hero_cta_click"; metadata?: Record<string, string> };
+  trackClick?: { name: "hero_cta_click" | "kw_cta_click"; metadata?: Record<string, string> };
+  /** Visual weight. Keyword pages demote the 20-level button to secondary: the themed board is the primary action there. */
+  variant?: "primary" | "secondary";
 }) {
   const router = useRouter();
   const t = useT();
@@ -86,7 +89,7 @@ export function StartButton({
           {error}
         </p>
       ) : null}
-      <Button variant={replay ? "text" : "primary"} onClick={start} disabled={busy && !replay}>
+      <Button variant={replay ? "text" : variant} onClick={start} disabled={busy && !replay}>
         {busy ? (busyLabel ?? t("正在开始")) : (label ?? t("开始挑战"))}
         {sublabel ? <span className="btn-sub">{sublabel}</span> : null}
       </Button>

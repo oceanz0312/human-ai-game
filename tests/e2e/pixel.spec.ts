@@ -31,8 +31,8 @@ test.describe("@viewport pixel type system", () => {
       expect(report.pixelText, "pixel display text present").toBeGreaterThan(0);
       expect(report.bad, "pixel text at off-grid sizes").toEqual([]);
       expect(report.loaded.some((family) => /pixelFont/.test(family)), "self-hosted pixel font loaded").toBe(true);
-      // tokens: hard edges, no radius on the primary call to action
-      await expect(page.locator(".primary-action").first()).toHaveCSS("border-radius", "0px");
+      // tokens: hard edges, no radius on the page call to action (keyword pages: the secondary 20-level button)
+      await expect(page.locator(".primary-action, .secondary-action").first()).toHaveCSS("border-radius", "0px");
     });
   }
 

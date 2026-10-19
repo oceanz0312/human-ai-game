@@ -41,6 +41,7 @@ export function QuickBoard({
   seed,
   title,
   cta,
+  startLabel,
   demo = false,
   page = "",
 }: {
@@ -48,6 +49,8 @@ export function QuickBoard({
   seed: string;
   title: string;
   cta?: React.ReactNode;
+  /** Text on the in-board start button (keyword pages: e.g. "Tap to play an easy round"). */
+  startLabel?: string;
   demo?: boolean;
   /** Page path for analytics metadata. */
   page?: string;
@@ -276,8 +279,8 @@ export function QuickBoard({
         ) : null}
         {phase === "ready" ? (
           <div className="quick-overlay">
-            <button type="button" className="quick-play" data-testid="quick-start" onClick={start}>
-              ▶ Play
+            <button type="button" className={`quick-play${startLabel ? " quick-play-label" : ""}`} data-testid="quick-start" onClick={start}>
+              ▶ {startLabel ?? "Play"}
             </button>
             <p>Find the one picture that is different before the AI does.</p>
           </div>
@@ -296,7 +299,7 @@ export function QuickBoard({
         ) : null}
       </div>
       <div className="quick-caption" data-testid="quick-caption" aria-live="polite">
-        {phase === "ready" ? "Tap Play, then tap the odd one out." : null}
+        {phase === "ready" ? (startLabel ? "Start the round, then tap the odd one out." : "Tap Play, then tap the odd one out.") : null}
         {phase === "demo" ? (
           <span data-testid="quick-demo-caption">
             {demoStep >= DEMO_DECOYS ? "Found the odd one! Your turn — tap any picture to play." : demoStep >= 0 ? "Not this one… keep looking." : "Find the one picture that's different before the AI does. Tap any picture to play."}

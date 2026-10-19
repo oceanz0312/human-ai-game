@@ -17,7 +17,7 @@ export interface KeywordPageContent {
   description: string;
   h1: string;
   lede: string;
-  board: { mode: QuickModeKey; seed: string; label: string };
+  board: { mode: QuickModeKey; seed: string; label: string; /** Start button on the board; themed only when the board really is that theme. */ start?: string };
   sections: KeywordSection[];
   faq: { q: string; a: string }[];
   links: { href: string; label: string }[];
@@ -146,7 +146,7 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
     description: "Take on the AI in a 20-level spot the difference game: 3×3 to 9×9 grids, a shrinking clock, three chances and a daily leaderboard. Free in your browser.",
     h1: "Spot the Difference Game",
     lede: "Warm up on three quick puzzles, then start the 20-level run against the AI.",
-    board: { mode: "game", seed: "game-v1", label: "Spot the difference game warm-up" },
+    board: { mode: "game", seed: "game-v1", label: "Spot the difference game warm-up", start: "Tap to play a quick round" },
     sections: [
       {
         h2: "The 20-level run",
@@ -180,7 +180,7 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
     description: "Find the difference in grids of pixel pictures and take on the AI while you do it. Three free puzzles per match, from 4×4 to 8×8. No signup.",
     h1: "Find the Difference",
     lede: "One picture in the grid does not match. Find the difference faster than the AI.",
-    board: { mode: "find", seed: "find-v1", label: "Find the difference puzzle" },
+    board: { mode: "find", seed: "find-v1", label: "Find the difference puzzle", start: "Tap to play a quick round" },
     sections: [
       {
         h2: "Find the differences, one grid at a time",
@@ -214,7 +214,7 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
     description: "Easy spot the difference puzzles with small grids and clear changes. Take on a gentle AI opponent at your own pace – free, no signup.",
     h1: "Easy Spot the Difference",
     lede: "Small grids, bigger changes, plenty of time. A relaxed way to play.",
-    board: { mode: "easy", seed: "easy-v1", label: "Easy spot the difference puzzle" },
+    board: { mode: "easy", seed: "easy-v1", label: "Easy spot the difference puzzle", start: "Tap to play an easy round" },
     sections: [
       {
         h2: "Why start easy",
@@ -240,7 +240,7 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
     description: "Hard spot the difference: 6×6 to 8×8 grids where a single pixel changes. Take on the strongest AI setting and see who blinks first.",
     h1: "Hard Spot the Difference",
     lede: "Up to 64 pictures and only one pixel is different. For sharp eyes only.",
-    board: { mode: "hard", seed: "hard-v1", label: "Hard spot the difference puzzle" },
+    board: { mode: "hard", seed: "hard-v1", label: "Hard spot the difference puzzle", start: "Tap to play a hard round" },
     sections: [
       {
         h2: "What makes it hard",
@@ -265,7 +265,7 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
     description: "Spot the difference for kids: big 3×3 grids, cute pixel animals and a 40-second timer. Free, no signup, works on tablets.",
     h1: "Spot the Difference for Kids",
     lede: "Big pictures, small grids, lots of time. Can you beat the robot?",
-    board: { mode: "kids", seed: "kids-v1", label: "Spot the difference puzzle for kids" },
+    board: { mode: "kids", seed: "kids-v1", label: "Spot the difference puzzle for kids", start: "Tap to play a round for kids" },
     sections: [
       {
         h2: "Made for young players",
@@ -291,7 +291,7 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
     description: "Christmas spot the difference: trees, gifts, snowmen and reindeer – find the odd one out and take on the AI. Free festive puzzles, no signup.",
     h1: "Christmas Spot the Difference",
     lede: "Trees, gifts, bells and snowmen. One of them is not quite right.",
-    board: { mode: "christmas", seed: "xmas-v1", label: "Christmas spot the difference puzzle" },
+    board: { mode: "christmas", seed: "xmas-v1", label: "Christmas spot the difference puzzle", start: "Tap to play a Christmas round" },
     sections: [
       {
         h2: "A festive set of puzzles",
@@ -316,7 +316,7 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
     description: "Spot the difference pictures: browse the pixel picture set, see which details change, then take on the AI in a live puzzle. Free, no signup.",
     h1: "Spot the Difference Pictures",
     lede: "Every puzzle is built from these pixel pictures. Study them, then play.",
-    board: { mode: "home", seed: "pictures-v1", label: "Spot the difference pictures puzzle" },
+    board: { mode: "home", seed: "pictures-v1", label: "Spot the difference pictures puzzle", start: "Tap to play a quick round" },
     sections: [
       {
         h2: "About the pictures",
