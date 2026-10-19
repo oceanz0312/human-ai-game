@@ -219,7 +219,7 @@ const en = {
           description: "Hard spot the difference level {n}: find the one different cell among {cells} in {secs} seconds, before the AI does. Free online find-the-difference game, no download.",
           h1: "Hard Spot the Difference: Level {n}",
           intro: "From level 6 the grid jumps to {grid}×{grid}: {cells} nearly identical cells and {secs} seconds to find the difference. It is a spot the difference puzzle with a timer, and the AI is scanning the same image.",
-          tip: "Tip: sweep the grid row by row in one pass. Colour and orientation changes are easier to catch than tiny shape changes.",
+          tip: "Tip: sweep the grid row by row in one pass. Color and orientation changes are easier to catch than tiny shape changes.",
         },
         expert: {
           name: "Expert",
@@ -227,7 +227,7 @@ const en = {
           description: "Expert spot the difference level {n}: {cells} cells and only {secs} seconds. Can you find the difference faster than the AI? A free, hard spot the difference game for adults.",
           h1: "Expert Spot the Difference: Level {n}",
           intro: "Level {n} gives you {secs} seconds for {cells} cells, a little less every level until 3 seconds at level 20. This is where most humans start losing to the AI.",
-          tip: "Tip: do not hunt. Relax your eyes on the centre of the grid and tap the first cell that feels off.",
+          tip: "Tip: do not hunt. Relax your eyes on the center of the grid and tap the first cell that feels off.",
         },
       },
       runs: "Runs played",

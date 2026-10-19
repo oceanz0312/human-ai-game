@@ -10,7 +10,7 @@ export const LOCALE_COOKIE = "hv_locale";
 /** hreflang codes per locale (Google accepts ISO 639-1 + optional script/region). */
 export const hreflang: Record<Locale, string> = { en: "en", zh: "zh-Hans" };
 /** <html lang> per locale. */
-export const htmlLang: Record<Locale, string> = { en: "en", zh: "zh-CN" };
+export const htmlLang: Record<Locale, string> = { en: "en-US", zh: "zh-CN" };
 
 export const isLocale = (value: unknown): value is Locale => typeof value === "string" && (locales as readonly string[]).includes(value);
 

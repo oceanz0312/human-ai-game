@@ -1,0 +1,7 @@
+{
+  "$comment": "IndexNow key (public by design, not a secret). Served verbatim at /<key>.txt from public/. Submit with: npm run seo:indexnow. Rotate = new key + new public/<key>.txt + delete the old file.",
+  "key": "3781243c1476c644bec50205e9cc3b83",
+  "host": "spotthedifferencegame.com",
+  "keyLocation": "https://spotthedifferencegame.com/3781243c1476c644bec50205e9cc3b83.txt",
+  "endpoint": "https://api.indexnow.org/indexnow"
+}

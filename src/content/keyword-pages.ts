@@ -108,7 +108,7 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
       {
         h2: "How this spot the difference works",
         paragraphs: [
-          "Each puzzle is a grid of identical pixel pictures with exactly one copy that is a little different: a pixel recoloured, a dot missing, an edge that moved. Spot the difference, tap it, and the round ends.",
+          "Each puzzle is a grid of identical pixel pictures with exactly one copy that is a little different: a pixel recolored, a dot missing, an edge that moved. Spot the difference, tap it, and the round ends.",
           "Luna AI scans the same grid at the same moment. If you find the odd picture first, you take the round. Three quick puzzles make a match; the grids grow from 4×4 to 6×6 as you go.",
         ],
       },
@@ -192,7 +192,7 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
       {
         h2: "Tips to find the difference faster",
         list: [
-          "Look at colour first: a recoloured pixel jumps out when you unfocus your eyes slightly.",
+          "Look at color first: a recolored pixel jumps out when you unfocus your eyes slightly.",
           "Sweep row by row on big grids instead of jumping around.",
           "Compare outlines – a missing edge pixel changes the silhouette.",
           "Don't wait for the AI: if you see it, tap it.",
@@ -245,7 +245,7 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
       {
         h2: "What makes it hard",
         paragraphs: [
-          "Only one pixel of an 8×8 sprite changes – sometimes a colour swap, sometimes a pixel added or removed at the edge. The grids run 6×6, 7×7 and 8×8, and the AI here plays at its level-16 strength.",
+          "Only one pixel of an 8×8 sprite changes – sometimes a color swap, sometimes a pixel added or removed at the edge. The grids run 6×6, 7×7 and 8×8, and the AI here plays at its level-16 strength.",
           "Expect to lose some rounds. Luna AI starts slow on the 6×6 grid and gets faster as the grids grow – from about 2.5 seconds to about 1.6 seconds on the 8×8 – and it gets roughly nine in ten right. Beat it by being quicker, or by catching the round it gets wrong.",
         ],
       },
@@ -297,7 +297,7 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
         h2: "A festive set of puzzles",
         paragraphs: [
           "This Christmas set swaps the everyday pictures for eight holiday sprites: a Christmas tree, a gift box, a snowman, a bell, a candy cane, a stocking, an ornament and a reindeer. Each match is three puzzles on 4×4, 5×5 and 6×6 grids.",
-          "Look for a bauble that changed colour, a missing ribbon pixel or a reindeer with an odd antler. Then race Luna AI to tap it.",
+          "Look for an ornament that changed color, a missing ribbon pixel or a reindeer with an odd antler. Then race Luna AI to tap it.",
         ],
       },
       { h2: "Holiday ideas", list: ["Play as a family: pass the phone and compare scores.", "Print the Christmas sheet for a classroom party.", "Challenge each other to beat the AI three times in a row."] },
