@@ -32,7 +32,7 @@ test("home JSON-LD: VideoGame + FAQPage (with the AI question) + WebSite/Organiz
   expect(blocks.find((block) => block["@type"] === "WebSite")!.name).toBe("Spot The Difference Game");
 });
 
-test("home hero v2: exactly one primary CTA, keyword lede, keyword-anchored internal link and five theme cards", () => {
+test("home hero v2: exactly one primary CTA, keyword lede, keyword-anchored internal link and five theme cards (+ seasonal)", async () => {
   const { container } = render(HomePage());
   const hero = screen.getByTestId("kw-hero");
   const primaries = container.querySelectorAll(".primary-action");
@@ -45,7 +45,9 @@ test("home hero v2: exactly one primary CTA, keyword lede, keyword-anchored inte
   expect(link).toHaveTextContent(/^spot the difference game$/);
   expect(link).toHaveAttribute("href", "/spot-the-difference-game");
   const themes = within(screen.getByTestId("kw-themes")).getAllByRole("link").map((a) => a.getAttribute("href"));
-  expect(themes).toEqual(["/easy", "/hard", "/for-kids", "/christmas", "/pictures"]);
+  const { themeCards } = await import("@/content/keyword-pages");
+  expect(themes).toEqual(themeCards().map((card) => card.href));
+  expect(themes.slice(-5)).toEqual(["/easy", "/hard", "/for-kids", "/christmas", "/pictures"]);
   // Honest difficulty copy, no stale "humans still win" claim.
   expect(container).toHaveTextContent(/The AI gets brutal around level \d+/);
   expect(container).not.toHaveTextContent(/still win/i);
@@ -66,4 +68,14 @@ test("difficulty copy cites the level where the sim-AI curve's last band starts"
   expect(AI_BRUTAL_FROM_LEVEL).toBe(FORMAL_DIFFICULTY.bands.at(-1)!.fromLevel);
   const { container } = render(HomePage());
   expect(container).toHaveTextContent(`The AI gets brutal around level ${AI_BRUTAL_FROM_LEVEL}`);
+});
+
+test("seasonal home card: Halloween first from Sep 1 through Oct 31 (UTC), none outside the window", async () => {
+  const { seasonalCard, themeCards } = await import("@/content/keyword-pages");
+  expect(seasonalCard(new Date("2026-10-21T04:00:00Z"))?.href).toBe("/halloween");
+  expect(seasonalCard(new Date("2026-09-01T00:00:00Z"))?.href).toBe("/halloween");
+  expect(seasonalCard(new Date("2026-10-31T23:59:59Z"))?.href).toBe("/halloween");
+  expect(seasonalCard(new Date("2026-08-31T23:59:59Z"))).toBeNull();
+  expect(themeCards(new Date("2026-10-21T04:00:00Z")).map((card) => card.href)).toEqual(["/halloween", "/easy", "/hard", "/for-kids", "/christmas", "/pictures"]);
+  expect(themeCards(new Date("2027-03-01T00:00:00Z"))).toHaveLength(5);
 });

@@ -24,7 +24,7 @@ async function pixelReport(page: Page) {
 }
 
 test.describe("@viewport pixel type system", () => {
-  for (const path of ["/", "/hard", "/christmas", "/games", "/faq", "/games/spot-the-difference/leaderboard"]) {
+  for (const path of ["/", "/hard", "/christmas", "/halloween", "/games", "/faq", "/games/spot-the-difference/leaderboard"]) {
     test(`${path} renders pixel fonts only at grid sizes`, async ({ page }) => {
       await page.goto(path);
       const report = await pixelReport(page);

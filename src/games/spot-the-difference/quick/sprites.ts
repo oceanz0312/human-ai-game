@@ -1,5 +1,5 @@
 /**
- * Pixel sprites for the instant "quick" puzzles (home page board, difficulty pages, Christmas set, printables).
+ * Pixel sprites for the instant "quick" puzzles (home page board, difficulty pages, holiday sets, printables).
  * Separate from the 20 ranked levels on purpose: answers here live in the browser, so they never touch the
  * leaderboard level set. 8×8 rows; "." is transparent, letters index the sprite's palette.
  */
@@ -36,5 +36,21 @@ export const CHRISTMAS: Sprite[] = [
   s("reindeer", "reindeer", { b: "#8a5a32", t: "#c79a6a", r: "#e5403a", k: "#1d2440" }, ["t.t..t.t", ".tt..tt.", "..bbbb..", ".bkbbkb.", ".bbbbbb.", "..bbbb..", "..brrb..", "...rr..."]),
 ];
 
-export type QuickTheme = "everyday" | "christmas";
-export const spritesFor = (theme: QuickTheme) => (theme === "christmas" ? CHRISTMAS : EVERYDAY);
+/**
+ * Halloween set (kid-friendly: no skulls or gore). Cells are white, so no color here is near-white – a pixel that
+ * turns transparent must always be visible (unit test: holiday palettes keep contrast against the cell).
+ */
+export const HALLOWEEN: Sprite[] = [
+  s("pumpkin", "jack-o'-lantern", { o: "#f39c34", d: "#c4621d", k: "#1d2440", g: "#3aa655" }, ["...gg...", ".oooooo.", "oooooooo", "okooooko", "oodoodoo", "okkkkkko", ".ookkoo.", "..oooo.."]),
+  s("ghost", "ghost", { l: "#d3d9f0", s: "#7d86b3", k: "#1d2440" }, ["..ssss..", ".slllls.", "slllllls", "slkllkls", "slllllls", "sllkklls", "slllllls", "ss.ss.ss"]),
+  s("bat", "bat", { p: "#5b3f8c", c: "#3b3355", y: "#ffd447" }, ["..c..c..", "p.cccc.p", "ppcyycpp", "pppccppp", "pppppppp", "p.pppp.p", "...pp...", "........"]),
+  s("witch-hat", "witch hat", { h: "#2b2440", p: "#7b4fc9", y: "#ffd447" }, ["....h...", "...hh...", "...hhh..", "..hhhh..", "..hhhhh.", ".ppyypp.", "hhhhhhhh", "........"]),
+  s("black-cat", "black cat", { c: "#3b3355", e: "#8be04e", p: "#ff8fb1" }, [".c...c..", ".ccccc..", ".cecec..", ".ccpcc..", "..ccc..c", ".ccccc.c", ".cccccc.", ".cc.cc.."]),
+  s("candy-corn", "candy corn", { w: "#ead29c", o: "#f39c34", y: "#ffcf3f" }, ["...ww...", "...ww...", "..oooo..", "..oooo..", ".oooooo.", ".yyyyyy.", "yyyyyyyy", "yyyyyyyy"]),
+  s("spider", "spider", { k: "#1d2440", p: "#7b4fc9", r: "#e5403a" }, ["k......k", ".k.kk.k.", "..kkkk..", "kkrkkrkk", "..kppk..", ".kkkkkk.", "k.kkkk.k", "...kk..."]),
+  s("cauldron", "cauldron", { e: "#8be04e", k: "#1d2440", s: "#5a6080", o: "#f39c34", y: "#ffd447" }, ["..e...e.", ".eeeeee.", "kkkkkkkk", "kskkkkkk", "kskkkkkk", ".kkkkkk.", "..k..k..", ".oyoyoo."]),
+];
+
+export type QuickTheme = "everyday" | "christmas" | "halloween";
+const SETS: Record<QuickTheme, Sprite[]> = { everyday: EVERYDAY, christmas: CHRISTMAS, halloween: HALLOWEEN };
+export const spritesFor = (theme: QuickTheme) => SETS[theme];

@@ -31,13 +31,40 @@ export interface KeywordPageContent {
 }
 
 /** Theme cards under the home first screen (each links an existing keyword page). */
-export const THEME_CARDS = [
+export const THEME_CARDS: ThemeCard[] = [
   { href: "/easy", label: "Easy spot the difference", blurb: "Small grids, bigger changes, more time." },
   { href: "/hard", label: "Hard spot the difference", blurb: "Up to 8×8 grids, one pixel changed." },
   { href: "/for-kids", label: "Spot the difference for kids", blurb: "Big 3×3 pictures and a long timer." },
   { href: "/christmas", label: "Christmas spot the difference", blurb: "Trees, gifts, bells and snowmen." },
   { href: "/pictures", label: "Spot the difference pictures", blurb: "The pixel picture set behind every puzzle." },
 ];
+
+export interface ThemeCard {
+  href: string;
+  label: string;
+  blurb: string;
+}
+
+/**
+ * One seasonal card goes first on the home page while its holiday is coming up (plan: holiday-pages-plan.md).
+ * Windows are [month, day] in UTC, inclusive. Keyword pages are prerendered, so the card flips with the first
+ * deploy on or after a window boundary. The holiday pages themselves stay live and indexable all year.
+ */
+export const SEASONAL_CARDS: Array<ThemeCard & { from: [number, number]; until: [number, number] }> = [
+  { href: "/halloween", label: "Halloween spot the difference", blurb: "Pumpkins, ghosts, bats and black cats.", from: [9, 1], until: [10, 31] },
+];
+
+export function seasonalCard(now: Date = new Date()): ThemeCard | null {
+  const today = (now.getUTCMonth() + 1) * 100 + now.getUTCDate();
+  const card = SEASONAL_CARDS.find(({ from, until }) => today >= from[0] * 100 + from[1] && today <= until[0] * 100 + until[1]);
+  return card ? { href: card.href, label: card.label, blurb: card.blurb } : null;
+}
+
+/** Home theme cards: the current seasonal card (if any) first, then the evergreen five. */
+export function themeCards(now: Date = new Date()): ThemeCard[] {
+  const seasonal = seasonalCard(now);
+  return seasonal ? [seasonal, ...THEME_CARDS] : THEME_CARDS;
+}
 
 /** Shared closing for every keyword-page AI FAQ (20-level curve; keep in sync with sim-v2). */
 const AI_FAQ_CORE =
@@ -73,6 +100,12 @@ const AI_FAQ_CHRISTMAS = {
   a: `Yes. The Christmas set races Luna AI on holiday sprites — trees, gifts, snowmen and reindeer — with the same rules as every other puzzle here. ${AI_FAQ_CORE}`,
 };
 
+/** Halloween page: same race, Halloween sprites. */
+const AI_FAQ_HALLOWEEN = {
+  q: "Can I race the AI on Halloween spot the difference?",
+  a: `Yes. The Halloween set races Luna AI on holiday sprites – pumpkins, ghosts, bats and cats – with the same rules as every other puzzle here. ${AI_FAQ_CORE}`,
+};
+
 /** Pictures page: gallery sprites in a live race. */
 const AI_FAQ_PICTURES = {
   q: "Can I play against AI with these spot the difference pictures?",
@@ -89,6 +122,7 @@ const L = {
   printable: { href: "/printable", label: "Printable spot the difference" },
   pictures: { href: "/pictures", label: "Spot the difference pictures" },
   christmas: { href: "/christmas", label: "Christmas spot the difference" },
+  halloween: { href: "/halloween", label: "Halloween spot the difference" },
   how: { href: "/how-to-play", label: "How to play" },
   vs: { href: "/human-vs-ai", label: "Human vs AI mode" },
 };
@@ -307,6 +341,50 @@ export const KEYWORD_PAGES: Record<string, KeywordPageContent> = {
       AI_FAQ_CHRISTMAS,
     ],
     links: [L.printable, L.kids, L.home, L.pictures],
+  },
+  /** Halloween (holiday-pages-plan.md, ★ copy per 哥飞 review 2026-10-19: title and H1 both "Spot"). */
+  "/halloween": {
+    path: "/halloween",
+    keyword: "halloween spot the difference",
+    nav: "Halloween",
+    title: "Halloween Spot the Difference – Free Puzzle vs AI",
+    description: "Pumpkins, ghosts, bats and black cats. Find the one picture that's different before Luna AI does. Free, no signup, in your browser.",
+    h1: "Halloween Spot the Difference",
+    lede: "Halloween spot the difference with pumpkins, ghosts, bats and witch hats — one of them is a little off.",
+    board: { mode: "halloween", seed: "halloween-v1", label: "Halloween spot the difference puzzle", start: "Tap to play a Halloween round" },
+    sections: [
+      {
+        h2: "A spooky (but not scary) set",
+        paragraphs: [
+          "Eight Halloween sprites: a jack-o'-lantern, a ghost, a bat, a witch hat, a black cat, candy corn, a spider and a cauldron. Each round fills a 4×4, 5×5 or 6×6 grid with copies of one sprite, and exactly one copy has two pixels changed. Spot it and tap it before Luna AI — the simulated opponent — finds it first.",
+          "Watch for a pumpkin with a different grin, a bat missing a wing pixel or a candy corn with its colors swapped.",
+        ],
+      },
+      {
+        h2: "How Halloween spot the difference plays differently here",
+        paragraphs: [
+          // Quick-mode pacing (QUICK_AI.modes.halloween) shortens the AI's median time each round: "every round" is literal.
+          "Most spot the difference games put two pictures side by side. This one fills a whole grid with the same sprite and changes two pixels on one copy — so you're scanning, not comparing. It's harder than it sounds, and Luna AI gets faster every round.",
+        ],
+      },
+      {
+        h2: "Halloween party ideas",
+        list: [
+          "Put it on the classroom screen and let kids call out the odd one.",
+          "Pass the phone around at a Halloween party and keep score.",
+          "Print the Halloween sheet for a class party – it comes with an answer key.",
+          "Try to win three rounds in a row before the AI takes one.",
+        ],
+      },
+    ],
+    faq: [
+      { q: "Is this Halloween find the difference game scary?", a: "No. The pixel-art sprites are cute 8×8 pictures – no gore and no jump scares." },
+      { q: "Is it free?", a: "Yes. It runs in your browser with no download or signup." },
+      { q: "Are there printable Halloween puzzles?", a: "Yes – the printable page includes a Halloween sheet with an answer key." },
+      AI_FAQ_HALLOWEEN,
+      { q: "Can I play after Halloween?", a: "Yes, this page stays up all year." },
+    ],
+    links: [{ href: "/printable", label: "Halloween printable spot the difference" }, L.kids, L.home],
   },
   "/pictures": {
     path: "/pictures",
