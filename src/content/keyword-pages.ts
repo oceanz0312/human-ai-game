@@ -1,5 +1,7 @@
 import type { QuickModeKey } from "@/games/spot-the-difference/quick/puzzle";
 import { AI_CURVE_LINE } from "./ai-curve";
+import type { SkinId } from "@/config/skin-calendar";
+import { SKINS } from "@/config/skins";
 
 /**
  * English keyword pages (one search term = one page, SEO plan 2026-10-18). Every page carries its own copy;
@@ -46,26 +48,33 @@ export interface ThemeCard {
 }
 
 /**
- * One seasonal card goes first on the home page while its holiday is coming up (plan: holiday-pages-plan.md).
- * Windows are [month, day] in UTC, inclusive. Keyword pages are prerendered, so the card flips with the first
- * deploy on or after a window boundary. The holiday pages themselves stay live and indexable all year.
+ * Seasonal home cards, one per keyword page a skin can point at (src/config/skins.ts). The home page shows the
+ * current skin's card first, chosen per request by the New York date (src/middleware.ts), and only when that keyword
+ * page exists: a skin whose page is not built yet (e.g. /winter) gets visuals only, never a dead link.
+ * The holiday pages themselves stay live and indexable all year.
  */
-export const SEASONAL_CARDS: Array<ThemeCard & { from: [number, number]; until: [number, number] }> = [
-  { href: "/halloween", label: "Halloween spot the difference", blurb: "Pumpkins, ghosts, bats and black cats.", from: [9, 1], until: [10, 31] },
-  // Thanksgiving is the 4th Thursday of November (Nov 22–28): the card stays up through the latest possible date.
-  { href: "/thanksgiving", label: "Thanksgiving spot the difference", blurb: "Turkeys, pies, corn and fall leaves.", from: [11, 1], until: [11, 28] },
-];
+export const SEASONAL_CARDS: Record<string, ThemeCard> = {
+  "/halloween": { href: "/halloween", label: "Halloween spot the difference", blurb: "Pumpkins, ghosts, bats and black cats." },
+  "/thanksgiving": { href: "/thanksgiving", label: "Thanksgiving spot the difference", blurb: "Turkeys, pies, corn and fall leaves." },
+  "/christmas": { href: "/christmas", label: "Christmas spot the difference", blurb: "Trees, gifts, bells and snowmen." },
+  // Not built yet; these show automatically once the route is added to KEYWORD_PAGES (copy to be reviewed then).
+  "/winter": { href: "/winter", label: "Winter spot the difference", blurb: "Snowflakes, polar bears, mittens and cocoa." },
+  "/spring": { href: "/spring", label: "Spring spot the difference", blurb: "Flowers, eggs, shamrocks and rain." },
+  "/summer": { href: "/summer", label: "Summer spot the difference", blurb: "Suns, beach balls, ice pops and fireworks." },
+  "/fall": { href: "/fall", label: "Fall spot the difference", blurb: "Leaves, acorns, apples and scarecrows." },
+};
 
-export function seasonalCard(now: Date = new Date()): ThemeCard | null {
-  const today = (now.getUTCMonth() + 1) * 100 + now.getUTCDate();
-  const card = SEASONAL_CARDS.find(({ from, until }) => today >= from[0] * 100 + from[1] && today <= until[0] * 100 + until[1]);
-  return card ? { href: card.href, label: card.label, blurb: card.blurb } : null;
+/** The home card for a skin, or null when the skin's keyword page does not exist (visuals only). */
+export function seasonalCard(skin: SkinId | null | undefined): ThemeCard | null {
+  if (!skin) return null;
+  const href = SKINS[skin].page;
+  return KEYWORD_PAGES[href] && SEASONAL_CARDS[href] ? SEASONAL_CARDS[href] : null;
 }
 
-/** Home theme cards: the current seasonal card (if any) first, then the evergreen five. */
-export function themeCards(now: Date = new Date()): ThemeCard[] {
-  const seasonal = seasonalCard(now);
-  return seasonal ? [seasonal, ...THEME_CARDS] : THEME_CARDS;
+/** Home theme cards: the skin's seasonal card (if any) first, then the evergreen five (without a duplicate). */
+export function themeCards(skin?: SkinId | null): ThemeCard[] {
+  const seasonal = seasonalCard(skin);
+  return seasonal ? [seasonal, ...THEME_CARDS.filter((card) => card.href !== seasonal.href)] : THEME_CARDS;
 }
 
 /** Shared closing for every keyword-page AI FAQ (20-level curve; keep in sync with sim-v2). */

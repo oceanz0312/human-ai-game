@@ -63,6 +63,18 @@ export const THANKSGIVING: Sprite[] = [
   s("gourd", "gourd", { n: "#e9a54a", d: "#b8742a", g: "#3aa655" }, ["...g....", "...nn...", "...nn...", "..nnnn..", ".nnnnnn.", ".nndnnn.", ".nnnnnn.", "..nnnn.."]),
 ];
 
+/**
+ * Seasonal skin marks (home header decoration only, src/config/skins.ts). Not part of any puzzle set, so they never
+ * change a board, a printable or the simulated AI.
+ */
+export const SKIN_SPRITES: Record<"snowflake" | "shamrock" | "egg" | "sun" | "firework", Sprite> = {
+  snowflake: s("snowflake", "snowflake", { b: "#3a9be0", l: "#9fd4ff" }, ["...b....", ".b.b.b..", "..bbb...", "bbblbbb.", "..bbb...", ".b.b.b..", "...b....", "........"]),
+  shamrock: s("shamrock", "shamrock", { g: "#3aa655", d: "#1f7a3a" }, [".gg.gg..", "gggggg..", "gggggg..", ".gggg...", "gggggg..", "ggddgg..", "...d....", "..d....."]),
+  egg: s("egg", "Easter egg", { p: "#b48cf0", y: "#ffd447", b: "#3ab0ff" }, ["...pp...", "..pppp..", ".pppppp.", ".yyyyyy.", "pppppppp", "bbbbbbbb", ".pppppp.", "..pppp.."]),
+  sun: s("sun", "sun", { y: "#ffcf3f", o: "#f39c34" }, ["y..y...y", ".y.y..y.", "...oo...", "yyooooyy", "yyooooyy", "...oo...", ".y..y.y.", "y...y..y"]),
+  firework: s("firework", "firework", { r: "#e5403a", b: "#3a7bff" }, ["r..b..r.", ".r.b.r..", "..rbr...", "bbb.bbb.", "..rbr...", ".r.b.r..", "r..b..r.", "........"]),
+};
+
 export type QuickTheme = "everyday" | "christmas" | "halloween" | "thanksgiving";
 const SETS: Record<QuickTheme, Sprite[]> = { everyday: EVERYDAY, christmas: CHRISTMAS, halloween: HALLOWEEN, thanksgiving: THANKSGIVING };
 export const spritesFor = (theme: QuickTheme) => SETS[theme];

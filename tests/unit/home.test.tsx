@@ -69,17 +69,3 @@ test("difficulty copy cites the level where the sim-AI curve's last band starts"
   const { container } = render(HomePage());
   expect(container).toHaveTextContent(`The AI gets brutal around level ${AI_BRUTAL_FROM_LEVEL}`);
 });
-
-test("seasonal home card: Halloween Sep 1–Oct 31, Thanksgiving Nov 1–28 (UTC), none outside the windows", async () => {
-  const { seasonalCard, themeCards } = await import("@/content/keyword-pages");
-  expect(seasonalCard(new Date("2026-10-21T04:00:00Z"))?.href).toBe("/halloween");
-  expect(seasonalCard(new Date("2026-09-01T00:00:00Z"))?.href).toBe("/halloween");
-  expect(seasonalCard(new Date("2026-10-31T23:59:59Z"))?.href).toBe("/halloween");
-  expect(seasonalCard(new Date("2026-08-31T23:59:59Z"))).toBeNull();
-  expect(seasonalCard(new Date("2026-11-01T00:00:00Z"))?.href).toBe("/thanksgiving");
-  expect(seasonalCard(new Date("2026-11-26T12:00:00Z"))?.href).toBe("/thanksgiving");
-  expect(seasonalCard(new Date("2026-11-28T23:59:59Z"))?.href).toBe("/thanksgiving");
-  expect(seasonalCard(new Date("2026-11-29T00:00:00Z"))).toBeNull();
-  expect(themeCards(new Date("2026-10-21T04:00:00Z")).map((card) => card.href)).toEqual(["/halloween", "/easy", "/hard", "/for-kids", "/christmas", "/pictures"]);
-  expect(themeCards(new Date("2027-03-01T00:00:00Z"))).toHaveLength(5);
-});

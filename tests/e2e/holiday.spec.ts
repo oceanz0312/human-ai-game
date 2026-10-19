@@ -1,5 +1,4 @@
 import { expect, test } from "@playwright/test";
-import { seasonalCard } from "../../src/content/keyword-pages";
 
 /** Holiday keyword pages (holiday-pages-plan.md): themed board, own copy, linked from footer, printable and the home seasonal card. */
 const ld = (html: string) =>
@@ -49,14 +48,6 @@ test("/halloween is linked from the footer, links /printable exactly once, and t
   await expect(printable).toHaveText(/^Halloween printable spot the difference/);
   await page.goto("/printable");
   await expect(page.getByRole("heading", { name: "Sheet 3 · Halloween" })).toBeVisible();
-});
-
-test("home seasonal card follows the date window", async ({ page }) => {
-  await page.goto("/");
-  const card = page.locator('.kw-themes a[href="/halloween"]');
-  // Pages are prerendered at build time: assert against the build day's window (same UTC day in CI).
-  await expect(card).toHaveCount(seasonalCard()?.href === "/halloween" ? 1 : 0);
-  await expect(page.locator('.kw-themes a[href="/thanksgiving"]')).toHaveCount(seasonalCard()?.href === "/thanksgiving" ? 1 : 0);
 });
 
 test("/thanksgiving: 哥飞-reviewed title/H1, indexable, find variant once, one /printable link, full match", async ({ page, request }) => {
