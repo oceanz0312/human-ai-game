@@ -31,15 +31,16 @@ for (const [date, skin, expected] of [
   ["2026-11-26", "thanksgiving", ["/thanksgiving", "/easy", "/hard", "/for-kids", "/christmas", "/pictures"]],
   ["2026-12-24", "christmas", ["/christmas", "/easy", "/hard", "/for-kids", "/pictures"]],
   ["2027-07-15", "summer", ["/easy", "/hard", "/for-kids", "/christmas", "/pictures"]],
-  ["2026-12-05", "winter", ["/easy", "/hard", "/for-kids", "/christmas", "/pictures"]],
+  ["2026-12-05", "winter", ["/winter", "/easy", "/hard", "/for-kids", "/christmas", "/pictures"]],
+  ["2027-02-14", "valentines", ["/winter", "/easy", "/hard", "/for-kids", "/christmas", "/pictures"]],
 ] as const) {
   test(`?skinDate=${date} → ${skin} skin, cards ${expected[0]}…`, async ({ page }) => {
     const res = await page.goto(`/?skinDate=${date}`);
     expect(res!.headers()["x-skin"]).toBe(skin);
     await expect(page.locator(".site-page")).toHaveAttribute("data-skin", skin);
     expect(await cards(page)).toEqual(expected);
-    // Seasons without a built page (/winter, /summer …) never link to it.
-    await expect(page.locator('a[href="/winter"], a[href="/summer"], a[href="/spring"], a[href="/fall"]')).toHaveCount(0);
+    // Seasons without a built page (/spring, /summer, /fall) never link to it.
+    await expect(page.locator('a[href="/summer"], a[href="/spring"], a[href="/fall"]')).toHaveCount(0);
   });
 }
 

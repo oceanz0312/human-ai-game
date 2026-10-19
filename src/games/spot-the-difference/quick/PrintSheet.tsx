@@ -16,7 +16,7 @@ const cellName = (index: number, grid: number) => `row ${Math.floor(index / grid
 export function PrintSheet({ sheet }: { sheet: SheetSpec }) {
   const puzzles = sheet.grids.map((grid, i) => makePuzzle(`print-${sheet.id}-${i}`, { theme: sheet.theme, grid, changes: sheet.changes }));
   return (
-    <article className="print-sheet" data-testid="print-sheet" aria-labelledby={`${sheet.id}-title`}>
+    <article id={sheet.id} className="print-sheet" data-testid="print-sheet" aria-labelledby={`${sheet.id}-title`}>
       <h2 id={`${sheet.id}-title`}>{sheet.title}</h2>
       <p className="print-instructions">In each grid, one picture is different from all the others. Circle it! Name: ____________</p>
       <div className="print-puzzles">

@@ -16,6 +16,7 @@ export function SiteFooter(_props: { locale?: Locale }) {
         { href: "/halloween", label: "Halloween puzzles" },
         { href: "/thanksgiving", label: "Thanksgiving puzzles" },
         { href: "/christmas", label: "Christmas puzzles" },
+        { href: "/winter", label: "Winter puzzles" },
       ],
     },
     {

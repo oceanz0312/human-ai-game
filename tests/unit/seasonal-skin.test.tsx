@@ -173,8 +173,15 @@ describe("home cards per skin", () => {
   test("Christmas moves its evergreen card first without a duplicate", () => {
     expect(themeCards("christmas").map((c) => c.href)).toEqual(["/christmas", "/easy", "/hard", "/for-kids", "/pictures"]);
   });
-  test("skins whose page is not built yet (winter, spring, summer, fall and their holidays) get visuals only, no dead link", () => {
-    for (const skin of ["winter", "new-year", "valentines", "spring", "st-patricks", "easter", "summer", "july-4", "fall"] as const) {
+  test("winter, New Year and Valentine's link the /winter card (the route exists now)", () => {
+    for (const skin of ["winter", "new-year", "valentines"] as const) {
+      expect(seasonalCard(skin)?.href).toBe("/winter");
+      expect(themeCards(skin).map((c) => c.href)).toEqual(["/winter", "/easy", "/hard", "/for-kids", "/christmas", "/pictures"]);
+    }
+    expect(seasonalCard("christmas")?.href).toBe("/christmas");
+  });
+  test("skins whose page is not built yet (spring, summer, fall and their holidays) get visuals only, no dead link", () => {
+    for (const skin of ["spring", "st-patricks", "easter", "summer", "july-4", "fall"] as const) {
       expect(KEYWORD_PAGES[SKINS[skin].page]).toBeUndefined();
       expect(seasonalCard(skin)).toBeNull();
       expect(themeCards(skin)).toEqual(THEME_CARDS);
@@ -232,9 +239,10 @@ describe("skinned home variants", () => {
     await expect(SkinnedHomePage({ params: Promise.resolve({ skin: "nope" }) })).rejects.toThrow("NEXT_NOT_FOUND");
   });
 
-  test("sitemap routes unchanged: no /skin variants (17 static + 1 leaderboard = 18 URLs)", () => {
+  test("sitemap routes: /winter added, no /skin variants (18 static + 1 leaderboard = 19 URLs)", () => {
     const paths = staticSeoRoutes().map((r) => r.path);
-    expect(paths).toHaveLength(17);
+    expect(paths).toHaveLength(18);
+    expect(paths).toContain("/winter");
     expect(paths.some((p) => p.includes("skin"))).toBe(false);
   });
 

@@ -1,5 +1,5 @@
 import type { SkinId } from "./skin-calendar";
-import { CHRISTMAS, EVERYDAY, HALLOWEEN, SKIN_SPRITES, THANKSGIVING, type Sprite } from "@/games/spot-the-difference/quick/sprites";
+import { CHRISTMAS, EVERYDAY, HALLOWEEN, SKIN_SPRITES, THANKSGIVING, WINTER, type Sprite } from "@/games/spot-the-difference/quick/sprites";
 
 /**
  * Visuals per seasonal skin (plan: proposals/seasonal-skin-plan.md §5). A skin only adds an accent color (header
@@ -31,7 +31,7 @@ export const SKINS: Record<SkinId, Skin> = {
   "st-patricks": { id: "st-patricks", name: "St. Patrick's Day", accent: "#3aa655", marks: [SKIN_SPRITES.shamrock], page: "/spring" },
   easter: { id: "easter", name: "Easter", accent: "#b48cf0", marks: [SKIN_SPRITES.egg], page: "/spring" },
   "july-4": { id: "july-4", name: "4th of July", accent: "#3a7bff", marks: [SKIN_SPRITES.firework, ...pick(EVERYDAY, "star")], page: "/summer" },
-  winter: { id: "winter", name: "Winter", accent: "#3a9be0", marks: [SKIN_SPRITES.snowflake], page: "/winter" },
+  winter: { id: "winter", name: "Winter", accent: "#3a9be0", marks: pick(WINTER, "snowflake", "mitten"), page: "/winter" },
   spring: { id: "spring", name: "Spring", accent: "#ff6fb5", marks: pick(EVERYDAY, "flower"), page: "/spring" },
   summer: { id: "summer", name: "Summer", accent: "#ffcf3f", marks: [SKIN_SPRITES.sun], page: "/summer" },
   fall: { id: "fall", name: "Fall", accent: "#d9661f", marks: pick(THANKSGIVING, "maple-leaf", "acorn"), page: "/fall" },

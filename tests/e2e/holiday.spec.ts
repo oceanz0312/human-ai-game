@@ -80,3 +80,59 @@ test("/thanksgiving: 哥飞-reviewed title/H1, indexable, find variant once, one
   await page.goto("/printable");
   await expect(page.getByRole("heading", { name: "Sheet 4 · Thanksgiving" })).toBeVisible();
 });
+
+/** Visible text of the page's <main>, without scripts/tags. */
+const mainText = (html: string) =>
+  (html.match(/<main[\s\S]*?<\/main>/)?.[0] ?? "").replace(/<script[\s\S]*?<\/script>/g, "").replace(/<style[\s\S]*?<\/style>/g, "").replace(/<[^>]+>/g, " ").replace(/&[a-z#0-9]+;/gi, " ").replace(/\s+/g, " ").trim();
+
+test("/winter: 哥飞-reviewed title/H1, indexable, ≥300 server-rendered words, no Christmas pictures outside the boundary FAQ", async ({ request }) => {
+  const res = await request.get("/winter");
+  expect(res.status()).toBe(200);
+  const html = await res.text();
+  expect(html).toMatch(/<html lang="en-US"/);
+  expect(html).toMatch(/<title>Winter Spot the Difference – Free Puzzle vs AI<\/title>/);
+  expect(html).toMatch(/<h1[^>]*>Winter Spot the Difference<\/h1>/);
+  expect(html).toMatch(/<link rel="canonical" href="https:\/\/spotthedifferencegame\.com\/winter"/);
+  expect(html).not.toMatch(/<meta name="robots" content="noindex/);
+  const text = mainText(html);
+  expect(text.split(" ").filter((w) => /[a-z0-9]/i.test(w)).length).toBeGreaterThanOrEqual(300);
+  for (const h2 of ["A cozy winter set", "New Year spot the difference", "Valentine&#x27;s Day spot the difference", "Snow day ideas"]) expect(html).toContain(`<h2>${h2}</h2>`);
+  const boundary = "The Christmas page has trees, gifts and snowmen.";
+  expect(text.split(boundary)).toHaveLength(2);
+  expect(text.replace(boundary, "")).not.toMatch(/\b(santa|trees?|gifts?|snowm[ae]n|reindeer|stockings?)\b/i);
+  expect(text).not.toMatch(/\b(best|#1|colour|favourite)\b/i);
+  const types = ld(html).map((d) => [d["@type"]].flat().join("+"));
+  expect(types).toEqual(expect.arrayContaining(["VideoGame", "FAQPage", "BreadcrumbList"]));
+  const faq = ld(html).find((d) => d["@type"] === "FAQPage") as { mainEntity: { name: string }[] };
+  expect(faq.mainEntity.map((q) => q.name)).toEqual(expect.arrayContaining(["Can I race the AI on winter spot the difference?", "Is this different from the Christmas page?"]));
+});
+
+test("/winter: full 3-round match on winter sprites, no auto-advance; links to printable #winter, Christmas and the seasonal ring", async ({ page }) => {
+  await page.goto("/winter");
+  await expect(page.locator('footer a[href="/winter"]')).toHaveText("Winter puzzles");
+  await expect(page.locator('.kw-body a[href="/printable#winter"]').first()).toHaveText("winter spot the difference printable");
+  for (const href of ["/christmas", "/thanksgiving", "/halloween"]) await expect(page.locator(`.info-links a[href="${href}"]`)).toHaveCount(1);
+  const board = page.getByTestId("quick-board");
+  await expect(board.locator("symbol").first()).toHaveAttribute("id", /-(snowflake|mitten|hot-cocoa|knit-hat|ice-skate|sled|penguin|polar-bear)(-odd)?$/);
+  await page.getByTestId("quick-start").click();
+  for (let round = 0; round < 3; round++) {
+    await expect(board).toHaveAttribute("data-phase", "playing");
+    await board.locator('.quick-cell:has(use[href$="-odd"])').click();
+    await expect(page.getByTestId("quick-result")).toHaveText(/You win!|AI wins|No winner/);
+    await page.waitForTimeout(600);
+    await expect(board).toHaveAttribute("data-phase", "reveal");
+    await page.getByTestId("quick-next").click();
+  }
+  await expect(page.getByTestId("quick-done")).toBeVisible();
+  await page.goto("/printable#winter");
+  await expect(page.locator("article#winter")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Sheet 6 · Winter" })).toBeVisible();
+});
+
+test("seasonal ring: /christmas, /halloween and /thanksgiving link each other and /winter", async ({ page }) => {
+  const ring = ["/halloween", "/thanksgiving", "/christmas", "/winter"];
+  for (const from of ring) {
+    await page.goto(from);
+    for (const to of ring.filter((p) => p !== from)) await expect(page.locator(`.info-links a[href="${to}"]`), `${from} → ${to}`).toHaveCount(1);
+  }
+});

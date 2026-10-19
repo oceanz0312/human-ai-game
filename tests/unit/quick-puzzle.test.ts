@@ -1,8 +1,8 @@
-import { CHRISTMAS, EVERYDAY, HALLOWEEN, spritesFor, THANKSGIVING } from "@/games/spot-the-difference/quick/sprites";
+import { CHRISTMAS, EVERYDAY, HALLOWEEN, spritesFor, THANKSGIVING, WINTER } from "@/games/spot-the-difference/quick/sprites";
 import { makePuzzle, QUICK_MODES } from "@/games/spot-the-difference/quick/puzzle";
 
 test("every sprite is 8×8 and only uses its palette", () => {
-  for (const sprite of [...EVERYDAY, ...CHRISTMAS, ...HALLOWEEN, ...THANKSGIVING]) {
+  for (const sprite of [...EVERYDAY, ...CHRISTMAS, ...HALLOWEEN, ...THANKSGIVING, ...WINTER]) {
     expect(sprite.rows, sprite.id).toHaveLength(8);
     for (const row of sprite.rows) {
       expect(row, sprite.id).toHaveLength(8);
@@ -38,7 +38,7 @@ const contrast = (a: string, b: string) => {
 const rgbDistance = (a: string, b: string) => Math.hypot(...[1, 3, 5].map((i) => parseInt(a.slice(i, i + 2), 16) - parseInt(b.slice(i, i + 2), 16)));
 
 test("holiday sets: 8 unique sprites, every color visible on the white cell and distinct from the others", () => {
-  for (const set of [HALLOWEEN, THANKSGIVING]) {
+  for (const set of [HALLOWEEN, THANKSGIVING, WINTER]) {
     expect(set).toHaveLength(8);
     expect(new Set(set.map((sprite) => sprite.id)).size).toBe(8);
     for (const sprite of set) {
@@ -52,9 +52,16 @@ test("holiday sets: 8 unique sprites, every color visible on the white cell and 
 });
 
 test("holiday puzzles never draw from another theme", () => {
-  for (const [theme, set] of [["halloween", HALLOWEEN], ["thanksgiving", THANKSGIVING]] as const) {
+  for (const [theme, set] of [["halloween", HALLOWEEN], ["thanksgiving", THANKSGIVING], ["winter", WINTER]] as const) {
     const ids = new Set(set.map((sprite) => sprite.id));
     expect(spritesFor(theme)).toBe(set);
     for (let i = 0; i < 50; i++) expect(ids.has(makePuzzle(`h-${i}`, { theme, grid: 4, changes: 2 }).base.id)).toBe(true);
   }
+});
+
+test("winter set: the 8 approved sprites, no Christmas pictures (snowman stays on /christmas)", () => {
+  expect(WINTER.map((sprite) => sprite.id)).toEqual(["snowflake", "mitten", "hot-cocoa", "knit-hat", "ice-skate", "sled", "penguin", "polar-bear"]);
+  const christmas = new Set(CHRISTMAS.map((sprite) => sprite.id));
+  expect(WINTER.some((sprite) => christmas.has(sprite.id))).toBe(false);
+  expect(QUICK_MODES.winter).toMatchObject({ theme: "winter", grids: [4, 5, 6], changes: 2 });
 });

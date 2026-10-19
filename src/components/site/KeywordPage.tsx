@@ -78,9 +78,17 @@ export function KeywordPage({ page, children, skin }: { page: KeywordPageContent
               ))}
               {section.list ? (
                 <ul>
-                  {section.list.map((item) => (
-                    <li key={item}>{item}</li>
-                  ))}
+                  {section.list.map((item) =>
+                    typeof item === "string" ? (
+                      <li key={item}>{item}</li>
+                    ) : (
+                      <li key={item.link.href}>
+                        {item.before}
+                        <Link href={item.link.href}>{item.link.label}</Link>
+                        {item.after}
+                      </li>
+                    ),
+                  )}
                 </ul>
               ) : null}
             </section>
@@ -93,6 +101,11 @@ export function KeywordPage({ page, children, skin }: { page: KeywordPageContent
                 <details key={item.q} className="card faq-item">
                   <summary>{item.q}</summary>
                   <p>{item.a}</p>
+                  {item.link ? (
+                    <p className="faq-link">
+                      <Link href={item.link.href}>{item.link.label} →</Link>
+                    </p>
+                  ) : null}
                 </details>
               ))}
             </div>

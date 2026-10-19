@@ -229,6 +229,7 @@ export const CONTENT_PATHS = [
   "/christmas",
   "/halloween",
   "/thanksgiving",
+  "/winter",
   "/pictures",
   "/printable",
   "/how-to-play",

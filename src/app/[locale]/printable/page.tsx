@@ -18,6 +18,7 @@ const SHEETS: SheetSpec[] = [
   { id: "halloween", title: "Sheet 3 · Halloween", theme: "halloween", grids: [4, 4, 5, 5], changes: 3 },
   { id: "thanksgiving", title: "Sheet 4 · Thanksgiving", theme: "thanksgiving", grids: [4, 4, 5, 5], changes: 3 },
   { id: "christmas", title: "Sheet 5 · Christmas", theme: "christmas", grids: [4, 4, 5, 5], changes: 3 },
+  { id: "winter", title: "Sheet 6 · Winter", theme: "winter", grids: [4, 4, 5, 5], changes: 3 },
 ];
 
 const FAQ = [
@@ -35,7 +36,7 @@ export default function Page() {
         <section className="kw-hero kw-hero-print">
           <div className="kw-head">
             <h1 className="page-title kw-title">Spot the Difference Printable</h1>
-            <p className="kw-lede">Five free sheets – easy, classic, Halloween, Thanksgiving and Christmas – with an answer key. Print them or save as PDF.</p>
+            <p className="kw-lede">Six free sheets – easy, classic, Halloween, Thanksgiving, Christmas and winter – with an answer key. Print them or save as PDF.</p>
             <div className="kw-cta">
               <PrintButton />
             </div>
