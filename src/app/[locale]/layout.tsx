@@ -12,6 +12,7 @@ import { htmlLang, isLocale, locales } from "@/i18n/config";
 import { SITE_ICONS, SITE_MANIFEST, SITE_NAME, SITE_URL } from "@/config/site";
 import { I18nProvider } from "@/i18n/client";
 import { Analytics } from "@/components/site/Analytics";
+import { SfxBootstrap } from "@/core/fx/SfxBootstrap";
 
 export const generateStaticParams = () => locales.map((locale) => ({ locale }));
 
@@ -30,7 +31,10 @@ export default async function LocaleLayout({ children, params }: { children: Rea
   return (
     <html lang={htmlLang[locale]} className={fontVariables}>
       <body>
-        <I18nProvider locale={locale}>{children}</I18nProvider>
+        <I18nProvider locale={locale}>
+          <SfxBootstrap />
+          {children}
+        </I18nProvider>
         <Analytics />
       </body>
     </html>

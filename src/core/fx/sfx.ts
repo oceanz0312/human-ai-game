@@ -1,11 +1,14 @@
 /**
  * Core feel kit · 8-bit SFX synthesized live with WebAudio (square / noise, no audio files).
- * Default ON, remembered in localStorage; iOS unlocks on the first user gesture. When muted, only haptics play.
+ * Default ON, remembered in localStorage; unlock on the first user gesture (iOS). When muted, only haptics play.
  */
 export type SfxName = "tap" | "hit" | "miss" | "win" | "lose" | "beep" | "fight" | "ko";
 
 const STORAGE_KEY = "hai.sfx.muted";
 let context: AudioContext | null = null;
+let unlockListenersInstalled = false;
+/** True after a successful gesture unlock (context running or resumed in that gesture). */
+let gestureUnlocked = false;
 const listeners = new Set<(muted: boolean) => void>();
 
 export function isMuted() {
@@ -32,18 +35,58 @@ export function onMutedChange(listener: (muted: boolean) => void) {
   };
 }
 
-function audio(): AudioContext | null {
+function audioContextCtor(): typeof AudioContext | null {
   if (typeof window === "undefined") return null;
-  const Ctor = window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+  return window.AudioContext ?? (window as unknown as { webkitAudioContext?: typeof AudioContext }).webkitAudioContext ?? null;
+}
+
+function getOrCreateContext(): AudioContext | null {
+  const Ctor = audioContextCtor();
   if (!Ctor) return null;
   context ??= new Ctor();
-  if (context.state === "suspended") void context.resume().catch(() => undefined);
   return context;
 }
 
-/** Call from a user gesture (tap / key) so iOS allows sound later. */
+/** Standard iOS unlock: tiny buffer in the same synchronous gesture turn as resume(). */
+export function unlockAudioFromGesture(): boolean {
+  if (isMuted()) return false;
+  const ctx = getOrCreateContext();
+  if (!ctx) return false;
+  try {
+    const buffer = ctx.createBuffer(1, 1, 22050);
+    const source = ctx.createBufferSource();
+    source.buffer = buffer;
+    source.connect(ctx.destination);
+    source.start(0);
+  } catch {
+    // Some browsers reject buffer playback; resume alone may still help.
+  }
+  if (ctx.state === "suspended") {
+    void ctx.resume().catch(() => undefined);
+  }
+  gestureUnlocked = ctx.state === "running";
+  return gestureUnlocked;
+}
+
+/** Call from a user gesture (tap / key). Prefer unlockAudioFromGesture in new code. */
 export function unlockAudio() {
-  if (!isMuted()) audio();
+  unlockAudioFromGesture();
+}
+
+/** One-time capture listeners so the first pointerup/click/keydown unlocks audio (covers Start before /play). */
+export function installAudioUnlockListeners() {
+  if (typeof window === "undefined" || unlockListenersInstalled) return;
+  unlockListenersInstalled = true;
+  const onGesture = () => {
+    if (isMuted()) return;
+    if (gestureUnlocked && context?.state === "running") return;
+    unlockAudioFromGesture();
+  };
+  const opts: AddEventListenerOptions = { capture: true, passive: true };
+  window.addEventListener("pointerup", onGesture, opts);
+  window.addEventListener("touchend", onGesture, opts);
+  window.addEventListener("click", onGesture, opts);
+  window.addEventListener("keydown", onGesture, opts);
 }
 
 type Note = { freq: number; at: number; dur: number; type?: OscillatorType; gain?: number; slideTo?: number };
@@ -79,8 +122,12 @@ const SONGS: Record<SfxName, Note[]> = {
 
 export function playSfx(name: SfxName) {
   if (isMuted()) return;
-  const ctx = audio();
+  const ctx = getOrCreateContext();
   if (!ctx) return;
+  if (ctx.state !== "running") {
+    void ctx.resume().catch(() => undefined);
+    return;
+  }
   const start = ctx.currentTime + 0.005;
   for (const note of SONGS[name]) {
     const osc = ctx.createOscillator();
@@ -105,4 +152,21 @@ export function hapticFx(kind: "hit" | "miss" | "tap") {
   } catch {
     // Not supported.
   }
+}
+
+/** @internal test hooks */
+export function __sfxTestState() {
+  return {
+    hasContext: context !== null,
+    contextState: context?.state ?? null,
+    gestureUnlocked,
+    unlockListenersInstalled,
+  };
+}
+
+/** @internal vitest reset */
+export function __sfxResetForTests() {
+  context = null;
+  gestureUnlocked = false;
+  unlockListenersInstalled = false;
 }

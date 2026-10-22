@@ -12,6 +12,7 @@ import { SITE_ICONS, SITE_MANIFEST, SITE_NAME } from "@/config/site";
 import { htmlLang } from "@/i18n/config";
 import { I18nProvider } from "@/i18n/client";
 import { Analytics } from "@/components/site/Analytics";
+import { SfxBootstrap } from "@/core/fx/SfxBootstrap";
 import { getCookieLocale } from "@/i18n/server";
 import { resolveSkin } from "@/config/skin-calendar";
 import { skinStyle } from "@/config/skins";
@@ -33,7 +34,10 @@ export default async function GameLayout({ children }: { children: React.ReactNo
   return (
     <html lang={htmlLang[locale]} className={fontVariables}>
       <body data-skin={skin} style={skinStyle(skin)}>
-        <I18nProvider locale={locale}>{children}</I18nProvider>
+        <I18nProvider locale={locale}>
+          <SfxBootstrap />
+          {children}
+        </I18nProvider>
         <Analytics />
       </body>
     </html>

@@ -95,6 +95,7 @@ const en: Record<string, string> = {
   答案: "Answer",
   答案已锁定: "Answer locked",
   答案揭晓: "Reveal",
+  揭晓棋盘: "Reveal board",
   答错: "Wrong",
   "系统分享不可用，可以保存海报或复制链接。": "System share isn't available — save the poster or copy the link.",
   "网络不稳定，答案已锁定，请重试提交。": "Network issue. Your answer is locked — retry submitting.",

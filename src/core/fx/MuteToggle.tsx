@@ -7,12 +7,8 @@ import { isMuted, onMutedChange, playSfx, setMuted, unlockAudio } from "./sfx";
 /** 🔊 / 🔇 in the game bar. Sound is on by default; the choice persists. */
 export function MuteToggle() {
   const t = useT();
-  const [muted, setState] = useState(false);
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- reads a browser-only preference
-    setState(isMuted());
-    return onMutedChange(setState);
-  }, []);
+  const [muted, setState] = useState(() => (typeof window !== "undefined" ? isMuted() : false));
+  useEffect(() => onMutedChange(setState), []);
   return (
     <button
       type="button"
