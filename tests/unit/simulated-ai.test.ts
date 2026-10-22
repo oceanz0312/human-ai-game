@@ -73,6 +73,8 @@ describe("simulated AI v2 (band curve)", () => {
     const bands = FORMAL_DIFFICULTY.bands;
     const early = bands[0];
     const brutal = bands[bands.length - 1];
+    expect(early.medianMs).toBeGreaterThanOrEqual(500);
+    expect(bands[1].medianMs).toBeGreaterThanOrEqual(450);
     expect(early.medianMs).toBeGreaterThan(brutal.medianMs);
     expect(bandForLevel(FORMAL_DIFFICULTY, 8).accuracy).toBe(1);
     // Hard band answers like a fast vision model: median well under half a second, with JEV-like snaps.

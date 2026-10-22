@@ -38,7 +38,7 @@ describe("difficulty config", () => {
 
 describe("expected human win rates (real human reaction data × curve × race rules)", () => {
   // 2026-10-22: levels 1–10 AI is always correct — humans win mostly on speed; 11–14 contested; 15–20 AI dominates.
-  const targets: Record<string, [number, number]> = { "1-5": [0.14, 0.22], "6-10": [0.06, 0.14], "11-14": [0.19, 0.26], "15-20": [0.04, 0.06] };
+  const targets: Record<string, [number, number]> = { "1-5": [0.07, 0.1], "6-10": [0.025, 0.04], "11-14": [0.19, 0.26], "15-20": [0.04, 0.06] };
   for (const seed of ["s1", "s2", "s3"]) {
     it(`lands every band, the full run and perfect early accuracy on target (seed ${seed}, 12k rounds per band)`, () => {
       const result = simulateCurve(FORMAL_DIFFICULTY, 12_000, seed);
@@ -54,8 +54,8 @@ describe("expected human win rates (real human reaction data × curve × race ru
       for (const row of result.perLevel.filter((r) => Number(r.label) >= 11 && Number(r.label) <= 14)) {
         expect(row.humanWinRate, `level ${row.label}`).toBeGreaterThanOrEqual(0.18);
       }
-      expect(result.fullRun).toBeGreaterThanOrEqual(0.1);
-      expect(result.fullRun).toBeLessThanOrEqual(0.16);
+      expect(result.fullRun).toBeGreaterThanOrEqual(0.07);
+      expect(result.fullRun).toBeLessThanOrEqual(0.1);
     });
   }
 });

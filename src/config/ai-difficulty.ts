@@ -9,8 +9,8 @@ import type { SimBandParams } from "@/models/adapters/sim-sampler";
  * without a code change, set SIM_AI_DIFFICULTY_JSON (same shape, any subset of keys) on the Worker; an invalid value
  * is ignored with a warning and these defaults apply. SIM_AI_CURVE=v1 restores the pre-2026-10-18 curve.
  *
- * Targets (2026-10-22): levels 1–10 the AI always answers correctly but humans can still win on speed; 11–14 contested;
- * 15–20 the AI dominates. Timing is tuned for a fast decision-model feel (sub-second to ~1s early, still sub-second late).
+ * Targets (2026-10-22): levels 1–10 the AI always answers correctly; early bands ~0.5–0.6s median with snaps;
+ * 11–14 contested; 15–20 the AI dominates.
  */
 export const SIM_AI_VERSION = "sim-v2";
 
@@ -36,22 +36,22 @@ export const FORMAL_DIFFICULTY: FormalDifficulty = {
       fromLevel: 1,
       toLevel: 5,
       accuracy: 1,
-      medianMs: 950,
+      medianMs: 600,
       spread: 0.32,
-      minMs: 420,
-      snap: { chance: 0.08, minMs: 180, maxMs: 380 },
-      hesitate: { chance: 0.08, minMs: 400, maxMs: 1100 },
+      minMs: 300,
+      snap: { chance: 0.14, minMs: 140, maxMs: 320 },
+      hesitate: { chance: 0.06, minMs: 350, maxMs: 900 },
     },
     {
       // Still perfect accuracy; tighter median as grids grow.
       fromLevel: 6,
       toLevel: 10,
       accuracy: 1,
-      medianMs: 720,
+      medianMs: 500,
       spread: 0.35,
-      minMs: 320,
-      snap: { chance: 0.12, minMs: 140, maxMs: 320 },
-      hesitate: { chance: 0.06, minMs: 350, maxMs: 900 },
+      minMs: 240,
+      snap: { chance: 0.16, minMs: 120, maxMs: 280 },
+      hesitate: { chance: 0.05, minMs: 300, maxMs: 750 },
     },
     {
       // Contested, trickier pictures: slower than 6–10 but still a race.
