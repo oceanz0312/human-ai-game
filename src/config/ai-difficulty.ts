@@ -9,9 +9,8 @@ import type { SimBandParams } from "@/models/adapters/sim-sampler";
  * without a code change, set SIM_AI_DIFFICULTY_JSON (same shape, any subset of keys) on the Worker; an invalid value
  * is ignored with a warning and these defaults apply. SIM_AI_CURVE=v1 restores the pre-2026-10-18 curve.
  *
- * Targets (human round-win rate, approved 2026-10-18): levels 1–5 the human wins easily (~60%; capped by how often
- * people solve these levels at all, ~60% measured), 6–14 contested (30–40%), 15–20 the AI dominates (5–10%).
- * A full 20-level run lands at 25–35% overall; the AI "gets brutal" (first level < 20%) at level 15.
+ * Targets (2026-10-22): levels 1–10 the AI always answers correctly; early bands ~0.5–0.6s median with snaps;
+ * 11–14 contested; 15–20 the AI dominates.
  */
 export const SIM_AI_VERSION = "sim-v2";
 
@@ -33,53 +32,52 @@ const NO_SNAP = { chance: 0, minMs: 0, maxMs: 0 };
 export const FORMAL_DIFFICULTY: FormalDifficulty = {
   bands: [
     {
-      // Warm-up: slow and error-prone — a player who spots it almost always wins.
+      // Warm-up: always correct, fast model — human wins mostly on reaction speed or timeouts.
       fromLevel: 1,
       toLevel: 5,
-      accuracy: 0.45,
-      medianMs: 3200,
-      spread: 0.3,
-      minMs: 1800,
-      snap: NO_SNAP,
-      hesitate: { chance: 0.2, minMs: 800, maxMs: 2000 },
+      accuracy: 1,
+      medianMs: 600,
+      spread: 0.32,
+      minMs: 300,
+      snap: { chance: 0.14, minMs: 140, maxMs: 320 },
+      hesitate: { chance: 0.06, minMs: 350, maxMs: 900 },
     },
     {
-      // Contested (9×9 grids begin): about as fast as a sharp player, rarely wrong.
+      // Still perfect accuracy; tighter median as grids grow.
       fromLevel: 6,
       toLevel: 10,
-      accuracy: 0.88,
-      medianMs: 1150,
+      accuracy: 1,
+      medianMs: 500,
       spread: 0.35,
-      minMs: 500,
-      snap: { chance: 0.05, minMs: 250, maxMs: 450 },
-      hesitate: { chance: 0.1, minMs: 600, maxMs: 1500 },
+      minMs: 240,
+      snap: { chance: 0.16, minMs: 120, maxMs: 280 },
+      hesitate: { chance: 0.05, minMs: 300, maxMs: 750 },
     },
     {
       // Contested, trickier pictures: slower than 6–10 but still a race.
       fromLevel: 11,
       toLevel: 14,
       accuracy: 0.8,
-      medianMs: 1600,
+      medianMs: 1050,
       spread: 0.35,
-      minMs: 600,
-      snap: { chance: 0.05, minMs: 250, maxMs: 450 },
-      hesitate: { chance: 0.1, minMs: 600, maxMs: 1500 },
+      minMs: 450,
+      snap: { chance: 0.08, minMs: 180, maxMs: 360 },
+      hesitate: { chance: 0.08, minMs: 450, maxMs: 1100 },
     },
     {
-      // Brutal: a fast vision model (JEV-like snaps). Humans win mostly when it slips or hesitates.
+      // Brutal: fast vision model (JEV-like snaps). Humans win mostly when it slips or hesitates.
       fromLevel: 15,
       toLevel: 20,
       accuracy: 0.93,
-      medianMs: 550,
+      medianMs: 420,
       spread: 0.4,
-      minMs: 250,
-      snap: { chance: 0.2, minMs: 150, maxMs: 350 },
-      hesitate: { chance: 0.06, minMs: 500, maxMs: 1200 },
+      minMs: 180,
+      snap: { chance: 0.22, minMs: 120, maxMs: 280 },
+      hesitate: { chance: 0.05, minMs: 400, maxMs: 900 },
     },
   ],
   maxFractionOfLimit: 0.9,
-  // Level 8 (未/末) is one most players miss: a shakier AI keeps it contested.
-  levelOverrides: { "8": { accuracy: 0.5 } },
+  levelOverrides: {},
 };
 
 const probability = z.number().check(z.minimum(0), z.maximum(1));

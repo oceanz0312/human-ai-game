@@ -16,11 +16,11 @@ export interface PresenceBand {
 }
 
 export const AI_PRESENCE = {
-  gotPictureMs: { min: 120, max: 180 },
+  gotPictureMs: { min: 90, max: 150 },
   bands: [
-    { fromLevel: 1, toLevel: 5, scanStartMs: 450, captionEveryMs: 900, captions: ["AI 正在扫描画面…", "AI 正在比对每一格…", "AI 正在复查…"] },
-    { fromLevel: 6, toLevel: 14, scanStartMs: 300, captionEveryMs: 600, captions: ["AI 正在扫描画面…", "AI 正在比对每一格…"] },
-    { fromLevel: 15, toLevel: 20, scanStartMs: 220, captionEveryMs: 450, captions: ["AI 正在扫描画面…", "AI 正在锁定目标…"] },
+    { fromLevel: 1, toLevel: 5, scanStartMs: 210, captionEveryMs: 380, captions: ["AI 正在扫描画面…", "AI 正在比对每一格…", "AI 正在复查…"] },
+    { fromLevel: 6, toLevel: 14, scanStartMs: 190, captionEveryMs: 360, captions: ["AI 正在扫描画面…", "AI 正在比对每一格…"] },
+    { fromLevel: 15, toLevel: 20, scanStartMs: 185, captionEveryMs: 340, captions: ["AI 正在扫描画面…", "AI 正在锁定目标…"] },
   ] satisfies PresenceBand[],
 } as const;
 

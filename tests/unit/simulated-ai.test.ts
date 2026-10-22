@@ -66,20 +66,21 @@ describe("simulated AI v2 (band curve)", () => {
     }
   });
 
-  it("the warm-up band is the slowest and least accurate, the last band the fastest and most accurate", () => {
-    const bands = FORMAL_DIFFICULTY.bands;
-    const first = bands[0];
-    const last = bands[bands.length - 1];
-    for (const band of bands) {
-      expect(band.accuracy).toBeGreaterThanOrEqual(first.accuracy);
-      expect(band.accuracy).toBeLessThanOrEqual(last.accuracy);
-      expect(band.medianMs).toBeLessThanOrEqual(first.medianMs);
-      expect(band.medianMs).toBeGreaterThanOrEqual(last.medianMs);
+  it("levels 1–10 are always correct; timing ramps faster toward the brutal band", () => {
+    for (let level = 1; level <= 10; level++) {
+      expect(bandForLevel(FORMAL_DIFFICULTY, level).accuracy).toBe(1);
     }
-    // Hard band answers like a fast vision model: median well under a second, with JEV-like snaps.
+    const bands = FORMAL_DIFFICULTY.bands;
+    const early = bands[0];
+    const brutal = bands[bands.length - 1];
+    expect(early.medianMs).toBeGreaterThanOrEqual(500);
+    expect(bands[1].medianMs).toBeGreaterThanOrEqual(450);
+    expect(early.medianMs).toBeGreaterThan(brutal.medianMs);
+    expect(bandForLevel(FORMAL_DIFFICULTY, 8).accuracy).toBe(1);
+    // Hard band answers like a fast vision model: median well under half a second, with JEV-like snaps.
     const hard = Array.from({ length: 4000 }, (_, i) => plan(15, `h${i}`).thinkMs).sort((a, b) => a - b);
-    expect(hard[2000]).toBeLessThan(600);
-    expect(hard[400]).toBeLessThan(300);
+    expect(hard[2000]).toBeLessThan(450);
+    expect(hard[400]).toBeLessThan(250);
   });
 
   it("caps hesitation inside the level clock", () => {
