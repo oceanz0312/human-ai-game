@@ -7,7 +7,7 @@ import en from "@/i18n/messages/en";
 
 describe("presence cues", () => {
   it("shows 'got the picture' within 180 ms and starts scanning after it", () => {
-    expect(AI_PRESENCE.gotPictureMs.max).toBeLessThanOrEqual(180);
+    expect(AI_PRESENCE.gotPictureMs.max).toBeLessThanOrEqual(150);
     for (const band of AI_PRESENCE.bands) expect(band.scanStartMs).toBeGreaterThan(AI_PRESENCE.gotPictureMs.max);
     expect(QUICK_PRESENCE.gotPictureMs).toBeLessThanOrEqual(180);
   });

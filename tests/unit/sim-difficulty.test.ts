@@ -11,7 +11,7 @@ describe("difficulty config", () => {
   it("applies a valid JSON override (subset of keys) and per-level overrides", () => {
     const config = resolveFormalDifficulty(JSON.stringify({ levelOverrides: { "8": { accuracy: 0.6 } } }), 20, () => undefined);
     expect(bandForLevel(config, 8).accuracy).toBe(0.6);
-    expect(bandForLevel(config, 9).accuracy).toBe(0.88);
+    expect(bandForLevel(config, 9).accuracy).toBe(1);
     expect(config.bands).toEqual(FORMAL_DIFFICULTY.bands);
   });
 
@@ -37,11 +37,10 @@ describe("difficulty config", () => {
 });
 
 describe("expected human win rates (real human reaction data × curve × race rules)", () => {
-  // Targets approved 2026-10-18 (revised): 1–5 easy for the human (~60%; capped by the measured ~60% solve rate),
-  // 6–14 contested 30–40%, 15–20 AI dominates 5–10%, full 20-level run 25–35%, AI brutal from level 15.
-  const targets: Record<string, [number, number]> = { "1-5": [0.52, 0.7], "6-10": [0.3, 0.4], "11-14": [0.3, 0.4], "15-20": [0.05, 0.1] };
+  // 2026-10-22: levels 1–10 AI is always correct — humans win mostly on speed; 11–14 contested; 15–20 AI dominates.
+  const targets: Record<string, [number, number]> = { "1-5": [0.14, 0.22], "6-10": [0.06, 0.14], "11-14": [0.19, 0.26], "15-20": [0.04, 0.06] };
   for (const seed of ["s1", "s2", "s3"]) {
-    it(`lands every band, the full run and the brutal level on target (seed ${seed}, 12k rounds per band)`, () => {
+    it(`lands every band, the full run and perfect early accuracy on target (seed ${seed}, 12k rounds per band)`, () => {
       const result = simulateCurve(FORMAL_DIFFICULTY, 12_000, seed);
       for (const row of result.bands) {
         const [lo, hi] = targets[row.label];
@@ -49,11 +48,14 @@ describe("expected human win rates (real human reaction data × curve × race ru
         expect(row.humanWinRate, row.label).toBeGreaterThanOrEqual(lo);
         expect(row.humanWinRate, row.label).toBeLessThanOrEqual(hi);
       }
-      // Mid levels each stay contested (no single level drops into "brutal" before 15).
-      for (const row of result.perLevel.filter((r) => Number(r.label) >= 6 && Number(r.label) <= 14)) expect(row.humanWinRate, `level ${row.label}`).toBeGreaterThanOrEqual(0.25);
-      expect(result.fullRun).toBeGreaterThanOrEqual(0.25);
-      expect(result.fullRun).toBeLessThanOrEqual(0.35);
-      expect(result.brutalFrom).toBe(15);
+      for (const row of result.bands.filter((r) => r.label === "1-5" || r.label === "6-10")) {
+        expect(row.aiCorrectRate, row.label).toBeGreaterThanOrEqual(0.995);
+      }
+      for (const row of result.perLevel.filter((r) => Number(r.label) >= 11 && Number(r.label) <= 14)) {
+        expect(row.humanWinRate, `level ${row.label}`).toBeGreaterThanOrEqual(0.18);
+      }
+      expect(result.fullRun).toBeGreaterThanOrEqual(0.1);
+      expect(result.fullRun).toBeLessThanOrEqual(0.16);
     });
   }
 });
