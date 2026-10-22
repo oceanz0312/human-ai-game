@@ -6,6 +6,7 @@ import { api, ApiError, track } from "@/lib/api-client";
 import { LOCALE_COOKIE, localePath, type Locale } from "@/i18n/config";
 import { useLocale, useT } from "@/i18n/client";
 import { Button } from "@/components/ui/8bit";
+import { unlockAudio } from "@/core/fx/sfx";
 import { getPlayerKey } from "@/core/limits/player-key";
 import { PlayLimitBadge, PlayLimitBlocked, usePlayLimit } from "@/core/limits/PlayLimit";
 import { getGame } from "@/games/registry";
@@ -51,6 +52,7 @@ export function StartButton({
 
   async function start() {
     if (busy) return;
+    unlockAudio();
     setBusy(true);
     setError(null);
     if (locale) document.cookie = `${LOCALE_COOKIE}=${locale}; Path=/; Max-Age=31536000; SameSite=Lax`;
