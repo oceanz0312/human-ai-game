@@ -2,13 +2,15 @@ import QRCode from "qrcode";
 import { FALLBACK_MESSAGE_LOCALE } from "@/i18n/messages";
 import type { Locale } from "@/i18n/config";
 import { POSTER_PALETTE } from "./pixel-palette";
-import { accuracy, posterHeadline, posterStats, shareCopy, shareOutcome, type ShareOutcome, type ShareStats } from "./share-copy";
+import { accuracy, posterHeadline, posterScanHook, posterStats, shareCopy, shareOutcome, type ShareOutcome, type ShareStats } from "./share-copy";
 
 export { posterHeadline } from "./share-copy";
 export { POSTER_PALETTE } from "./pixel-palette";
 
 export const POSTER_WIDTH = 1080;
 export const POSTER_HEIGHT = 1920;
+/** QR size in the footer CTA strip (was 240px; enlarged for scan-at-a-glance). */
+export const POSTER_FOOTER_QR_PX = 308;
 
 const P = POSTER_PALETTE;
 
@@ -107,7 +109,8 @@ export async function renderPoster(input: PosterInput) {
 
   const families = fontFamilies();
   const display = zh ? families.cjk : families.latin;
-  await loadFonts(families, [line1, line2, c.game, c.accuracy, c.you, c.reached, c.correct, c.faster, c.rounds, ...c.cta, c.scan, c.badge[outcome]].join(""));
+  const scanHook = posterScanHook();
+  await loadFonts(families, [line1, line2, c.game, c.accuracy, c.you, c.reached, c.correct, c.faster, c.rounds, scanHook, c.badge[outcome]].join(""));
 
   const canvas = document.createElement("canvas");
   canvas.width = POSTER_WIDTH;
@@ -214,33 +217,23 @@ export async function renderPoster(input: PosterInput) {
     }
   });
 
-  // terminal-style CTA footer with QR
-  const footY = 1536;
+  // terminal-style CTA footer: large QR + one English scan hook (no URL/domain listing)
+  const footY = 1512;
   const footH = POSTER_HEIGHT - pad - footY;
   box(ctx, pad, footY, inner - 18, footH, P.ink, 0, 18);
-  const qr = 240;
+  const qr = POSTER_FOOTER_QR_PX;
+  const qrPad = 12;
   const qrX = pad + inner - 18 - 36 - qr;
   const qrY = footY + Math.floor((footH - qr) / 2);
   ctx.fillStyle = P.surface;
-  ctx.fillRect(qrX - 12, qrY - 12, qr + 24, qr + 24);
+  ctx.fillRect(qrX - qrPad, qrY - qrPad, qr + qrPad * 2, qr + qrPad * 2);
   drawQr(ctx, input.url, qrX, qrY, qr);
-  const textMax = qrX - 36 - (pad + 36);
-  ctx.fillStyle = P.termDim;
-  ctx.font = zh ? `36px ${families.cjk}` : `24px ${families.latin}`;
-  ctx.fillText(`> ${c.scan}`, pad + 36, footY + 60);
+  const textMax = qrX - 48 - (pad + 36);
+  const footMid = footY + footH / 2;
   ctx.fillStyle = P.surface;
-  c.cta.forEach((line, i) => {
-    // Fusion Pixel carries Latin too and is far narrower than Press Start 2P, so long CTA lines stay legible.
-    const s = fit(ctx, line, families.cjk, [48, 36, 24], textMax);
-    ctx.font = `${s}px ${families.cjk}`;
-    ctx.fillText(line, pad + 36, footY + 132 + i * 66);
-  });
-  // Full link lives in the QR; print the whole short URL only if it stays legible (>= 24px), else just the host.
-  ctx.fillStyle = P.hi;
-  let urlText = input.shortUrl;
-  if (fit(ctx, urlText, families.cjk, [36, 24, 12], textMax) < 24) urlText = input.shortUrl.split("/")[0];
-  fit(ctx, urlText, families.cjk, [36, 24, 12], textMax);
-  ctx.fillText(urlText, pad + 36, footY + footH - 42);
+  const hookSize = fit(ctx, scanHook, families.latin, [56, 48, 40, 32], textMax);
+  ctx.font = `${hookSize}px ${families.latin}`;
+  ctx.fillText(scanHook, pad + 36, footMid + (zh ? 0 : 4));
 
   return new Promise<Blob>((resolve, reject) => canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("poster_failed"))), "image/png"));
 }

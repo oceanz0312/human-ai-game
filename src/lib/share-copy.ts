@@ -63,6 +63,9 @@ const EN = {
 
 export const shareCopy = (locale: Locale = FALLBACK_MESSAGE_LOCALE) => (locale === "zh" ? ZH : EN);
 
+/** Single scan hook on the 9:16 poster footer (English only; URL lives in the QR). */
+export const posterScanHook = () => "> Out-spot the AI?";
+
 /** Big poster headline: two short lines. */
 export function posterHeadline(s: ShareStats, locale: Locale = FALLBACK_MESSAGE_LOCALE): [string, string] {
   const [a, b] = shareCopy(locale).outcome[shareOutcome(s)];
