@@ -1,7 +1,7 @@
-import QRCode from "qrcode";
 import { FALLBACK_MESSAGE_LOCALE } from "@/i18n/messages";
 import type { Locale } from "@/i18n/config";
 import { POSTER_PALETTE } from "./pixel-palette";
+import { drawPixelColorQr, drawPixelQrFrame } from "./poster-pixel-qr";
 import { accuracy, posterHeadline, posterScanHook, posterStats, shareCopy, shareOutcome, type ShareOutcome, type ShareStats } from "./share-copy";
 
 export { posterHeadline } from "./share-copy";
@@ -9,10 +9,13 @@ export { POSTER_PALETTE } from "./pixel-palette";
 
 export const POSTER_WIDTH = 1080;
 export const POSTER_HEIGHT = 1920;
-/** QR size in the footer CTA strip (was 240px; enlarged for scan-at-a-glance). */
-export const POSTER_FOOTER_QR_PX = 308;
+/** Hero QR in the scan zone (was 240px in the original footer strip). */
+export const POSTER_HERO_QR_PX = 672;
+/** @deprecated Renamed — use POSTER_HERO_QR_PX. */
+export const POSTER_FOOTER_QR_PX = POSTER_HERO_QR_PX;
 
 const P = POSTER_PALETTE;
+const QR_FRAME = 14;
 
 const BADGE_FILL: Record<ShareOutcome, string> = { cleared: P.hi, win: P.ok, tie: P.hi, loss: P.ai };
 
@@ -36,24 +39,6 @@ async function loadFonts(families: { cjk: string; latin: string }, text: string)
     document.fonts.load(`48px ${families.latin}`, "HUMANVSAI0123456789%/-").catch(() => undefined),
   ]);
   await document.fonts.ready.catch(() => undefined);
-}
-
-function drawQr(ctx: CanvasRenderingContext2D, url: string, x: number, y: number, size: number) {
-  const qr = QRCode.create(url, { errorCorrectionLevel: "M" });
-  const quiet = 2;
-  const count = qr.modules.size + quiet * 2;
-  const cell = Math.floor(size / count);
-  const actual = cell * count;
-  const ox = x + Math.floor((size - actual) / 2);
-  const oy = y + Math.floor((size - actual) / 2);
-  ctx.fillStyle = P.surface;
-  ctx.fillRect(x, y, size, size);
-  ctx.fillStyle = P.ink;
-  for (let row = 0; row < qr.modules.size; row += 1) {
-    for (let col = 0; col < qr.modules.size; col += 1) {
-      if (qr.modules.data[row * qr.modules.size + col]) ctx.fillRect(ox + (col + quiet) * cell, oy + (row + quiet) * cell, cell, cell);
-    }
-  }
 }
 
 /** Pixel box: flat fill, solid ink border, hard offset shadow, no radius. */
@@ -82,7 +67,7 @@ function fit(ctx: CanvasRenderingContext2D, text: string, family: string, sizes:
 /** 10-segment block bar, filled in proportion to pct. */
 function segBar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, pct: number | null, fill: string) {
   const segs = 10;
-  const gap = 8;
+  const gap = 6;
   const seg = Math.floor((w - gap * (segs - 1)) / segs);
   const on = pct == null ? 0 : Math.round(pct / 10);
   for (let i = 0; i < segs; i += 1) {
@@ -90,13 +75,13 @@ function segBar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, 
     ctx.fillStyle = P.ink;
     ctx.fillRect(sx, y, seg, h);
     ctx.fillStyle = i < on ? fill : P.paper;
-    ctx.fillRect(sx + 4, y + 4, seg - 8, h - 8);
+    ctx.fillRect(sx + 3, y + 3, seg - 6, h - 6);
   }
 }
 
 export type PosterInput = ShareStats & { url: string; shortUrl: string; locale?: Locale };
 
-/** Draws the 9:16 pixel-style result poster: brand bar, outcome headline, accuracy duel, stats, CTA + QR. */
+/** Draws the 9:16 pixel-style result poster: result stack + hero scan zone (color QR + hook). */
 export async function renderPoster(input: PosterInput) {
   const locale = input.locale ?? FALLBACK_MESSAGE_LOCALE;
   const zh = locale === "zh";
@@ -129,111 +114,115 @@ export async function renderPoster(input: PosterInput) {
   ctx.textBaseline = "middle";
 
   // brand bar (window title bar)
-  box(ctx, pad, pad, inner - 18, 120, P.ink, 0, 18);
+  box(ctx, pad, pad, inner - 18, 108, P.ink, 0, 18);
   ctx.fillStyle = P.surface;
-  ctx.font = `36px ${families.latin}`;
-  ctx.fillText("Spot The Difference Game", pad + 36, pad + 64);
+  ctx.font = `32px ${families.latin}`;
+  ctx.fillText("Spot The Difference Game", pad + 32, pad + 58);
   [P.human, P.hi, P.ai].forEach((fill, i) => {
-    const s = 36;
-    const bx = pad + inner - 18 - 36 - (3 - i) * (s + 12) + 12;
+    const s = 32;
+    const bx = pad + inner - 18 - 32 - (3 - i) * (s + 10) + 10;
     ctx.fillStyle = fill;
-    ctx.fillRect(bx, pad + 42, s, s);
+    ctx.fillRect(bx, pad + 38, s, s);
   });
 
   // game tag + outcome badge
-  const tagY = 264;
-  ctx.font = zh ? `36px ${families.cjk}` : `24px ${families.latin}`;
-  const tagW = Math.ceil(ctx.measureText(c.game).width) + 48;
-  box(ctx, pad, tagY, tagW, 72, P.surface, 6, 0);
+  const tagY = 228;
+  ctx.font = zh ? `32px ${families.cjk}` : `22px ${families.latin}`;
+  const tagW = Math.ceil(ctx.measureText(c.game).width) + 44;
+  box(ctx, pad, tagY, tagW, 64, P.surface, 6, 0);
   ctx.fillStyle = P.ink;
-  ctx.fillText(c.game, pad + 24, tagY + 38);
+  ctx.fillText(c.game, pad + 22, tagY + 34);
   const badge = c.badge[outcome];
-  ctx.font = zh ? `48px ${families.cjk}` : `36px ${families.latin}`;
-  const badgeW = Math.ceil(ctx.measureText(badge).width) + 60;
-  box(ctx, W - pad - 12 - badgeW, tagY - 12, badgeW, 96, BADGE_FILL[outcome], 8, 12);
+  ctx.font = zh ? `44px ${families.cjk}` : `32px ${families.latin}`;
+  const badgeW = Math.ceil(ctx.measureText(badge).width) + 52;
+  box(ctx, W - pad - 12 - badgeW, tagY - 8, badgeW, 80, BADGE_FILL[outcome], 8, 12);
   ctx.fillStyle = P.ink;
-  ctx.fillText(badge, W - pad - 12 - badgeW + 30, tagY + 38);
+  ctx.fillText(badge, W - pad - 12 - badgeW + 26, tagY + 34);
 
   // headline: line 2 on a yellow highlight block
-  const hlSizes = zh ? [96, 84, 72] : [64, 56, 48];
+  const hlSizes = zh ? [88, 76, 64] : [56, 48, 40];
   const size1 = fit(ctx, line1, display, hlSizes, inner);
-  const size2 = fit(ctx, line2, display, hlSizes, inner - 48);
+  const size2 = fit(ctx, line2, display, hlSizes, inner - 40);
   const hs = Math.min(size1, size2);
   ctx.font = `${hs}px ${display}`;
   ctx.fillStyle = P.ink;
-  const h1y = 470;
+  const h1y = 368;
   ctx.fillText(line1, pad, h1y);
   const l2w = Math.ceil(ctx.measureText(line2).width);
-  const h2y = h1y + hs + 60;
+  const h2y = h1y + hs + 48;
   ctx.fillStyle = P.hi;
-  ctx.fillRect(pad - 12, h2y - hs / 2 - 24, l2w + 48, hs + 48);
+  ctx.fillRect(pad - 10, h2y - hs / 2 - 20, l2w + 40, hs + 40);
   ctx.fillStyle = P.ink;
-  ctx.fillText(line2, pad + 12, h2y + (zh ? 0 : 4));
+  ctx.fillText(line2, pad + 10, h2y + (zh ? 0 : 2));
 
-  // accuracy duel card
-  const cardY = 780;
-  const cardH = 420;
+  // accuracy duel card (compact)
+  const cardY = 548;
+  const cardH = 300;
   box(ctx, pad, cardY, inner - 18, cardH, P.surface);
   ctx.fillStyle = P.muted;
-  ctx.font = zh ? `36px ${families.cjk}` : `24px ${families.latin}`;
-  ctx.fillText(c.accuracy, pad + 48, cardY + 72);
+  ctx.font = zh ? `32px ${families.cjk}` : `22px ${families.latin}`;
+  ctx.fillText(c.accuracy, pad + 40, cardY + 56);
   const rows: [string, number | null, string, string][] = [
     [c.you, human, P.human, P.humanText],
     [c.ai, ai, P.ai, P.aiText],
   ];
   rows.forEach(([who, pct, fill, text], i) => {
-    const ry = cardY + 168 + i * 132;
+    const ry = cardY + 148 + i * 108;
     ctx.fillStyle = text;
-    ctx.font = zh && who !== "AI" ? `48px ${families.cjk}` : `36px ${families.latin}`;
-    ctx.fillText(who, pad + 48, ry);
-    segBar(ctx, pad + 180, ry - 30, 460, 60, pct, fill);
+    ctx.font = zh && who !== "AI" ? `40px ${families.cjk}` : `32px ${families.latin}`;
+    ctx.fillText(who, pad + 40, ry);
+    segBar(ctx, pad + 168, ry - 26, inner - 18 - 168 - 120, 48, pct, fill);
     ctx.fillStyle = text;
-    ctx.font = `48px ${families.latin}`;
+    ctx.font = `40px ${families.latin}`;
     ctx.textAlign = "right";
-    ctx.fillText(pct == null ? "--" : `${pct}%`, pad + inner - 18 - 48, ry + 4);
+    ctx.fillText(pct == null ? "--" : `${pct}%`, pad + inner - 18 - 40, ry + 2);
     ctx.textAlign = "left";
   });
 
-  // stat tiles
-  const tileY = 1272;
-  const tileH = 192;
-  const gap = 36;
+  // stat tiles (compact)
+  const tileY = 876;
+  const tileH = 132;
+  const gap = 28;
   const tileW = Math.floor((inner - 12 - gap * (stats.length - 1)) / stats.length);
   stats.forEach((stat, i) => {
     const tx = pad + i * (tileW + gap);
     box(ctx, tx, tileY, tileW, tileH, P.surface, 8, 12);
     ctx.fillStyle = P.muted;
-    ctx.font = zh ? `36px ${families.cjk}` : `24px ${families.latin}`;
-    ctx.fillText(stat.label, tx + 36, tileY + 60);
+    ctx.font = zh ? `28px ${families.cjk}` : `20px ${families.latin}`;
+    ctx.fillText(stat.label, tx + 28, tileY + 44);
     ctx.fillStyle = P.ink;
-    const valueSize = fit(ctx, stat.value, families.latin, [64, 48, 40], tileW - 72 - (stat.unit ? 48 : 0));
+    const valueSize = fit(ctx, stat.value, families.latin, [52, 40, 32], tileW - 56 - (stat.unit ? 40 : 0));
     ctx.font = `${valueSize}px ${families.latin}`;
-    ctx.fillText(stat.value, tx + 36, tileY + 132);
+    ctx.fillText(stat.value, tx + 28, tileY + 96);
     if (stat.unit) {
       const vw = ctx.measureText(stat.value).width;
-      ctx.font = `36px ${families.cjk}`;
+      ctx.font = `28px ${families.cjk}`;
       ctx.fillStyle = P.muted;
-      ctx.fillText(stat.unit, tx + 36 + vw + 12, tileY + 136);
+      ctx.fillText(stat.unit, tx + 28 + vw + 8, tileY + 98);
     }
   });
 
-  // terminal-style CTA footer: large QR + one English scan hook (no URL/domain listing)
-  const footY = 1512;
-  const footH = POSTER_HEIGHT - pad - footY;
-  box(ctx, pad, footY, inner - 18, footH, P.ink, 0, 18);
-  const qr = POSTER_FOOTER_QR_PX;
-  const qrPad = 12;
-  const qrX = pad + inner - 18 - 36 - qr;
-  const qrY = footY + Math.floor((footH - qr) / 2);
-  ctx.fillStyle = P.surface;
-  ctx.fillRect(qrX - qrPad, qrY - qrPad, qr + qrPad * 2, qr + qrPad * 2);
-  drawQr(ctx, input.url, qrX, qrY, qr);
-  const textMax = qrX - 48 - (pad + 36);
-  const footMid = footY + footH / 2;
-  ctx.fillStyle = P.surface;
-  const hookSize = fit(ctx, scanHook, families.latin, [56, 48, 40, 32], textMax);
+  // hero scan zone: full-width terminal block, centered colorful QR + one hook line
+  const scanY = 1044;
+  const scanH = POSTER_HEIGHT - pad - scanY;
+  const scanW = inner - 18;
+  box(ctx, pad, scanY, scanW, scanH, P.ink, 0, 18);
+
+  const hookSize = fit(ctx, scanHook, families.latin, [44, 38, 32], scanW - 80);
   ctx.font = `${hookSize}px ${families.latin}`;
-  ctx.fillText(scanHook, pad + 36, footMid + (zh ? 0 : 4));
+  ctx.fillStyle = P.surface;
+  ctx.textAlign = "center";
+  ctx.fillText(scanHook, pad + scanW / 2, scanY + 56);
+
+  const qr = POSTER_HERO_QR_PX;
+  const qrBlock = qr + QR_FRAME * 2;
+  const qrX = pad + Math.floor((scanW - qrBlock) / 2);
+  const zoneTop = scanY + 96;
+  const zoneBottom = scanY + scanH - 36;
+  const qrY = zoneTop + Math.floor((zoneBottom - zoneTop - qrBlock) / 2);
+  drawPixelQrFrame(ctx, qrX + QR_FRAME, qrY + QR_FRAME, qr, QR_FRAME);
+  drawPixelColorQr(ctx, input.url, qrX + QR_FRAME, qrY + QR_FRAME, qr);
+  ctx.textAlign = "left";
 
   return new Promise<Blob>((resolve, reject) => canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("poster_failed"))), "image/png"));
 }
