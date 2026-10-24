@@ -63,14 +63,14 @@ const EN = {
 
 export const shareCopy = (locale: Locale = FALLBACK_MESSAGE_LOCALE) => (locale === "zh" ? ZH : EN);
 
-/** Plain scan cue under the outcome (existing product copy). */
-export function posterScanExplain(locale: Locale = FALLBACK_MESSAGE_LOCALE) {
+/** Classic poster footer (left of QR): scan prompt, one hook line, site host. */
+export function posterFooterCopy(shortUrl: string, locale: Locale = FALLBACK_MESSAGE_LOCALE) {
   const c = shareCopy(locale);
-  return locale === "zh" ? `${c.cta[0]}${c.scan}。` : `${c.cta[0]} ${c.scan}`;
+  const host = shortUrl.split("/")[0];
+  const prompt = `> ${c.scan}`;
+  const hook = locale === "zh" ? `${c.cta[0]}${c.cta[1]}` : `${c.cta[0]} ${c.cta[1]}`;
+  return { prompt, hook, url: host };
 }
-
-/** Short challenge hook beside the QR (English only; URL lives in the QR). */
-export const posterScanHook = () => "Out-spot the AI?";
 
 /** Big poster headline: two short lines. */
 export function posterHeadline(s: ShareStats, locale: Locale = FALLBACK_MESSAGE_LOCALE): [string, string] {

@@ -1,7 +1,7 @@
 import type { RoundReveal } from "@/game/contracts";
 import { describeReveal, shareHeadline } from "@/game/reveal-copy";
 import { POSTER_PALETTE, posterHeadline } from "@/lib/poster";
-import { accuracy, posterOutcomeLine, posterScanExplain, posterScanHook, posterStats, shareCta, shareLine, shareOutcome } from "@/lib/share-copy";
+import { accuracy, posterFooterCopy, posterOutcomeLine, posterStats, shareCta, shareLine, shareOutcome } from "@/lib/share-copy";
 import { readFileSync } from "node:fs";
 import { countdown } from "@/lib/format";
 
@@ -35,8 +35,11 @@ test("poster copy is framed around accuracy and the outcome", () => {
   expect(shareLine(run({ played: 0, humanCorrect: 0, aiCorrect: 0 }), "en")).toBe("THE AI WAS SHARPER");
   expect(shareCta("zh")).toBe("同一套题，你能比 AI 更准吗？");
   expect(posterOutcomeLine(run({}), "en")).toBe("THE AI WAS SHARPER");
-  expect(posterScanExplain("en")).toBe("Same levels. Scan to play");
-  expect(posterScanHook()).toBe("Out-spot the AI?");
+  expect(posterFooterCopy("spotthedifferencegame.com/share/x", "en")).toEqual({
+    prompt: "> Scan to play",
+    hook: "Same levels. Out-spot the AI?",
+    url: "spotthedifferencegame.com",
+  });
 });
 
 test("zero counts are never bragged about", () => {

@@ -1,21 +1,20 @@
 import { FALLBACK_MESSAGE_LOCALE } from "@/i18n/messages";
 import type { Locale } from "@/i18n/config";
 import { POSTER_PALETTE } from "./pixel-palette";
-import { drawPixelHeroScanZone, drawPosterModqr, drawQrPixelPad } from "./poster-pixel-qr";
-import { posterOutcomeLine, posterScanExplain, posterScanHook, shareCopy, shareOutcome, type ShareOutcome, type ShareStats } from "./share-copy";
+import { drawPosterModqr } from "./poster-pixel-qr";
+import { accuracy, posterFooterCopy, posterHeadline, posterStats, shareCopy, shareOutcome, type ShareOutcome, type ShareStats } from "./share-copy";
 
 export { posterHeadline } from "./share-copy";
 export { POSTER_PALETTE } from "./pixel-palette";
 
 export const POSTER_WIDTH = 1080;
 export const POSTER_HEIGHT = 1920;
-/** Share poster QR (modqr pixel style). */
-export const POSTER_HERO_QR_PX = 392;
-/** @deprecated Renamed — use POSTER_HERO_QR_PX. */
-export const POSTER_FOOTER_QR_PX = POSTER_HERO_QR_PX;
+/** Footer QR (modqr pixel); balanced for classic CTA strip layout. */
+export const POSTER_FOOTER_QR_PX = 280;
+/** @deprecated Use POSTER_FOOTER_QR_PX — classic layout is footer-only. */
+export const POSTER_HERO_QR_PX = POSTER_FOOTER_QR_PX;
 
 const P = POSTER_PALETTE;
-const QR_PAD = 10;
 
 const BADGE_FILL: Record<ShareOutcome, string> = { cleared: P.hi, win: P.ok, tie: P.hi, loss: P.ai };
 
@@ -64,22 +63,38 @@ function fit(ctx: CanvasRenderingContext2D, text: string, family: string, sizes:
   return last;
 }
 
+/** 10-segment block bar, filled in proportion to pct. */
+function segBar(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, pct: number | null, fill: string) {
+  const segs = 10;
+  const gap = 8;
+  const seg = Math.floor((w - gap * (segs - 1)) / segs);
+  const on = pct == null ? 0 : Math.round(pct / 10);
+  for (let i = 0; i < segs; i += 1) {
+    const sx = x + i * (seg + gap);
+    ctx.fillStyle = P.ink;
+    ctx.fillRect(sx, y, seg, h);
+    ctx.fillStyle = i < on ? fill : P.paper;
+    ctx.fillRect(sx + 4, y + 4, seg - 8, h - 8);
+  }
+}
+
 export type PosterInput = ShareStats & { url: string; shortUrl: string; locale?: Locale };
 
-/** Draws the 9:16 pixel-style result poster: outcome + scan cue + modqr pixel QR. */
+/** Draws the 9:16 pixel-style result poster: classic layout + modqr footer QR. */
 export async function renderPoster(input: PosterInput) {
   const locale = input.locale ?? FALLBACK_MESSAGE_LOCALE;
   const zh = locale === "zh";
   const c = shareCopy(locale);
   const outcome = shareOutcome(input);
-  const outcomeLine = posterOutcomeLine(input, locale);
-  const scanExplain = posterScanExplain(locale);
-  const scanHook = posterScanHook();
+  const [line1, line2] = posterHeadline(input, locale);
+  const stats = posterStats(input, locale);
+  const human = accuracy(input.humanCorrect, input.played);
+  const ai = accuracy(input.aiCorrect, input.played);
+  const footer = posterFooterCopy(input.shortUrl, locale);
 
   const families = fontFamilies();
   const display = zh ? families.cjk : families.latin;
-  const badge = c.badge[outcome];
-  await loadFonts(families, [outcomeLine, scanExplain, scanHook, badge].join(""));
+  await loadFonts(families, [line1, line2, c.game, c.accuracy, c.you, footer.prompt, footer.hook, footer.url, c.badge[outcome]].join(""));
 
   const canvas = document.createElement("canvas");
   canvas.width = POSTER_WIDTH;
@@ -96,48 +111,114 @@ export async function renderPoster(input: PosterInput) {
   for (let gy = 12; gy < POSTER_HEIGHT; gy += 24) for (let gx = 12; gx < W; gx += 24) ctx.fillRect(gx, gy, 3, 3);
   ctx.textBaseline = "middle";
 
-  ctx.font = zh ? `44px ${families.cjk}` : `36px ${families.latin}`;
-  const badgeW = Math.ceil(ctx.measureText(badge).width) + 48;
-  box(ctx, W - pad - badgeW, pad, badgeW, 72, BADGE_FILL[outcome], 8, 12);
-  ctx.fillStyle = P.ink;
-  ctx.fillText(badge, W - pad - badgeW + 24, pad + 38);
+  box(ctx, pad, pad, inner - 18, 120, P.ink, 0, 18);
+  ctx.fillStyle = P.surface;
+  ctx.font = `36px ${families.latin}`;
+  ctx.fillText("Spot The Difference", pad + 36, pad + 64);
+  [P.human, P.hi, P.ai].forEach((fill, i) => {
+    const s = 36;
+    const bx = pad + inner - 18 - 36 - (3 - i) * (s + 12) + 12;
+    ctx.fillStyle = fill;
+    ctx.fillRect(bx, pad + 42, s, s);
+  });
 
-  const hlSizes = zh ? [64, 56, 48] : [52, 44, 36];
-  const hs = fit(ctx, outcomeLine, display, hlSizes, inner - 24);
+  const tagY = 264;
+  ctx.font = zh ? `36px ${families.cjk}` : `24px ${families.latin}`;
+  const tagW = Math.ceil(ctx.measureText(c.game).width) + 48;
+  box(ctx, pad, tagY, tagW, 72, P.surface, 6, 0);
+  ctx.fillStyle = P.ink;
+  ctx.fillText(c.game, pad + 24, tagY + 38);
+  const badge = c.badge[outcome];
+  ctx.font = zh ? `48px ${families.cjk}` : `36px ${families.latin}`;
+  const badgeW = Math.ceil(ctx.measureText(badge).width) + 60;
+  box(ctx, W - pad - 12 - badgeW, tagY - 12, badgeW, 96, BADGE_FILL[outcome], 8, 12);
+  ctx.fillStyle = P.ink;
+  ctx.fillText(badge, W - pad - 12 - badgeW + 30, tagY + 38);
+
+  const hlSizes = zh ? [96, 84, 72] : [64, 56, 48];
+  const size1 = fit(ctx, line1, display, hlSizes, inner);
+  const size2 = fit(ctx, line2, display, hlSizes, inner - 48);
+  const hs = Math.min(size1, size2);
   ctx.font = `${hs}px ${display}`;
-  const lineW = Math.ceil(ctx.measureText(outcomeLine).width);
-  const lineY = 236;
-  ctx.fillStyle = P.hi;
-  ctx.fillRect(pad - 8, lineY - hs / 2 - 18, lineW + 32, hs + 36);
   ctx.fillStyle = P.ink;
-  ctx.fillText(outcomeLine, pad + 8, lineY + (zh ? 0 : 2));
+  const h1y = 470;
+  ctx.fillText(line1, pad, h1y);
+  const l2w = Math.ceil(ctx.measureText(line2).width);
+  const h2y = h1y + hs + 60;
+  ctx.fillStyle = P.hi;
+  ctx.fillRect(pad - 12, h2y - hs / 2 - 24, l2w + 48, hs + 48);
+  ctx.fillStyle = P.ink;
+  ctx.fillText(line2, pad + 12, h2y + (zh ? 0 : 4));
 
-  const explainSize = fit(ctx, scanExplain, families.latin, [32, 28, 24], inner);
-  ctx.font = `${explainSize}px ${families.latin}`;
+  const cardY = 780;
+  const cardH = 420;
+  box(ctx, pad, cardY, inner - 18, cardH, P.surface);
   ctx.fillStyle = P.muted;
-  ctx.fillText(scanExplain, pad, lineY + hs / 2 + 52);
+  ctx.font = zh ? `36px ${families.cjk}` : `24px ${families.latin}`;
+  ctx.fillText(c.accuracy, pad + 48, cardY + 72);
+  const rows: [string, number | null, string, string][] = [
+    [c.you, human, P.human, P.humanText],
+    [c.ai, ai, P.ai, P.aiText],
+  ];
+  rows.forEach(([who, pct, fill, text], i) => {
+    const ry = cardY + 168 + i * 132;
+    ctx.fillStyle = text;
+    ctx.font = zh && who !== "AI" ? `48px ${families.cjk}` : `36px ${families.latin}`;
+    ctx.fillText(who, pad + 48, ry);
+    segBar(ctx, pad + 180, ry - 30, 460, 60, pct, fill);
+    ctx.fillStyle = text;
+    ctx.font = `48px ${families.latin}`;
+    ctx.textAlign = "right";
+    ctx.fillText(pct == null ? "--" : `${pct}%`, pad + inner - 18 - 48, ry + 4);
+    ctx.textAlign = "left";
+  });
 
-  const scanY = 420;
-  const scanH = POSTER_HEIGHT - pad - scanY;
-  const scanW = inner - 18;
-  drawPixelHeroScanZone(ctx, pad, scanY, scanW, scanH);
+  const tileY = 1272;
+  const tileH = 192;
+  const gap = 36;
+  const tileW = Math.floor((inner - 12 - gap * (stats.length - 1)) / stats.length);
+  stats.forEach((stat, i) => {
+    const tx = pad + i * (tileW + gap);
+    box(ctx, tx, tileY, tileW, tileH, P.surface, 8, 12);
+    ctx.fillStyle = P.muted;
+    ctx.font = zh ? `36px ${families.cjk}` : `24px ${families.latin}`;
+    ctx.fillText(stat.label, tx + 36, tileY + 60);
+    ctx.fillStyle = P.ink;
+    const valueSize = fit(ctx, stat.value, families.latin, [64, 48, 40], tileW - 72 - (stat.unit ? 48 : 0));
+    ctx.font = `${valueSize}px ${families.latin}`;
+    ctx.fillText(stat.value, tx + 36, tileY + 132);
+    if (stat.unit) {
+      const vw = ctx.measureText(stat.value).width;
+      ctx.font = `36px ${families.cjk}`;
+      ctx.fillStyle = P.muted;
+      ctx.fillText(stat.unit, tx + 36 + vw + 12, tileY + 136);
+    }
+  });
 
-  const qr = POSTER_HERO_QR_PX;
-  const qrBlock = qr + QR_PAD * 2;
-  const qrX = pad + Math.floor((scanW - qrBlock) / 2) + QR_PAD;
-  const hookSize = fit(ctx, scanHook, families.latin, [36, 32, 28], scanW - 80);
-  ctx.font = `${hookSize}px ${families.latin}`;
-  const hookGap = 36;
-  const stackH = qrBlock + hookGap + hookSize;
-  const stackTop = scanY + Math.floor((scanH - stackH) / 2);
-  const qrY = stackTop + QR_PAD;
-  drawQrPixelPad(ctx, qrX, qrY, qr, QR_PAD);
+  const footY = 1536;
+  const footH = POSTER_HEIGHT - pad - footY;
+  box(ctx, pad, footY, inner - 18, footH, P.ink, 0, 18);
+  const qr = POSTER_FOOTER_QR_PX;
+  const qrX = pad + inner - 18 - 36 - qr;
+  const qrY = footY + Math.floor((footH - qr) / 2);
+  ctx.fillStyle = P.surface;
+  ctx.fillRect(qrX - 12, qrY - 12, qr + 24, qr + 24);
   drawPosterModqr(ctx, input.url, qrX, qrY, qr);
 
-  ctx.fillStyle = P.ink;
-  ctx.textAlign = "center";
-  ctx.fillText(scanHook, pad + scanW / 2, qrY + qr + QR_PAD + hookGap + hookSize / 2);
-  ctx.textAlign = "left";
+  const textMax = qrX - 36 - (pad + 36);
+  const footMid = footY + footH / 2;
+  ctx.fillStyle = P.termDim;
+  ctx.font = zh ? `32px ${families.cjk}` : `24px ${families.latin}`;
+  ctx.fillText(footer.prompt, pad + 36, footMid - 54);
+  ctx.fillStyle = P.surface;
+  const hookSize = fit(ctx, footer.hook, families.cjk, [40, 32, 24], textMax);
+  ctx.font = `${hookSize}px ${families.cjk}`;
+  ctx.fillText(footer.hook, pad + 36, footMid + 6);
+  ctx.fillStyle = P.hi;
+  let urlText = footer.url;
+  const urlSize = fit(ctx, urlText, families.cjk, [32, 24, 18], textMax);
+  ctx.font = `${urlSize}px ${families.cjk}`;
+  ctx.fillText(urlText, pad + 36, footMid + 66);
 
   return new Promise<Blob>((resolve, reject) => canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("poster_failed"))), "image/png"));
 }

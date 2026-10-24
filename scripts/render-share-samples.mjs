@@ -31,7 +31,7 @@ const html = `<!doctype html><html><head><style>
 
 const cases = {
   win: { reachedLevel: 9, played: 9, humanCorrect: 7, aiCorrect: 5, fasterThanAiCount: 4, cleared: false },
-  loss: { reachedLevel: 4, played: 6, humanCorrect: 3, aiCorrect: 5, fasterThanAiCount: 0, cleared: false },
+  loss: { reachedLevel: 15, played: 15, humanCorrect: 12, aiCorrect: 14, fasterThanAiCount: 5, cleared: false },
   cleared: { reachedLevel: 20, played: 22, humanCorrect: 20, aiCorrect: 14, fasterThanAiCount: 11, cleared: true },
 };
 
