@@ -1,21 +1,21 @@
 import { FALLBACK_MESSAGE_LOCALE } from "@/i18n/messages";
 import type { Locale } from "@/i18n/config";
 import { POSTER_PALETTE } from "./pixel-palette";
-import { drawPixelColorQr, drawPixelHeroScanZone, drawPixelQrFrame } from "./poster-pixel-qr";
-import { posterOutcomeLine, posterScanHook, shareCopy, shareOutcome, type ShareOutcome, type ShareStats } from "./share-copy";
+import { drawPixelHeroScanZone, drawPosterModqr, drawQrPixelPad } from "./poster-pixel-qr";
+import { posterOutcomeLine, posterScanExplain, posterScanHook, shareCopy, shareOutcome, type ShareOutcome, type ShareStats } from "./share-copy";
 
 export { posterHeadline } from "./share-copy";
 export { POSTER_PALETTE } from "./pixel-palette";
 
 export const POSTER_WIDTH = 1080;
 export const POSTER_HEIGHT = 1920;
-/** Hero QR in the scan zone (was 240px in the original footer strip). */
-export const POSTER_HERO_QR_PX = 784;
+/** Share poster QR (modqr pixel style). */
+export const POSTER_HERO_QR_PX = 392;
 /** @deprecated Renamed — use POSTER_HERO_QR_PX. */
 export const POSTER_FOOTER_QR_PX = POSTER_HERO_QR_PX;
 
 const P = POSTER_PALETTE;
-const QR_FRAME = 14;
+const QR_PAD = 10;
 
 const BADGE_FILL: Record<ShareOutcome, string> = { cleared: P.hi, win: P.ok, tie: P.hi, loss: P.ai };
 
@@ -66,19 +66,20 @@ function fit(ctx: CanvasRenderingContext2D, text: string, family: string, sizes:
 
 export type PosterInput = ShareStats & { url: string; shortUrl: string; locale?: Locale };
 
-/** Draws the 9:16 pixel-style result poster: minimal outcome + hero scan zone (color QR + hook). */
+/** Draws the 9:16 pixel-style result poster: outcome + scan cue + modqr pixel QR. */
 export async function renderPoster(input: PosterInput) {
   const locale = input.locale ?? FALLBACK_MESSAGE_LOCALE;
   const zh = locale === "zh";
   const c = shareCopy(locale);
   const outcome = shareOutcome(input);
   const outcomeLine = posterOutcomeLine(input, locale);
+  const scanExplain = posterScanExplain(locale);
   const scanHook = posterScanHook();
 
   const families = fontFamilies();
   const display = zh ? families.cjk : families.latin;
   const badge = c.badge[outcome];
-  await loadFonts(families, [outcomeLine, scanHook, badge].join(""));
+  await loadFonts(families, [outcomeLine, scanExplain, scanHook, badge].join(""));
 
   const canvas = document.createElement("canvas");
   canvas.width = POSTER_WIDTH;
@@ -101,36 +102,41 @@ export async function renderPoster(input: PosterInput) {
   ctx.fillStyle = P.ink;
   ctx.fillText(badge, W - pad - badgeW + 24, pad + 38);
 
-  const hlSizes = zh ? [72, 64, 56] : [56, 48, 40];
+  const hlSizes = zh ? [64, 56, 48] : [52, 44, 36];
   const hs = fit(ctx, outcomeLine, display, hlSizes, inner - 24);
   ctx.font = `${hs}px ${display}`;
   const lineW = Math.ceil(ctx.measureText(outcomeLine).width);
-  const lineY = 248;
+  const lineY = 236;
   ctx.fillStyle = P.hi;
-  ctx.fillRect(pad - 8, lineY - hs / 2 - 20, lineW + 32, hs + 40);
+  ctx.fillRect(pad - 8, lineY - hs / 2 - 18, lineW + 32, hs + 36);
   ctx.fillStyle = P.ink;
   ctx.fillText(outcomeLine, pad + 8, lineY + (zh ? 0 : 2));
 
-  const scanY = 380;
+  const explainSize = fit(ctx, scanExplain, families.latin, [32, 28, 24], inner);
+  ctx.font = `${explainSize}px ${families.latin}`;
+  ctx.fillStyle = P.muted;
+  ctx.fillText(scanExplain, pad, lineY + hs / 2 + 52);
+
+  const scanY = 420;
   const scanH = POSTER_HEIGHT - pad - scanY;
   const scanW = inner - 18;
   drawPixelHeroScanZone(ctx, pad, scanY, scanW, scanH);
 
   const qr = POSTER_HERO_QR_PX;
-  const qrBlock = qr + QR_FRAME * 2;
-  const qrX = pad + Math.floor((scanW - qrBlock) / 2);
-  const hookSize = fit(ctx, scanHook, families.latin, [40, 36, 32], scanW - 96);
+  const qrBlock = qr + QR_PAD * 2;
+  const qrX = pad + Math.floor((scanW - qrBlock) / 2) + QR_PAD;
+  const hookSize = fit(ctx, scanHook, families.latin, [36, 32, 28], scanW - 80);
   ctx.font = `${hookSize}px ${families.latin}`;
-  const hookH = hookSize + 48;
-  const stackH = qrBlock + hookH;
+  const hookGap = 36;
+  const stackH = qrBlock + hookGap + hookSize;
   const stackTop = scanY + Math.floor((scanH - stackH) / 2);
-  const qrY = stackTop;
-  drawPixelQrFrame(ctx, qrX + QR_FRAME, qrY + QR_FRAME, qr, QR_FRAME);
-  drawPixelColorQr(ctx, input.url, qrX + QR_FRAME, qrY + QR_FRAME, qr);
+  const qrY = stackTop + QR_PAD;
+  drawQrPixelPad(ctx, qrX, qrY, qr, QR_PAD);
+  drawPosterModqr(ctx, input.url, qrX, qrY, qr);
 
   ctx.fillStyle = P.ink;
   ctx.textAlign = "center";
-  ctx.fillText(scanHook, pad + scanW / 2, qrY + qrBlock + hookH / 2);
+  ctx.fillText(scanHook, pad + scanW / 2, qrY + qr + QR_PAD + hookGap + hookSize / 2);
   ctx.textAlign = "left";
 
   return new Promise<Blob>((resolve, reject) => canvas.toBlob((blob) => (blob ? resolve(blob) : reject(new Error("poster_failed"))), "image/png"));
