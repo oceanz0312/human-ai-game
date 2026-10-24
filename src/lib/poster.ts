@@ -9,8 +9,8 @@ export { POSTER_PALETTE } from "./pixel-palette";
 
 export const POSTER_WIDTH = 1080;
 export const POSTER_HEIGHT = 1920;
-/** Footer QR (modqr pixel); balanced for classic CTA strip layout. */
-export const POSTER_FOOTER_QR_PX = 280;
+/** Footer QR (modqr pixel); classic CTA strip, enlarged for scan visibility. */
+export const POSTER_FOOTER_QR_PX = 376;
 /** @deprecated Use POSTER_FOOTER_QR_PX — classic layout is footer-only. */
 export const POSTER_HERO_QR_PX = POSTER_FOOTER_QR_PX;
 
@@ -173,7 +173,7 @@ export async function renderPoster(input: PosterInput) {
     ctx.textAlign = "left";
   });
 
-  const tileY = 1272;
+  const tileY = 1256;
   const tileH = 192;
   const gap = 36;
   const tileW = Math.floor((inner - 12 - gap * (stats.length - 1)) / stats.length);
@@ -195,7 +195,7 @@ export async function renderPoster(input: PosterInput) {
     }
   });
 
-  const footY = 1536;
+  const footY = 1452;
   const footH = POSTER_HEIGHT - pad - footY;
   box(ctx, pad, footY, inner - 18, footH, P.ink, 0, 18);
   const qr = POSTER_FOOTER_QR_PX;
