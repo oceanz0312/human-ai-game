@@ -59,6 +59,26 @@ export function SiteFooter(_props: { locale?: Locale }) {
           </nav>
         ))}
       </div>
+      <div className="container site-footer-badges">
+        <a href="https://smollaunch.com" target="_blank" rel="noopener">
+          {/* eslint-disable-next-line @next/next/no-img-element -- launch badge; remote src must stay verbatim for verifiers */}
+          <img
+            src="https://smollaunch.com/badges/featured.svg"
+            alt="Spot the Difference Game — Featured on Smol Launch"
+            loading="lazy"
+            width={250}
+            height={60}
+          />
+        </a>
+        <a href="https://tinylaunch.com" target="_blank" rel="noopener">
+          {/* eslint-disable-next-line @next/next/no-img-element -- launch badge; remote src must stay verbatim for verifiers */}
+          <img
+            src="https://tinylaunch.com/tinylaunch_badge_live_now.svg"
+            alt="TinyLaunch Badge"
+            style={{ width: "202px", height: "auto" }}
+          />
+        </a>
+      </div>
     </footer>
   );
 }

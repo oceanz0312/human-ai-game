@@ -990,6 +990,28 @@
   font: 400 var(--fs-px-1)/1.4 var(--f-display);
 }
 
+.site-footer-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: center;
+  gap: var(--s3);
+  padding-top: 0;
+  padding-bottom: var(--s5);
+  opacity: 0.85;
+}
+
+.site-footer-badges a:hover {
+  text-decoration: none;
+  opacity: 1;
+}
+
+.site-footer-badges img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
 /* ---------- Responsive ---------- */
 @media (max-width: 1023px) {
   .hub-hero,
