@@ -39,6 +39,7 @@
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "drizzle-orm": "0.45.4",
+    "modqr": "^1.0.4",
     "next": "16.4.0",
     "qrcode": "1.5.4",
     "react": "19.3.0",

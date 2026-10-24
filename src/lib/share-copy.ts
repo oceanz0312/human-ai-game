@@ -63,10 +63,26 @@ const EN = {
 
 export const shareCopy = (locale: Locale = FALLBACK_MESSAGE_LOCALE) => (locale === "zh" ? ZH : EN);
 
+/** Classic poster footer (left of QR): scan prompt, one hook line, site host. */
+export function posterFooterCopy(shortUrl: string, locale: Locale = FALLBACK_MESSAGE_LOCALE) {
+  const c = shareCopy(locale);
+  const host = shortUrl.split("/")[0];
+  const prompt = `> ${c.scan}`;
+  const hook = locale === "zh" ? `${c.cta[0]}${c.cta[1]}` : `${c.cta[0]} ${c.cta[1]}`;
+  return { prompt, hook, url: host };
+}
+
 /** Big poster headline: two short lines. */
 export function posterHeadline(s: ShareStats, locale: Locale = FALLBACK_MESSAGE_LOCALE): [string, string] {
   const [a, b] = shareCopy(locale).outcome[shareOutcome(s)];
   return [a, b];
+}
+
+/** One-line outcome on the share poster (joins the existing two headline lines). */
+export function posterOutcomeLine(s: ShareStats, locale: Locale = FALLBACK_MESSAGE_LOCALE): string {
+  const [a, b] = posterHeadline(s, locale);
+  if (locale === "zh" && !/[A-Za-z]$/.test(a)) return `${a}${b}`;
+  return `${a} ${b}`;
 }
 
 /** Stat tiles shown under the accuracy block. Correct / faster-than-AI tiles only appear when they are > 0. */
