@@ -2,7 +2,7 @@ import { FALLBACK_MESSAGE_LOCALE } from "@/i18n/messages";
 import type { Locale } from "@/i18n/config";
 import { POSTER_PALETTE } from "./pixel-palette";
 import { drawPosterModqr } from "./poster-pixel-qr";
-import { accuracy, posterFooterCopy, posterHeadline, posterStats, shareCopy, shareOutcome, type ShareOutcome, type ShareStats } from "./share-copy";
+import { accuracy, posterFooterCopy, posterHeadline, shareCopy, shareOutcome, type ShareOutcome, type ShareStats } from "./share-copy";
 
 export { posterHeadline } from "./share-copy";
 export { POSTER_PALETTE } from "./pixel-palette";
@@ -87,7 +87,6 @@ export async function renderPoster(input: PosterInput) {
   const c = shareCopy(locale);
   const outcome = shareOutcome(input);
   const [line1, line2] = posterHeadline(input, locale);
-  const stats = posterStats(input, locale);
   const human = accuracy(input.humanCorrect, input.played);
   const ai = accuracy(input.aiCorrect, input.played);
   const footer = posterFooterCopy(input.shortUrl, locale);
@@ -173,29 +172,7 @@ export async function renderPoster(input: PosterInput) {
     ctx.textAlign = "left";
   });
 
-  const tileY = 1256;
-  const tileH = 192;
-  const gap = 36;
-  const tileW = Math.floor((inner - 12 - gap * (stats.length - 1)) / stats.length);
-  stats.forEach((stat, i) => {
-    const tx = pad + i * (tileW + gap);
-    box(ctx, tx, tileY, tileW, tileH, P.surface, 8, 12);
-    ctx.fillStyle = P.muted;
-    ctx.font = zh ? `36px ${families.cjk}` : `24px ${families.latin}`;
-    ctx.fillText(stat.label, tx + 36, tileY + 60);
-    ctx.fillStyle = P.ink;
-    const valueSize = fit(ctx, stat.value, families.latin, [64, 48, 40], tileW - 72 - (stat.unit ? 48 : 0));
-    ctx.font = `${valueSize}px ${families.latin}`;
-    ctx.fillText(stat.value, tx + 36, tileY + 132);
-    if (stat.unit) {
-      const vw = ctx.measureText(stat.value).width;
-      ctx.font = `36px ${families.cjk}`;
-      ctx.fillStyle = P.muted;
-      ctx.fillText(stat.unit, tx + 36 + vw + 12, tileY + 136);
-    }
-  });
-
-  const footY = 1452;
+  const footY = 1248;
   const footH = POSTER_HEIGHT - pad - footY;
   box(ctx, pad, footY, inner - 18, footH, P.ink, 0, 18);
   const qr = POSTER_FOOTER_QR_PX;
