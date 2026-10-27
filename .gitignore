@@ -24,3 +24,7 @@ workers/decisions/.wrangler/
 
 # worktree symlink
 /node_modules
+
+# HTML5 portal package
+/dist-html5/
+/html5/generated/

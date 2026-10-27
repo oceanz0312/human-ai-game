@@ -1,0 +1,11 @@
+/* Self-hosted subset fonts, relative paths (bundled by Vite). Same files as src/lib/fonts.ts. */
+@font-face { font-family: "Fusion Pixel"; src: url("../../src/styles/fonts/fusion-pixel-12-subset.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "Press Start 2P"; src: url("../../src/styles/fonts/press-start-2p-latin-400-normal.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; font-weight: 400; src: url("../../src/styles/fonts/jetbrains-mono-latin-400-normal.woff2") format("woff2"); font-display: swap; }
+@font-face { font-family: "JetBrains Mono"; font-weight: 700; src: url("../../src/styles/fonts/jetbrains-mono-latin-700-normal.woff2") format("woff2"); font-display: swap; }
+:root { --font-fusion-pixel: "Fusion Pixel"; --font-press-start: "Press Start 2P"; --font-jetbrains-mono: "JetBrains Mono"; }
+.h5-screen { min-height: 100dvh; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 16px; padding: 24px 16px; text-align: center; }
+.h5-screen h1 { font-family: var(--f-display); font-size: 24px; line-height: 1.4; margin: 0; }
+.h5-screen p { margin: 0; max-width: 34ch; }
+.h5-version { font-family: var(--f-mono); font-size: 11px; opacity: .65; max-width: 40ch; word-break: break-word; }
+.h5-stats { font-family: var(--f-display); font-size: 12px; }
