@@ -32,7 +32,10 @@
     "share:samples": "node scripts/render-share-samples.mjs",
     "seo:indexnow": "node scripts/indexnow-submit.mjs",
     "stats:d1": "node scripts/d1-stats.mjs",
-    "printables:generate": "tsx scripts/generate-printables.ts"
+    "printables:generate": "tsx scripts/generate-printables.ts",
+    "html5:build": "tsx scripts/build-html5.ts",
+    "html5:typecheck": "tsc -p html5/tsconfig.json",
+    "html5:smoke": "node scripts/smoke-html5.mjs"
   },
   "dependencies": {
     "@libsql/client": "0.18.0",
